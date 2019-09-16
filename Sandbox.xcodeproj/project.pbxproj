@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48B02D3232DB35800EB72AE /* URLSession.swift */; };
 		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
 		C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F023242A4100BB883A /* SceneDelegate.swift */; };
 		C4E186F323242A4100BB883A /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F223242A4100BB883A /* FileListView.swift */; };
@@ -40,6 +41,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C48B02D3232DB35800EB72AE /* URLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSession.swift; sourceTree = "<group>"; };
 		C4E186EB23242A4100BB883A /* Sandbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sandbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E186EE23242A4100BB883A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C4E186F023242A4100BB883A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				C4E1872723242B6A00BB883A /* DateFormatter.swift */,
+				C48B02D3232DB35800EB72AE /* URLSession.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -327,6 +330,7 @@
 				C4E1872523242B3C00BB883A /* File.swift in Sources */,
 				C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */,
 				C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */,
+				C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */,
 				C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */,
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
 				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,

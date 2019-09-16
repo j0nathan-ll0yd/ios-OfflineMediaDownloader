@@ -1,48 +1,59 @@
 import Foundation
 import Combine
+import AVKit
+import SwiftUI
 
 final class FileCellViewModel: ObservableObject, Identifiable {
     @Published public var file: File
-    @Published public var progress: String = "0.0"
-    private var disposables = Set<AnyCancellable>()
+    @Published public var progress: Int = 0
+    @Published public var isDownloaded: Bool = false
+    @Published public var isDownloading: Bool = false
+    private var observation: NSKeyValueObservation?
+    private var location: URL
+    private let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    
+    private lazy var task: URLSessionDownloadTask = {
+        let session = URLSession.shared
+        let task = session.downloadTask(with: self.file.fileUrl) { (tempLocation, _, _) in
+            debugPrint("file saved to: \(String(describing: tempLocation))")
+            debugPrint("saving to: \(String(describing: self.location))")
+            self.location = tempLocation!
+            DispatchQueue.main.async{
+                self.isDownloaded = true
+                self.isDownloading = false
+            }
+        }
+        return task
+    }()
     
     public init(file: File) {
         self.file = file
+        self.location = self.documentsPath.appendingPathComponent(file.fileUrl.lastPathComponent)
+        
     }
     
     public func download() {
-        debugPrint("Downloading...")
-        debugPrint(self.file.fileUrl.absoluteString)
-        
-        self.progress = "20.0"
-        debugPrint(self.progress)
-        self.file.key = "Test"
-        
-        // TODO: Figure out how to make this return an AnyCancellable so it can be cancelled
-        URLSession.shared.dataTaskPublisher(for: self.file.fileUrl)
-            .handleEvents(receiveSubscription: { (subscription) in
-                print("Receive subscription")
-            }, receiveOutput: { output in
-                print("Received output: \(output)")
-            }, receiveCompletion: { _ in
-                print("Receive completion")
-            }, receiveCancel: {
-                print("Receive cancel")
-            }, receiveRequest: { demand in
-                print("Receive request: \(demand)")
-            })
-            .sink(receiveCompletion: { completion in
-                    debugPrint(".sink() received the completion", String(describing: completion))
-                    switch completion {
-                        case .finished:
-                            break
-                        case .failure(let anError):
-                            print("received error: ", anError)
-                    }
-            }, receiveValue: { someValue in
-                debugPrint(".sink() received \(someValue)")
-            })
-            .store(in: &disposables)
-        
+        self.isDownloading = true
+        self.observation = self.task.progress.observe(\.fractionCompleted) { (progress, _) in
+            DispatchQueue.main.async{
+                self.progress = Int(progress.fractionCompleted * 100)
+            }
+        }
+        self.task.resume()
+    }
+    
+    public func play() {
+        // TODO: Figure out how to launch a SwiftUI
+        let player = AVPlayer(url: self.location)
+        let playerController = AVPlayerViewController()
+        playerController.modalPresentationStyle = .fullScreen
+        //self.present(vc, animated: true, completion: nil)
+
+        playerController.player = player
+        //self.addChildViewController(playerController)
+        //self.view.addSubview(playerController.view)
+        //playerController.view.frame = self.view.frame
+
+        player.play()
     }
 }

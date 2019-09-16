@@ -20,9 +20,24 @@ struct FileCellView : View {
                     .foregroundColor(.gray)
             }
             Spacer()
-            Text("\(viewModel.progress)")
-            Button(action: { self.viewModel.download() }) {
-                Image(systemName: "square.and.arrow.down")
+            if viewModel.isDownloaded {
+              Button(action: {}) {
+                  Image(systemName: "play.circle")
+              }
+            }
+            else if viewModel.isDownloading {
+                Text("\(viewModel.progress)")
+                if viewModel.progress >= 50 {
+                    Image(systemName: "circle.righthalf.fill")
+                } else {
+                    Image(systemName: "circle")
+                }
+                
+            }
+            else {
+              Button(action: { self.viewModel.download() }) {
+                  Image(systemName: "square.and.arrow.down")
+              }
             }
         }
     }
