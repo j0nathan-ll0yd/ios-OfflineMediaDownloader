@@ -50,7 +50,6 @@ extension URLSession {
             }
 
         }
-        task.progress
         
         task.resume()
         

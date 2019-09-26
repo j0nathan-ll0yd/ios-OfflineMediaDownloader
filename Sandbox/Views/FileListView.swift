@@ -8,8 +8,10 @@ struct FileListView: View {
     }
     
     var body: some View {
-        List {
-          ForEach(viewModel.dataSource, content: FileCellView.init(viewModel:))
+        VStack {
+            List {
+              ForEach(viewModel.dataSource, content: FileCellView.init(viewModel:))
+            }
         }
     }
 }

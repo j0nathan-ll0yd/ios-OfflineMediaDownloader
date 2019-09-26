@@ -1,7 +1,9 @@
 import SwiftUI
+import UIKit
 
 struct FileCellView : View {
     @ObservedObject var viewModel: FileCellViewModel
+    @State var showVideo: Bool = false
     
     init(viewModel: FileCellViewModel) {
       self.viewModel = viewModel
@@ -13,17 +15,21 @@ struct FileCellView : View {
             VStack(alignment: .leading) {
                 Text("\(viewModel.file.key)")
                     .font(.body)
-                    .lineLimit(nil)
+                    .lineLimit(5)
                     .multilineTextAlignment(.leading)
                 Text("\(viewModel.file.relativeDate)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+                HStack() {
+                    Spacer()
+                }
             }
-            Spacer()
             if viewModel.isDownloaded {
-              Button(action: {}) {
-                  Image(systemName: "play.circle")
-              }
+                Button(action: { self.showVideo = true }) {
+                    Image(systemName: "play.circle")
+                }.sheet(isPresented: $showVideo) {
+                    AVPlayerView(url: self.viewModel.location)
+                }
             }
             else if viewModel.isDownloading {
                 Text("\(viewModel.progress)")
@@ -39,7 +45,7 @@ struct FileCellView : View {
                   Image(systemName: "square.and.arrow.down")
               }
             }
-        }
+        }.padding(10)
     }
 }
 

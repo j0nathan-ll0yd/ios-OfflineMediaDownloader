@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-import AVKit
 import SwiftUI
 
 final class FileCellViewModel: ObservableObject, Identifiable {
@@ -9,15 +8,31 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     @Published public var isDownloaded: Bool = false
     @Published public var isDownloading: Bool = false
     private var observation: NSKeyValueObservation?
-    private var location: URL
+    @Published public var location: URL
     private let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
     private lazy var task: URLSessionDownloadTask = {
         let session = URLSession.shared
-        let task = session.downloadTask(with: self.file.fileUrl) { (tempLocation, _, _) in
-            debugPrint("file saved to: \(String(describing: tempLocation))")
+        let task = session.downloadTask(with: self.file.fileUrl) { (tempLocalUrl, response, error) in
+            debugPrint("file saved to: \(String(describing: tempLocalUrl))")
             debugPrint("saving to: \(String(describing: self.location))")
-            self.location = tempLocation!
+            
+            if let tempLocalUrl = tempLocalUrl, error == nil {
+                if let statusCode = (response as? HTTPURLResponse)?.statusCode {
+                    print("Successfully downloaded. Status code: \(statusCode)")
+                }
+                
+                do {
+                    try FileManager.default.copyItem(at: tempLocalUrl, to: self.location)
+                } catch (let writeError) {
+                    print("Error creating a file \(self.location) : \(writeError)")
+                }
+                
+            } else {
+                print("Error took place while downloading a file. Error description: %@", error?.localizedDescription);
+            }
+
+            
             DispatchQueue.main.async{
                 self.isDownloaded = true
                 self.isDownloading = false
@@ -44,16 +59,16 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     
     public func play() {
         // TODO: Figure out how to launch a SwiftUI
-        let player = AVPlayer(url: self.location)
-        let playerController = AVPlayerViewController()
-        playerController.modalPresentationStyle = .fullScreen
+        //let player = AVPlayer(url: self.location)
+        //let playerController = AVPlayerViewController()
+        //playerController.modalPresentationStyle = .fullScreen
         //self.present(vc, animated: true, completion: nil)
 
-        playerController.player = player
+        //playerController.player = player
         //self.addChildViewController(playerController)
         //self.view.addSubview(playerController.view)
         //playerController.view.frame = self.view.frame
 
-        player.play()
+        //player.play()
     }
 }
