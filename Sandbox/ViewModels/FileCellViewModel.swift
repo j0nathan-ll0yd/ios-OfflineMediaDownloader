@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import os
 
 final class FileCellViewModel: ObservableObject, Identifiable {
     @Published public var file: File
@@ -13,6 +14,7 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     
     private lazy var task: URLSessionDownloadTask = {
         let session = URLSession.shared
+        debugPrint("Downloading \(self.file.fileUrl)")
         let task = session.downloadTask(with: self.file.fileUrl) { (tempLocalUrl, response, error) in
             debugPrint("file saved to: \(String(describing: tempLocalUrl))")
             debugPrint("saving to: \(String(describing: self.location))")
@@ -41,10 +43,13 @@ final class FileCellViewModel: ObservableObject, Identifiable {
         return task
     }()
     
-    public init(file: File) {
+    public init(file: File, isDownloaded: Bool = false) {
         self.file = file
+        self.isDownloaded = isDownloaded
         self.location = self.documentsPath.appendingPathComponent(file.fileUrl.lastPathComponent)
-        
+        if FileManager.default.fileExists(atPath: self.location.path) {
+            self.isDownloaded = true
+        }
     }
     
     public func download() {
@@ -56,19 +61,13 @@ final class FileCellViewModel: ObservableObject, Identifiable {
         }
         self.task.resume()
     }
-    
-    public func play() {
-        // TODO: Figure out how to launch a SwiftUI
-        //let player = AVPlayer(url: self.location)
-        //let playerController = AVPlayerViewController()
-        //playerController.modalPresentationStyle = .fullScreen
-        //self.present(vc, animated: true, completion: nil)
-
-        //playerController.player = player
-        //self.addChildViewController(playerController)
-        //self.view.addSubview(playerController.view)
-        //playerController.view.frame = self.view.frame
-
-        //player.play()
+    public func delete() {
+        if FileManager.default.fileExists(atPath: self.location.path) {
+            do {
+                try FileManager.default.removeItem(atPath: self.location.path)
+            } catch (let deleteError) {
+                print("Error deleting a file \(self.location) : \(deleteError)")
+            }
+        }
     }
 }

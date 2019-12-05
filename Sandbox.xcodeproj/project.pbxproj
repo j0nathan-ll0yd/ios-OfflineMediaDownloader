@@ -7,7 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */; };
 		C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48B02D3232DB35800EB72AE /* URLSession.swift */; };
+		C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED0236DFF34001F10EB /* FileList.swift */; };
+		C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED1236DFF34001F10EB /* FileResponse.swift */; };
 		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
 		C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F023242A4100BB883A /* SceneDelegate.swift */; };
 		C4E186F323242A4100BB883A /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F223242A4100BB883A /* FileListView.swift */; };
@@ -42,7 +45,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicator.swift; sourceTree = "<group>"; };
 		C48B02D3232DB35800EB72AE /* URLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSession.swift; sourceTree = "<group>"; };
+		C4A91ED0236DFF34001F10EB /* FileList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileList.swift; sourceTree = "<group>"; };
+		C4A91ED1236DFF34001F10EB /* FileResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileResponse.swift; sourceTree = "<group>"; };
 		C4E186EB23242A4100BB883A /* Sandbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sandbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E186EE23242A4100BB883A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C4E186F023242A4100BB883A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -62,6 +68,7 @@
 		C4E1872423242B3C00BB883A /* File.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = File.swift; sourceTree = "<group>"; };
 		C4E1872723242B6A00BB883A /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
 		C4E1872A23242BBE00BB883A /* FileCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCellView.swift; sourceTree = "<group>"; };
+		C4E2FED123942F5000D881A9 /* Sandbox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Sandbox.entitlements; sourceTree = "<group>"; };
 		C4F86A8B233B045800ABC233 /* AVPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVPlayerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -90,13 +97,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C49D55F32325B77000BCE67B /* Networking */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Networking;
-			sourceTree = "<group>";
-		};
 		C4E186E223242A4100BB883A = {
 			isa = PBXGroup;
 			children = (
@@ -120,7 +120,7 @@
 		C4E186ED23242A4100BB883A /* Sandbox */ = {
 			isa = PBXGroup;
 			children = (
-				C49D55F32325B77000BCE67B /* Networking */,
+				C4E2FED123942F5000D881A9 /* Sandbox.entitlements */,
 				C4E1872923242BB200BB883A /* Views */,
 				C4E1872623242B5A00BB883A /* Extensions */,
 				C4E1872323242B3300BB883A /* Models */,
@@ -173,6 +173,8 @@
 		C4E1872323242B3300BB883A /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C4A91ED0236DFF34001F10EB /* FileList.swift */,
+				C4A91ED1236DFF34001F10EB /* FileResponse.swift */,
 				C4E1872423242B3C00BB883A /* File.swift */,
 			);
 			path = Models;
@@ -193,6 +195,7 @@
 				C4E186F223242A4100BB883A /* FileListView.swift */,
 				C4E1872A23242BBE00BB883A /* FileCellView.swift */,
 				C4F86A8B233B045800ABC233 /* AVPlayerView.swift */,
+				C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -328,14 +331,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */,
 				C4E1872B23242BBE00BB883A /* FileCellView.swift in Sources */,
 				C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */,
 				C4E1872523242B3C00BB883A /* File.swift in Sources */,
+				C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */,
 				C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */,
 				C4F86A8C233B045800ABC233 /* AVPlayerView.swift in Sources */,
 				C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */,
 				C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */,
 				C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */,
+				C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */,
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
 				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,
 			);
@@ -502,6 +508,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sandbox/Sandbox.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"Sandbox/Preview Content\"";
 				DEVELOPMENT_TEAM = P328YB6M54;
@@ -522,6 +529,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sandbox/Sandbox.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"Sandbox/Preview Content\"";
 				DEVELOPMENT_TEAM = P328YB6M54;

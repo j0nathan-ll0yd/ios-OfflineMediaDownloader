@@ -34,12 +34,10 @@ extension File: Decodable {
         
         let urlString = try values.decode(String.self, forKey: .fileUrl)
         print(urlString)
-        if let url = URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!) {
+        if let url = URL(string: urlString) {
             fileUrl = url
         } else {
-            throw DecodingError.dataCorruptedError(forKey: .fileUrl,
-                                                   in: values,
-                                                   debugDescription: "URL string does not match format expected by formatter.")
+            throw DecodingError.dataCorruptedError(forKey: .fileUrl, in: values, debugDescription: "fileUrl is invalid")
         }
         
         let dateString = try values.decode(String.self, forKey: .lastModified)
@@ -47,9 +45,7 @@ extension File: Decodable {
         if let date = formatter.date(from: dateString) {
             lastModified = date
         } else {
-            throw DecodingError.dataCorruptedError(forKey: .lastModified,
-                                                   in: values,
-                                                   debugDescription: "Date string does not match format expected by formatter.")
+            throw DecodingError.dataCorruptedError(forKey: .lastModified, in: values, debugDescription: ".lastModified string does not match formatter.")
         }
     }
 }

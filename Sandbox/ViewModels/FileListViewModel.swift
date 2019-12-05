@@ -3,10 +3,52 @@ import Combine
 
 final class FileListViewModel: ObservableObject, Identifiable {
     @Published var dataSource: [FileCellViewModel] = []
-    @Published var currentVideo: File?
+    @Published var isLoading: Bool = true
+    private var subscription: Cancellable?
     
     init() {
-        search()
+        searchRemote()
+    }
+    init(datasource: [FileCellViewModel], isLoading: Bool) {
+        self.dataSource = datasource
+        self.isLoading = isLoading
+    }
+    
+    func deleteItems(at offsets: IndexSet) {
+        debugPrint("Deleting \(offsets)")
+        guard let index = Array(offsets).first else { return }
+        let fileCellViewModel: FileCellViewModel = dataSource[index]
+        fileCellViewModel.delete()
+        dataSource.remove(atOffsets: offsets)
+    }
+    
+    func searchRemote() {
+        var urlComponents = URLComponents(string: "https://zc21p8daqc.execute-api.us-west-2.amazonaws.com/Prod/files")!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "ApiKey", value: "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc")
+        ]
+        
+        var request = URLRequest(url: urlComponents.url!)
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        self.subscription = URLSession.shared
+          .dataTaskPublisher(for: request)
+          .map(\.data)
+          .decode(type: FileResponse.self, decoder: JSONDecoder())
+          .sink(receiveCompletion: { completion in
+            if case .failure(let err) = completion {
+              print("Retrieving data failed with error \(err)")
+            }
+          }, receiveValue: { object in
+            print("Retrieved object \(object)")
+            DispatchQueue.main.async {
+                self.dataSource = object.body.contents.map({ file in
+                    return FileCellViewModel(file: file)
+                })
+                self.isLoading = false
+            }
+          })
+        
     }
     
     func search() {
