@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */; };
-		C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48B02D3232DB35800EB72AE /* URLSession.swift */; };
 		C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED0236DFF34001F10EB /* FileList.swift */; };
 		C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED1236DFF34001F10EB /* FileResponse.swift */; };
 		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
@@ -46,7 +45,6 @@
 
 /* Begin PBXFileReference section */
 		C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicator.swift; sourceTree = "<group>"; };
-		C48B02D3232DB35800EB72AE /* URLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSession.swift; sourceTree = "<group>"; };
 		C4A91ED0236DFF34001F10EB /* FileList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileList.swift; sourceTree = "<group>"; };
 		C4A91ED1236DFF34001F10EB /* FileResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileResponse.swift; sourceTree = "<group>"; };
 		C4E186EB23242A4100BB883A /* Sandbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sandbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -184,7 +182,6 @@
 			isa = PBXGroup;
 			children = (
 				C4E1872723242B6A00BB883A /* DateFormatter.swift */,
-				C48B02D3232DB35800EB72AE /* URLSession.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -339,7 +336,6 @@
 				C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */,
 				C4F86A8C233B045800ABC233 /* AVPlayerView.swift in Sources */,
 				C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */,
-				C48B02D4232DB35800EB72AE /* URLSession.swift in Sources */,
 				C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */,
 				C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */,
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,

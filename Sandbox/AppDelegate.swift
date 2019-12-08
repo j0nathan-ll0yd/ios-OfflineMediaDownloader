@@ -27,6 +27,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
       }
     }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        debugPrint(userInfo)
+        debugPrint(userInfo[AnyHashable("key")])
+        completionHandler(.newData)
+    }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
       print("Failed to register: \(error)")
@@ -85,12 +91,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         
         setupNotifications(application: application)
-        #if IOS_SIMULATOR
-            // FileHelper().clearCache()
-        #else
-            application.registerForRemoteNotifications()
-        #endif
-        
         return true
     }
 

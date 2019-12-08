@@ -25,7 +25,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use a UIHostingController as window root view controller
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = UIHostingController(rootView: fileListView)
-        window.rootViewController?.modalPresentationStyle = .fullScreen
         window.makeKeyAndVisible()
         self.window = window
     }

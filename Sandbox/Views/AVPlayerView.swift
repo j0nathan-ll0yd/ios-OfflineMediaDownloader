@@ -1,11 +1,3 @@
-//
-//  PlayerViewController.swift
-//  WWDCPlayer
-//
-//  Created by Giftbot on 2019/09/13.
-//  Copyright © 2019 Giftbot. All rights reserved.
-//
-
 import AVKit
 import SwiftUI
 
@@ -23,70 +15,6 @@ struct AVPlayerView: UIViewControllerRepresentable {
     
 }
 
-/*
-struct AVPlayerView: UIViewControllerRepresentable {
-    let url: URL?
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    func makeUIViewController(context: Context) -> AVPlayerViewController {
-        debugPrint("makeUIViewController")
-        
-        //let url = URL(string: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")!
-        let player = AVPlayer()
-        
-        let viewController = AVPlayerViewController()
-        viewController.player = player
-        viewController.delegate = context.coordinator
-
-        let item = AVPlayerItem(url: url!)
-
-        context.coordinator.observation = item.observe(\.status) { item, change in
-            switch item.status {
-            case .readyToPlay:
-                debugPrint(".readyToPlay")
-            case .failed:
-                debugPrint(".failed")
-            case .unknown:
-                debugPrint(".unknown")
-            @unknown default:
-                fatalError()
-            }
-        }
-        player.replaceCurrentItem(with: item)
-        return viewController
-    }
-    
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: UIViewControllerRepresentableContext<AVPlayerView>) {
-    }
-    
-    static func dismantleUIViewController(_ uiViewController: AVPlayerViewController, coordinator: AVPlayerView.Coordinator) {
-        debugPrint("dismantleUIViewController")
-    }
-    
-    class Coordinator: NSObject, AVPlayerViewControllerDelegate {
-        var parent: AVPlayerView
-        var observation: NSKeyValueObservation?
-
-        init(_ viewController: AVPlayerView) {
-            self.parent = viewController
-        }
-        
-        func playerViewController(_ playerViewController: AVPlayerViewController, willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator) {
-            debugPrint("willBeginFullScreenPresentationWithAnimationCoordinator")
-        }
-        
-        func playerViewController(_ playerViewController: AVPlayerViewController, willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator) {
-            debugPrint("willEndFullScreenPresentationWithAnimationCoordinator")
-        }
-        
-        
-        
-    }
-}
-*/
 class PlayerViewController: AVPlayerViewController, AVAssetResourceLoaderDelegate {
     
     var url: URL!
@@ -106,7 +34,6 @@ class PlayerViewController: AVPlayerViewController, AVAssetResourceLoaderDelegat
         } catch _ {
         }
         
-        let url = URL(string: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")!
         let asset: AVURLAsset = AVURLAsset(url: self.url!)
         let playerItem = AVPlayerItem(asset: asset)
         self.player = AVPlayer(playerItem:playerItem)
