@@ -3,11 +3,14 @@ import Combine
 
 final class FileListViewModel: ObservableObject, Identifiable {
     @Published var dataSource: [FileCellViewModel] = []
-    @Published var isLoading: Bool = true
+    @Environment(\.managedObjectContext) var managedObjectContext
+    @Published var isLoading: Bool = false
+    
     private var subscription: Cancellable?
+    private let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
     init() {
-        searchRemote()
+        //searchRemote()
     }
     init(datasource: [FileCellViewModel], isLoading: Bool) {
         self.dataSource = datasource
@@ -22,19 +25,35 @@ final class FileListViewModel: ObservableObject, Identifiable {
         dataSource.remove(atOffsets: offsets)
     }
     
+    func searchLocal() {
+        do {
+            let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: nil)
+            fileURLs.map({ url in
+                
+            })
+        } catch {
+            print("Error while enumerating files \(documentsPath.path): \(error.localizedDescription)")
+        }
+    }
+    
     func searchRemote() {
-        var urlComponents = URLComponents(string: "https://zc21p8daqc.execute-api.us-west-2.amazonaws.com/Prod/files")!
+        var urlComponents = URLComponents(string: "https://m0l9d6rzcb.execute-api.us-west-2.amazonaws.com/Prod/files")!
         urlComponents.queryItems = [
-            URLQueryItem(name: "ApiKey", value: "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc")
+            URLQueryItem(name: "ApiKey", value: "HPOlSPxiPY7mzvcfnxHPJ5i0UIr41xuO9099TB1e")
         ]
         
         var request = URLRequest(url: urlComponents.url!)
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        let decoder = JSONDecoder()
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let context = appDelegate.persistentContainer.viewContext
+        decoder.userInfo[CodingUserInfoKey.context!] = context
+        
         self.subscription = URLSession.shared
           .dataTaskPublisher(for: request)
           .map(\.data)
-          .decode(type: FileResponse.self, decoder: JSONDecoder())
+          .decode(type: FileResponse.self, decoder: decoder)
           .sink(receiveCompletion: { completion in
             if case .failure(let err) = completion {
               print("Retrieving data failed with error \(err)")
@@ -45,21 +64,14 @@ final class FileListViewModel: ObservableObject, Identifiable {
                 self.dataSource = object.body.contents.map({ file in
                     return FileCellViewModel(file: file)
                 })
+                do {
+                    try context.save()
+                    print("Saved new files.")
+                }
+                catch { fatalError("Unable to save data.") }
                 self.isLoading = false
             }
           })
         
-    }
-    
-    func search() {
-            
-        let file1 = File(key: "Short video", lastModified: Date(), eTag: "eTag", size: 3485113, storageClass: "STANDARD", fileUrl: URL(string: "https://kevin-and-bean-archive.s3.amazonaws.com/Turo%20Commercial-NIqubRnYBQs.mp4")!)
-        let file2 = File(key: "This is a video with a really long name to see how the sizing works for this text", lastModified: Date.init(timeInterval: -186400, since: Date()), eTag: "eTag", size: 3485113, storageClass: "STANDARD", fileUrl: URL(string: "https://p-events-delivery.akamaized.net/3004qzusahnbjppuwydgjzsdyzsippar/m3u8/hls_vod_mvp.m3u8")!)
-        
-        let fileCellViewModel1 = FileCellViewModel(file: file1)
-        let fileCellViewModel2 = FileCellViewModel(file: file2)
-        
-        self.dataSource.append(fileCellViewModel1)
-        self.dataSource.append(fileCellViewModel2)
     }
 }

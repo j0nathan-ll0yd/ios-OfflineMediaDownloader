@@ -9,12 +9,12 @@ struct FileList {
     var prefix: String
     
     enum CodingKeys: String, CodingKey {
-        case contents = "Contents"
-        case isTruncated = "IsTruncated"
-        case keyCount = "KeyCount"
-        case maxKeys = "MaxKeys"
-        case name = "Name"
-        case prefix = "Prefix"
+        case contents = "contents"
+        case isTruncated = "isTruncated"
+        case keyCount = "keyCount"
+        case maxKeys = "maxKeys"
+        case name = "name"
+        case prefix = "prefix"
     }
 }
 

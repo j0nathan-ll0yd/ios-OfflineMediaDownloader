@@ -15,7 +15,7 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     private lazy var task: URLSessionDownloadTask = {
         let session = URLSession.shared
         debugPrint("Downloading \(self.file.fileUrl)")
-        let task = session.downloadTask(with: self.file.fileUrl) { (tempLocalUrl, response, error) in
+        let task = session.downloadTask(with: self.file.fileUrl!) { (tempLocalUrl, response, error) in
             debugPrint("file saved to: \(String(describing: tempLocalUrl))")
             debugPrint("saving to: \(String(describing: self.location))")
             
@@ -46,7 +46,7 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     public init(file: File, isDownloaded: Bool = false) {
         self.file = file
         self.isDownloaded = isDownloaded
-        self.location = self.documentsPath.appendingPathComponent(file.fileUrl.lastPathComponent)
+        self.location = self.documentsPath.appendingPathComponent(file.fileUrl!.lastPathComponent)
         if FileManager.default.fileExists(atPath: self.location.path) {
             self.isDownloaded = true
         }

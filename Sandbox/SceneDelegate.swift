@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 import SwiftUI
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -19,8 +20,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         guard let windowScene = scene as? UIWindowScene else { return }
         
+        // ❇️ Get the managedObjectContext from the persistent container
+        // ❇️ This assumes you've left the Core Data stack creation code within AppDelegate
+        let managedObjectContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+        
         let viewModel = FileListViewModel()
-        let fileListView = FileListView(viewModel: viewModel)
+        // ❇️ Pass it to the ContentView through the
+        // ❇️ managedObjectContext @Environment variable
+        let fileListView = FileListView(viewModel: viewModel).environment(\.managedObjectContext, managedObjectContext)
 
         // Use a UIHostingController as window root view controller
         let window = UIWindow(windowScene: windowScene)

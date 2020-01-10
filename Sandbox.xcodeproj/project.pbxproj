@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */; };
+		C467C25923BC27350038F462 /* Sandbox.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C467C25723BC27350038F462 /* Sandbox.xcdatamodeld */; };
 		C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED0236DFF34001F10EB /* FileList.swift */; };
 		C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED1236DFF34001F10EB /* FileResponse.swift */; };
 		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
@@ -45,6 +46,7 @@
 
 /* Begin PBXFileReference section */
 		C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicator.swift; sourceTree = "<group>"; };
+		C467C25823BC27350038F462 /* Sandbox.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Sandbox.xcdatamodel; sourceTree = "<group>"; };
 		C4A91ED0236DFF34001F10EB /* FileList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileList.swift; sourceTree = "<group>"; };
 		C4A91ED1236DFF34001F10EB /* FileResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileResponse.swift; sourceTree = "<group>"; };
 		C4E186EB23242A4100BB883A /* Sandbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sandbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -118,6 +120,7 @@
 		C4E186ED23242A4100BB883A /* Sandbox */ = {
 			isa = PBXGroup;
 			children = (
+				C467C25723BC27350038F462 /* Sandbox.xcdatamodeld */,
 				C4E2FED123942F5000D881A9 /* Sandbox.entitlements */,
 				C4E1872923242BB200BB883A /* Views */,
 				C4E1872623242B5A00BB883A /* Extensions */,
@@ -328,6 +331,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C467C25923BC27350038F462 /* Sandbox.xcdatamodeld in Sources */,
 				C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */,
 				C4E1872B23242BBE00BB883A /* FileCellView.swift in Sources */,
 				C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */,
@@ -666,6 +670,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		C467C25723BC27350038F462 /* Sandbox.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				C467C25823BC27350038F462 /* Sandbox.xcdatamodel */,
+			);
+			currentVersion = C467C25823BC27350038F462 /* Sandbox.xcdatamodel */;
+			path = Sandbox.xcdatamodeld;
+			sourceTree = SOURCE_ROOT;
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = C4E186E323242A4100BB883A /* Project object */;
 }

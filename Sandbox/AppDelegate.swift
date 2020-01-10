@@ -1,4 +1,5 @@
 import UIKit
+import CoreData
 import Combine
 import AVFoundation
 import UserNotifications
@@ -6,6 +7,15 @@ import UserNotifications
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var subscription: Cancellable?
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "Sandbox")
+        container.loadPersistentStores { description, error in
+            if let error = error {
+                fatalError("Unable to load persistent stores: \(error)")
+            }
+        }
+        return container
+    }()
     
     func setupNotifications(application: UIApplication) {
         let center = UNUserNotificationCenter.current()
@@ -42,17 +52,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         print("didRegisterForRemoteNotificationsWithDeviceToken")
         let parameters = [
-            "Token": deviceToken.map { String(format: "%02.2hhx", $0) }.joined(),
+            "token": deviceToken.map { String(format: "%02.2hhx", $0) }.joined(),
             "UUID": UIDevice.current.identifierForVendor!.uuidString,
-            "Name": UIDevice.current.name,
-            "SystemName": UIDevice.current.systemName,
-            "SystemVersion": UIDevice.current.systemVersion
+            "name": UIDevice.current.name,
+            "systemName": UIDevice.current.systemName,
+            "systemVersion": UIDevice.current.systemVersion
         ] as [String : Any]
         debugPrint(parameters)
         
-        var urlComponents = URLComponents(string: "https://zc21p8daqc.execute-api.us-west-2.amazonaws.com/Prod/registerDevice")!
+        var urlComponents = URLComponents(string: "https://m0l9d6rzcb.execute-api.us-west-2.amazonaws.com/Prod/registerDevice")!
         urlComponents.queryItems = [
-            URLQueryItem(name: "ApiKey", value: "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc")
+            URLQueryItem(name: "ApiKey", value: "HPOlSPxiPY7mzvcfnxHPJ5i0UIr41xuO9099TB1e")
         ]
         
         var request = URLRequest(url: urlComponents.url!)

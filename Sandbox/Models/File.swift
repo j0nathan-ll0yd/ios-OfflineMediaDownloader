@@ -1,39 +1,42 @@
 import SwiftUI
+import Foundation
+import CoreData
 
-struct File : Identifiable {
-    var id = UUID()
-    var key: String
-    var lastModified: Date
-    var eTag: String
-    var size: Int
-    var storageClass: String
-    var fileUrl: URL
+extension CodingUserInfoKey {
+    static let context = CodingUserInfoKey(rawValue: "context")
+}
+
+public class File: NSManagedObject, Identifiable, Codable {
+    enum CodingKeys: String, CodingKey {
+        case key, lastModified, eTag, size, storageClass, fileUrl
+    }
+    
+    @NSManaged public var key: String
+    @NSManaged public var lastModified: Date?
+    @NSManaged public var eTag: String?
+    @NSManaged public var size: NSNumber?
+    @NSManaged public var storageClass: String?
+    @NSManaged public var fileUrl: URL?
     
     var relativeDate: String {
         let formatter = DateFormatter.relativeDate
-        return formatter.string(from: self.lastModified)
+        return formatter.string(from: self.lastModified!)
     }
     
-    enum CodingKeys: String, CodingKey {
-        case key = "Key"
-        case lastModified = "LastModified"
-        case eTag = "ETag"
-        case size = "Size"
-        case storageClass = "StorageClass"
-        case fileUrl = "FileUrl"
-    }
-}
+    public required convenience init(from decoder: Decoder) throws {
+        guard let context = decoder.userInfo[CodingUserInfoKey.context!] as? NSManagedObjectContext else { fatalError() }
+        guard let entity = NSEntityDescription.entity(forEntityName: "File", in: context) else { fatalError() }
 
-extension File: Decodable {
-    init(from decoder: Decoder) throws {
+        self.init(entity: entity, insertInto: context)
+        
         let values = try decoder.container(keyedBy: CodingKeys.self)
         key = try values.decode(String.self, forKey: .key)
         eTag = try values.decode(String.self, forKey: .eTag)
-        size = try values.decode(Int.self, forKey: .size)
+        let sizeInteger = try values.decode(Int.self, forKey: .size)
+        size = NSNumber(integerLiteral: sizeInteger)
         storageClass = try values.decode(String.self, forKey: .storageClass)
         
         let urlString = try values.decode(String.self, forKey: .fileUrl)
-        print(urlString)
         if let url = URL(string: urlString) {
             fileUrl = url
         } else {
@@ -47,5 +50,26 @@ extension File: Decodable {
         } else {
             throw DecodingError.dataCorruptedError(forKey: .lastModified, in: values, debugDescription: ".lastModified string does not match formatter.")
         }
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .key)
+        try container.encode(lastModified, forKey: .lastModified)
+        try container.encode(eTag, forKey: .eTag)
+        try container.encode(Int(truncating: size!), forKey: .size)
+        try container.encode(storageClass, forKey: .storageClass)
+        try container.encode(fileUrl, forKey: .fileUrl)
+    }
+}
+
+extension File {
+    // ❇️ The @FetchRequest property wrapper in the ContentView will call this function
+    static func allIdeasFetchRequest() -> NSFetchRequest<File> {
+        let request: NSFetchRequest<File> = File.fetchRequest() as! NSFetchRequest<File>
+        
+        // ❇️ The @FetchRequest property wrapper in the ContentView requires a sort descriptor
+        request.sortDescriptors = [NSSortDescriptor(key: "key", ascending: true)]
+          
+        return request
     }
 }
