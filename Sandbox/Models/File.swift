@@ -6,6 +6,8 @@ extension CodingUserInfoKey {
     static let context = CodingUserInfoKey(rawValue: "context")
 }
 
+// https://www.codementor.io/@francofantillo/coredata-and-data-persistence-in-ios-uapgfgbxn
+// https://medium.com/@pratheeshdhayadev/codable-nsmanagedobject-coredata-e9f42670a441
 public class File: NSManagedObject, Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case key, lastModified, eTag, size, storageClass, fileUrl
