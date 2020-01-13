@@ -23,6 +23,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // ❇️ Get the managedObjectContext from the persistent container
         // ❇️ This assumes you've left the Core Data stack creation code within AppDelegate
         let managedObjectContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+        // A policy that merges conflicts between the persistent store’s version of the object and the current in-memory version by individual property, with the in-memory changes trumping external changes.
+        managedObjectContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
         let viewModel = FileListViewModel()
         // ❇️ Pass it to the ContentView through the

@@ -10,7 +10,7 @@ final class FileListViewModel: ObservableObject, Identifiable {
     private let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
     init() {
-        //searchRemote()
+        searchRemote()
     }
     init(datasource: [FileCellViewModel], isLoading: Bool) {
         self.dataSource = datasource
