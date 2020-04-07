@@ -101,8 +101,8 @@
 			isa = PBXGroup;
 			children = (
 				C4E186ED23242A4100BB883A /* OfflineMediaDownloader */,
-				C4E1870423242A4200BB883A /* SandboxTests */,
-				C4E1870F23242A4300BB883A /* SandboxUITests */,
+				C4E1870423242A4200BB883A /* OfflineMediaDownloaderTests */,
+				C4E1870F23242A4300BB883A /* OfflineMediaDownloaderUITests */,
 				C4E186EC23242A4100BB883A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -144,22 +144,22 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		C4E1870423242A4200BB883A /* SandboxTests */ = {
+		C4E1870423242A4200BB883A /* OfflineMediaDownloaderTests */ = {
 			isa = PBXGroup;
 			children = (
 				C4E1870523242A4300BB883A /* SandboxTests.swift */,
 				C4E1870723242A4300BB883A /* Info.plist */,
 			);
-			path = SandboxTests;
+			path = OfflineMediaDownloaderTests;
 			sourceTree = "<group>";
 		};
-		C4E1870F23242A4300BB883A /* SandboxUITests */ = {
+		C4E1870F23242A4300BB883A /* OfflineMediaDownloaderUITests */ = {
 			isa = PBXGroup;
 			children = (
 				C4E1871023242A4300BB883A /* SandboxUITests.swift */,
 				C4E1871223242A4300BB883A /* Info.plist */,
 			);
-			path = SandboxUITests;
+			path = OfflineMediaDownloaderUITests;
 			sourceTree = "<group>";
 		};
 		C4E1871E23242AE400BB883A /* ViewModels */ = {
