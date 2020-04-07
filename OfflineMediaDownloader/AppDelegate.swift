@@ -8,7 +8,7 @@ import UserNotifications
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var subscription: Cancellable?
     lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "Sandbox")
+        let container = NSPersistentContainer(name: "OfflineMediaDownloader")
         container.loadPersistentStores { description, error in
             if let error = error {
                 fatalError("Unable to load persistent stores: \(error)")

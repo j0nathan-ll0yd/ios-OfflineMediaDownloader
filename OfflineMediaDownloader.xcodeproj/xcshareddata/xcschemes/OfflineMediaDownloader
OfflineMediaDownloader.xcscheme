@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C4E186EA23242A4100BB883A"
-               BuildableName = "Sandbox.app"
-               BlueprintName = "Sandbox"
-               ReferencedContainer = "container:Sandbox.xcodeproj">
+               BuildableName = "OfflineMediaDownloader.app"
+               BlueprintName = "OfflineMediaDownloader"
+               ReferencedContainer = "container:OfflineMediaDownloader.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C4E1870023242A4200BB883A"
-               BuildableName = "SandboxTests.xctest"
-               BlueprintName = "SandboxTests"
-               ReferencedContainer = "container:Sandbox.xcodeproj">
+               BuildableName = "OfflineMediaDownloaderTests.xctest"
+               BlueprintName = "OfflineMediaDownloaderTests"
+               ReferencedContainer = "container:OfflineMediaDownloader.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -43,9 +43,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C4E1870B23242A4300BB883A"
-               BuildableName = "SandboxUITests.xctest"
-               BlueprintName = "SandboxUITests"
-               ReferencedContainer = "container:Sandbox.xcodeproj">
+               BuildableName = "OfflineMediaDownloaderUITests.xctest"
+               BlueprintName = "OfflineMediaDownloaderUITests"
+               ReferencedContainer = "container:OfflineMediaDownloader.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -65,9 +65,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "C4E186EA23242A4100BB883A"
-            BuildableName = "Sandbox.app"
-            BlueprintName = "Sandbox"
-            ReferencedContainer = "container:Sandbox.xcodeproj">
+            BuildableName = "OfflineMediaDownloader.app"
+            BlueprintName = "OfflineMediaDownloader"
+            ReferencedContainer = "container:OfflineMediaDownloader.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -89,9 +89,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "C4E186EA23242A4100BB883A"
-            BuildableName = "Sandbox.app"
-            BlueprintName = "Sandbox"
-            ReferencedContainer = "container:Sandbox.xcodeproj">
+            BuildableName = "OfflineMediaDownloader.app"
+            BlueprintName = "OfflineMediaDownloader"
+            ReferencedContainer = "container:OfflineMediaDownloader.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
