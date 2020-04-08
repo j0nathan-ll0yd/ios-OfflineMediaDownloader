@@ -1,16 +1,23 @@
-# File Download App
+# Offline Media Downloader
 
-This is the companion iOS App that hooks in to [the backend for downloading YouTube videos](https://github.com/j0nathan-ll0yd/aws-cloudformation-file-download-app).
+This is the companion iOS App that hooks in to [the backend for downloading media (e.g. YouTube videos)](https://github.com/j0nathan-ll0yd/aws-cloudformation-file-download-app).
+
+## Getting Started
+
+1. [Install](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#installation) the backend source code on your local machine.
+2. [Deploy](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#deployment) the application to your AWS account.
+3. Set the environment variables in Xcode from your deployment.
+    * **MEDIA_DOWNLOADER_API_KEY** = The iOSAppKey from the API Gateway
+    * **MEDIA_DOWNLOADER_BASE_PATH** = The invoke URL of the API Gateway
+    
+That's it! You should now be able to launch and use the App.
+
+> **NOTE**: If you don't see any files yet, it's likely because you haven't downloaded a file to your S3 bucket. You can do this easily by running the `test-remote-hook` command under the [Live Testing](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#live-testing) instructions.
 
 ## Project Tenants
 
 * Minimal external dependencies.
 * Leverage new technologies introduced with iOS 13: [SwiftUI](https://developer.apple.com/xcode/swiftui/) & [Combine](https://developer.apple.com/documentation/combine).
-
-## Getting Started
-
-export MEDIA_DOWNLOADER_API_KEY="pFM2pr7gdm8E0DU87uRk8160s36dl82zQH25Pt60"
-export MEDIA_DOWNLOADER_BASE_PATH="https://oztga5jjx4.execute-api.us-west-2.amazonaws.com/Prod/"
 
 ## Project Features
 
@@ -24,3 +31,27 @@ export MEDIA_DOWNLOADER_BASE_PATH="https://oztga5jjx4.execute-api.us-west-2.amaz
 * Xcode Version 11.4
 * MacOS Version 10.15.3 Catalina
 
+## Setting ENV Variables
+
+If you need additional help setting the environment variables. I have included screenshots from the AWS console for your reference.
+
+### MEDIA_DOWNLOADER_API_KEY
+
+Navigate to the Amazon API Gateway from your deployment and select **API Keys** on the left. Select the **iOSAppKey**. Select **Show** to reveal the key.
+
+![API Gateway, API Keys](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-finding-api-key.png)
+
+### MEDIA_DOWNLOADER_BASE_PATH
+
+Navigate to the Amazon API Gateway from your deployment and select **Dashboard** on the left. The invocation URL will appear on the top of the page.
+
+![API Gateway, Invoke URL](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-finding-base-path.png)
+
+### Environment variables in Xcode
+
+1. Hover over the OfflineMediaDownloader scheme at the top of Xcode and select _Manage Schemes..._
+2. Select the only available scheme and select **Edit**.
+3. Select **Run** on the left.
+4. Select **Arguments** from the top tabs.
+
+![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables.png)
