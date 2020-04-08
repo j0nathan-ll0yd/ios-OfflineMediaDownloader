@@ -76,6 +76,16 @@
             value = "disable"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MEDIA_DOWNLOADER_API_KEY"
+            value = "pFM2pr7gdm8E0DU87uRk8160s36dl82zQH25Pt60"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MEDIA_DOWNLOADER_BASE_PATH"
+            value = "https://oztga5jjx4.execute-api.us-west-2.amazonaws.com/Prod/"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

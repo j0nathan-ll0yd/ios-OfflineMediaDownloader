@@ -1,16 +1,20 @@
 
 import Foundation
 import Combine
+import UIKit
 
 enum Server {
-    static let basePath = "https://oztga5jjx4.execute-api.us-west-2.amazonaws.com/Prod/"
-}
-
-extension Server {
   private static func generateRequest(pathPart: String, method:String = "POST") -> URLRequest {
+    guard let apiKey = ProcessInfo.processInfo.environment["MEDIA_DOWNLOADER_API_KEY"] else {
+        fatalError("No ENV key 'MEDIA_DOWNLOADER_API_KEY' specified")
+    }
+    guard let basePath = ProcessInfo.processInfo.environment["MEDIA_DOWNLOADER_BASE_PATH"] else {
+        fatalError("No ENV key 'MEDIA_DOWNLOADER_BASE_PATH' specified")
+    }
+    
     var urlComponents = URLComponents(string: basePath+pathPart)!
     urlComponents.queryItems = [
-        URLQueryItem(name: "ApiKey", value: "pFM2pr7gdm8E0DU87uRk8160s36dl82zQH25Pt60")
+        URLQueryItem(name: "ApiKey", value: apiKey)
     ]
     
     var request = URLRequest(url: urlComponents.url!)
@@ -31,5 +35,45 @@ extension Server {
       .decode(type: FileResponse.self, decoder: Server.decoder())
       .receive(on: DispatchQueue.main) // 6
       .eraseToAnyPublisher()
+  }
+  static func registerDevice(token: String) -> AnyPublisher<Int, Error> {
+    
+    let parameters = [
+        "token": token,
+        "UUID": UIDevice.current.identifierForVendor!.uuidString,
+        "name": UIDevice.current.name,
+        "systemName": UIDevice.current.systemName,
+        "systemVersion": UIDevice.current.systemVersion
+    ] as [String : Any]
+    debugPrint(parameters)
+    
+    var request = generateRequest(pathPart: "registerDevice", method: "POST")
+    let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
+    request.httpBody = jsonData
+    return URLSession.shared
+      .dataTaskPublisher(for: request)
+      .tryMap { result in
+        if let httpResponse = result.response as? HTTPURLResponse {
+          return httpResponse.statusCode
+        }
+        return 500
+      }
+      .receive(on: DispatchQueue.main) // 6
+      .eraseToAnyPublisher()
+  }
+  static func logEvent(message: Data) -> AnyCancellable {
+    var request = generateRequest(pathPart: "logEvent", method: "POST")
+    request.httpBody = message
+    print("logEvent")
+    print(String(decoding: message, as: UTF8.self))
+    return URLSession.shared.dataTaskPublisher(for: request)
+      .tryMap { result in
+        if let httpResponse = result.response as? HTTPURLResponse {
+          return httpResponse.statusCode
+        }
+        return 500
+      }
+      .receive(on: DispatchQueue.main) // 6
+      .sink(receiveCompletion: { _ in }, receiveValue: { print($0) })
   }
 }

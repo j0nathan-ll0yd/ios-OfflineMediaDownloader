@@ -4,12 +4,12 @@ import Combine
 final class FileListViewModel: ObservableObject, Identifiable {
   @Published var dataSource: [FileCellViewModel] = []
   @Published var isLoading: Bool = false
-  private var subscription: Cancellable?
+  private var cancellableSink: Cancellable?
   
   init() {
-    //searchRemote()
     searchLocal()
   }
+    
   init(datasource: [FileCellViewModel], isLoading: Bool) {
     self.dataSource = datasource
     self.isLoading = isLoading
@@ -34,17 +34,16 @@ final class FileListViewModel: ObservableObject, Identifiable {
   }
   
   func searchRemote() {
-    self.subscription = Server.getFiles().sink(
+    self.cancellableSink = Server.getFiles().sink(
       receiveCompletion: { completion in
         if case .failure(let err) = completion {
           print("Retrieving data failed with error \(err)")
         }
       },
-      receiveValue: { object in
-        print("Retrieved object \(object)")
+      receiveValue: { fileResponse in
         DispatchQueue.main.async {
           self.isLoading = false
-          self.dataSource = object.body.contents.map({ file in
+          self.dataSource = fileResponse.body.contents.map({ file in
               return FileCellViewModel(file: file)
           })
         }

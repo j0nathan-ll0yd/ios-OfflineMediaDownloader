@@ -6,18 +6,18 @@ import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
-  private var log: Cancellable?
+  private var logSink: Cancellable?
   private var observation: NSKeyValueObservation?
   private var subscription: Cancellable?
     
   lazy var persistentContainer: NSPersistentContainer = {
-      let container = NSPersistentContainer(name: "OfflineMediaDownloader")
-      container.loadPersistentStores { description, error in
-          if let error = error {
-              fatalError("Unable to load persistent stores: \(error)")
-          }
+    let container = NSPersistentContainer(name: "OfflineMediaDownloader")
+    container.loadPersistentStores { description, error in
+      if let error = error {
+        fatalError("Unable to load persistent stores: \(error)")
       }
-      return container
+    }
+    return container
   }()
   
   func setupNotifications(application: UIApplication) {
@@ -64,55 +64,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 // Methods related to registering for notifications
 extension AppDelegate {
   func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    print("Failed to register: \(error)")
+    self.logSink = Server.logEvent(message: Data("didFailToRegisterForRemoteNotificationsWithError: \(error)".utf8))
   }
 
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-      
-      print("didRegisterForRemoteNotificationsWithDeviceToken")
-      let parameters = [
-          "token": deviceToken.map { String(format: "%02.2hhx", $0) }.joined(),
-          "UUID": UIDevice.current.identifierForVendor!.uuidString,
-          "name": UIDevice.current.name,
-          "systemName": UIDevice.current.systemName,
-          "systemVersion": UIDevice.current.systemVersion
-      ] as [String : Any]
-      debugPrint(parameters)
-      
-      var urlComponents = URLComponents(string: "https://oztga5jjx4.execute-api.us-west-2.amazonaws.com/Prod/files")!
-      urlComponents.queryItems = [
-          URLQueryItem(name: "ApiKey", value: "pFM2pr7gdm8E0DU87uRk8160s36dl82zQH25Pt60")
-      ]
-      
-      var request = URLRequest(url: urlComponents.url!)
-      request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-      request.httpMethod = "POST"
-      let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
-      request.httpBody = jsonData
-      
-      debugPrint("Sending request")
-      debugPrint(request)
-      self.subscription = URLSession.shared
-        .dataTaskPublisher(for: request)
-        .sink(receiveCompletion: { completion in
-          if case .failure(let err) = completion {
-            print("Retrieving data failed with error \(err)")
-          }
-        }, receiveValue: { object in
-          print("Retrieved object \(object)")
-          debugPrint(object.response)
-      })
+    self.logSink = Server.logEvent(message: Data("didRegisterForRemoteNotificationsWithDeviceToken".utf8))
+    let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+    self.subscription = Server.registerDevice(token: token).sink(
+      receiveCompletion: { completion in
+        if case .failure(let err) = completion {
+          print("Failed to register device with error \(err)")
+        }
+      }, receiveValue: { _ in }
+    )
   }
 }
 
 // Methods relating to receiving remote notifications
 extension AppDelegate {
   func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-    //self.log = ServerAPI.logEvent(message: "didReceiveRemoteNotification")
-    //self.log = ServerAPI.logEvent(message: userInfo)
-    
-    let managedObjectContext = self.persistentContainer.viewContext
-    managedObjectContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    self.logSink = Server.logEvent(message: Data("didReceiveRemoteNotification".utf8))
     
     if let aps = userInfo["aps"] as? NSDictionary {
       print("userInfo[aps]")
@@ -122,17 +93,17 @@ extension AppDelegate {
     if let file = userInfo["file"] as? NSDictionary {
       debugPrint(file)
       let decoder = JSONDecoder()
-      decoder.userInfo[CodingUserInfoKey.context!] = managedObjectContext
+      decoder.userInfo[CodingUserInfoKey.context!] = CoreDataHelper.managedContext()
       do {
         let jsonData = try JSONSerialization.data(withJSONObject: file)
+        self.logSink = Server.logEvent(message: jsonData)
         let file = try decoder.decode(File.self, from: jsonData)
-        debugPrint(file)
         if !FileHelper.fileExists(file: file) {
-          try managedObjectContext.save()
+          CoreDataHelper.saveFiles()
           downloadFileInBackground(file: file)
         }
       } catch {
-        fatalError("Failure to decode JSON: \(error)")
+        self.logSink = Server.logEvent(message: Data("Failure to decode JSON: \(error)".utf8))
       }
     }
     completionHandler(.newData)
@@ -151,13 +122,13 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
   }
   
   var session : URLSession {
-      get {
-          let config = makeSessionConfiguration()
-          // Warning: If an URLSession still exists from a previous download, it doesn't create
-          // a new URLSession object but returns the existing one with the old delegate object attached!
-          config.requestCachePolicy = .returnCacheDataElseLoad
-          return URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue())
-      }
+    get {
+      let config = makeSessionConfiguration()
+      // Warning: If an URLSession still exists from a previous download, it doesn't create
+      // a new URLSession object but returns the existing one with the old delegate object attached!
+      config.requestCachePolicy = .returnCacheDataElseLoad
+      return URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue())
+    }
   }
   
   func downloadFileInBackground(file: File) {
@@ -171,18 +142,18 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
   }
     
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-    //self.log = ServerAPI.logEvent(message: "downloadTask.didFinishDownloadingTo \(String(describing: location))")
+    self.logSink = Server.logEvent(message: Data("downloadTask.didFinishDownloadingTo \(String(describing: location))".utf8))
     guard let url = downloadTask.originalRequest?.url else { return }
-    //self.log = ServerAPI.logEvent(message: "downloadTask.didFinishDownloadingFrom \(String(describing: url))")
+    self.logSink = Server.logEvent(message: Data("downloadTask.didFinishDownloadingFrom \(String(describing: url))".utf8))
     do {
       let filePath = FileHelper.filePath(url: url)
       try FileManager.default.copyItem(at: location, to: filePath)
     } catch (let writeError) {
-      //self.log = ServerAPI.logEvent(message: "downloadTask.didFinishDownloadingTo.error \(String(describing: writeError))")
+      self.logSink = Server.logEvent(message: Data("downloadTask.didFinishDownloadingTo.error \(String(describing: writeError))".utf8))
     }
   }
   func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
     guard error != nil else { return }
-    //self.log = ServerAPI.logEvent(message: "downloadTask.didCompleteWithError \(String(describing: error))")
+    self.logSink = Server.logEvent(message: Data("downloadTask.didCompleteWithError \(String(describing: error))".utf8))
   }
-  }
+}
