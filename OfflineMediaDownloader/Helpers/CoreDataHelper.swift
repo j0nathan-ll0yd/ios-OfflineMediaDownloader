@@ -10,6 +10,8 @@ struct CoreDataHelper {
   }
   static func getFiles() -> [File] {
     let fetchRequest = NSFetchRequest<File>(entityName: "File")
+    let sortDescriptor = NSSortDescriptor(key: "lastModified", ascending: false)
+    fetchRequest.sortDescriptors = [sortDescriptor]
     var files: [File] = []
     do {
       files = try CoreDataHelper.managedContext().fetch(fetchRequest)
