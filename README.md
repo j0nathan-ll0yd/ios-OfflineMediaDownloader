@@ -6,7 +6,7 @@ This is the companion iOS App that hooks in to [the backend for downloading medi
 
 1. [Install](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#installation) the backend source code on your local machine.
 2. [Deploy](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#deployment) the application to your AWS account.
-3. Set the environment variables in Xcode from your deployment.
+3. [Set the environment variables](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader#setting-env-variables) in Xcode from your deployment.
     * **MEDIA_DOWNLOADER_API_KEY** = The iOSAppKey from the API Gateway
     * **MEDIA_DOWNLOADER_BASE_PATH** = The invoke URL of the API Gateway
     
@@ -21,7 +21,7 @@ That's it! You should now be able to launch and use the App.
 
 ## Project Features
 
-* Uses the [MVVM architecture](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel)
+* Uses the [MVVM architecture](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel).
 * Supports registering for and receiving push notifications.
 * Supports background downloads.
 * Uses [CoreData](https://developer.apple.com/documentation/coredata) for persistence and offline support.
