@@ -69,3 +69,4 @@ fastlane/test_output
 
 # custom
 *.DS_Store
+*.xcscheme
