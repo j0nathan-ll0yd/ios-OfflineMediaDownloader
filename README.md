@@ -2,13 +2,6 @@
 
 This is the companion iOS App that hooks in to [the backend for downloading media (e.g. YouTube videos)](https://github.com/j0nathan-ll0yd/aws-cloudformation-file-download-app).
 
-<p align="center">
-  <img align="left" src="https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/app-initial-state-preview.png" width="250" />
-  <img align="left" src="https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/app-downloading-video-preview.png" width="250" />
-  <img align="left" src="https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/app-viewing-video-preview.png" width="250" />
-  <br clear="left" />
-</p>
-
 ## Getting Started
 
 1. [Install](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#installation) the backend source code on your local machine.
@@ -56,11 +49,11 @@ Navigate to the Amazon API Gateway from your deployment and select **Dashboard**
 
 ### Environment variables in Xcode
 
-1. Add a new Configuration Setting file to the project named Development.xcconfig
+1. Add a new Configuration Setting file to the project named **Development.xcconfig**.
 
-![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file.png)
+![Xcode, Development.xcconfig](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file.png)
 
-2. Add the environment variables to the file.
+2. Add your environment variables to the file.
 
 ![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file-content.png)
 
