@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C421AFF7244F82FE0046F984 /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C421AFF6244F82FE0046F984 /* Environment.swift */; };
 		C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */; };
 		C46095FE243D32A500EB80BE /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46095FD243D32A500EB80BE /* Server.swift */; };
 		C4609601243D335E00EB80BE /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609600243D335E00EB80BE /* FileHelper.swift */; };
@@ -48,6 +49,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C421AFF5244F80AE0046F984 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		C421AFF6244F82FE0046F984 /* Environment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
 		C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicator.swift; sourceTree = "<group>"; };
 		C46095FD243D32A500EB80BE /* Server.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C4609600243D335E00EB80BE /* FileHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
@@ -123,6 +126,7 @@
 		C4E186E223242A4100BB883A = {
 			isa = PBXGroup;
 			children = (
+				C421AFF5244F80AE0046F984 /* Development.xcconfig */,
 				C4E186ED23242A4100BB883A /* OfflineMediaDownloader */,
 				C4E1870423242A4200BB883A /* OfflineMediaDownloaderTests */,
 				C4E1870F23242A4300BB883A /* OfflineMediaDownloaderUITests */,
@@ -210,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				C4E1872723242B6A00BB883A /* DateFormatter.swift */,
+				C421AFF6244F82FE0046F984 /* Environment.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -372,6 +377,7 @@
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
 				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,
 				C4609601243D335E00EB80BE /* FileHelper.swift in Sources */,
+				C421AFF7244F82FE0046F984 /* Environment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,6 +426,7 @@
 /* Begin XCBuildConfiguration section */
 		C4E1871323242A4300BB883A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -480,6 +487,7 @@
 		};
 		C4E1871423242A4300BB883A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -534,6 +542,7 @@
 		};
 		C4E1871623242A4300BB883A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OfflineMediaDownloader/OfflineMediaDownloader.entitlements;
@@ -555,6 +564,7 @@
 		};
 		C4E1871723242A4300BB883A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OfflineMediaDownloader/OfflineMediaDownloader.entitlements;
@@ -576,6 +586,7 @@
 		};
 		C4E1871923242A4300BB883A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -598,6 +609,7 @@
 		};
 		C4E1871A23242A4300BB883A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -620,6 +632,7 @@
 		};
 		C4E1871C23242A4300BB883A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
@@ -640,6 +653,7 @@
 		};
 		C4E1871D23242A4300BB883A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;

@@ -5,7 +5,6 @@ struct AVPlayerView: UIViewControllerRepresentable {
     var url: URL?
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<AVPlayerView>) -> AVPlayerViewController {
-        debugPrint("makeUIViewController")
         let controller = PlayerViewController()
         controller.url = url
         return controller
@@ -42,15 +41,12 @@ class PlayerViewController: AVPlayerViewController, AVAssetResourceLoaderDelegat
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        debugPrint("viewWillDisappear")
         self.player!.pause()
     }
     override func viewDidDisappear(_ animated: Bool) {
-        debugPrint("viewDidDisappear")
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        debugPrint("viewWillAppear has appeared")
         UIApplication.shared.beginReceivingRemoteControlEvents()
         self.becomeFirstResponder()
     }
@@ -60,23 +56,17 @@ class PlayerViewController: AVPlayerViewController, AVAssetResourceLoaderDelegat
     }
     
     override func remoteControlReceived(with event: UIEvent?) {
-        debugPrint("in remoteControlReceivedWithEvent")
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
     func resourceLoader(_ resourceLoader: AVAssetResourceLoader, shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
-        debugPrint("shouldWaitForLoadingOfRequestedResource")
-        debugPrint(loadingRequest)
         return false
     }
     
     func resourceLoader(_ resourceLoader: AVAssetResourceLoader, didCancel loadingRequest: AVAssetResourceLoadingRequest) {
-        debugPrint("didCancel")
-        debugPrint(loadingRequest)
     }
     
 }

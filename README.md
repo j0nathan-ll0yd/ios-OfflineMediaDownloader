@@ -49,9 +49,12 @@ Navigate to the Amazon API Gateway from your deployment and select **Dashboard**
 
 ### Environment variables in Xcode
 
-1. Hover over the OfflineMediaDownloader scheme at the top of Xcode and select _Manage Schemes..._
-2. Select the only available scheme and select **Edit**.
-3. Select **Run** on the left.
-4. Select **Arguments** from the top tabs.
+1. Add a new Configuration Setting file to the project named Development.xcconfig
 
-![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables.png)
+![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file.png)
+
+2. Add the environment variables to the file.
+
+![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file-content.png)
+
+> **NOTE**: You may have noticed some strangeness with the `MEDIA_DOWNLOADER_BASE_PATH` formatting. This is due to the way characters are escaped in xcconfig files. In order to have the `//` in `https://`, we need to split it with an empty variable substitution via `$()`. 

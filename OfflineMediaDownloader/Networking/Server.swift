@@ -5,16 +5,9 @@ import UIKit
 
 enum Server {
   private static func generateRequest(pathPart: String, method:String = "POST") -> URLRequest {
-    guard let apiKey = ProcessInfo.processInfo.environment["MEDIA_DOWNLOADER_API_KEY"] else {
-        fatalError("No ENV key 'MEDIA_DOWNLOADER_API_KEY' specified")
-    }
-    guard let basePath = ProcessInfo.processInfo.environment["MEDIA_DOWNLOADER_BASE_PATH"] else {
-        fatalError("No ENV key 'MEDIA_DOWNLOADER_BASE_PATH' specified")
-    }
-    
-    var urlComponents = URLComponents(string: basePath+pathPart)!
+    var urlComponents = URLComponents(string: Environment.basePath+pathPart)!
     urlComponents.queryItems = [
-        URLQueryItem(name: "ApiKey", value: apiKey)
+      URLQueryItem(name: "ApiKey", value: Environment.apiKey)
     ]
     
     var request = URLRequest(url: urlComponents.url!)

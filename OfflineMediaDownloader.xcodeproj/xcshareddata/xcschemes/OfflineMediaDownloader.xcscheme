@@ -76,16 +76,6 @@
             value = "disable"
             isEnabled = "YES">
          </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "MEDIA_DOWNLOADER_API_KEY"
-            value = "&lt;API Key Here&gt;"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "MEDIA_DOWNLOADER_BASE_PATH"
-            value = "&lt;Base Path Here&gt;"
-            isEnabled = "YES">
-         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
