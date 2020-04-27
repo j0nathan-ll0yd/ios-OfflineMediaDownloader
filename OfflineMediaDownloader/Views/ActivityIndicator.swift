@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 // https://jetrockets.pro/blog/activity-indicator-in-swiftui

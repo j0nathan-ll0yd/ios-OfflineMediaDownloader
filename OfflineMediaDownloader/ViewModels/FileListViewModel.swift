@@ -41,13 +41,13 @@ final class FileListViewModel: ObservableObject, Identifiable {
         }
       },
       receiveValue: { fileResponse in
+        CoreDataHelper.saveFiles()
         DispatchQueue.main.async {
           self.isLoading = false
           self.dataSource = fileResponse.body.contents.map({ file in
-              return FileCellViewModel(file: file)
+            return FileCellViewModel(file: file)
           })
         }
-        CoreDataHelper.saveFiles()
       }
     )
   }

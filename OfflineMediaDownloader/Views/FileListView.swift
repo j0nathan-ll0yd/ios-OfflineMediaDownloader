@@ -22,6 +22,9 @@ struct FileListView: View {
           List(self.viewModel.dataSource) { fileCellViewModel in
               FileCellView(viewModel: fileCellViewModel)
           }
+          .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            self.viewModel.searchLocal()
+          }
           .navigationBarTitle(Text("Files"))
           .navigationBarItems(trailing:
             Button(action: { self.viewModel.searchRemote() }) {

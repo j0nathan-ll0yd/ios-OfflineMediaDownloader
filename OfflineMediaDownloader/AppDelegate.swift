@@ -23,11 +23,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   func setupNotifications(application: UIApplication) {
     let center = UNUserNotificationCenter.current()
     center.requestAuthorization(options: [.alert, .sound, .badge]) {
-        [weak self] granted, error in
-          
-        print("Permission granted: \(granted)")
-        guard granted else { return }
-        self?.getNotificationSettings()
+      [weak self] granted, error in
+        
+      print("Permission granted: \(granted)")
+      guard granted else { return }
+      self?.getNotificationSettings()
     }
   }
   
@@ -50,10 +50,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
     let audioSession = AVAudioSession.sharedInstance()
     do {
-        try audioSession.setCategory(.playback, mode: .moviePlayback)
+      try audioSession.setCategory(.playback, mode: .moviePlayback)
     }
     catch {
-        print("Setting category to AVAudioSessionCategoryPlayback failed.")
+      print("Setting category to AVAudioSessionCategoryPlayback failed.")
     }
     
     setupNotifications(application: application)
