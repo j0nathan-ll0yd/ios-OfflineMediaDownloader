@@ -32,12 +32,16 @@ final class FileCellViewModel: ObservableObject, Identifiable {
     self.file = file
     self.location = FileHelper.filePath(url: file.fileUrl!)
     if FileHelper.fileExists(file: file) {
-      self.isDownloaded = true
+      DispatchQueue.main.async {
+        self.isDownloaded = true
+      }
     }
   }
   
   public func download() {
-    self.isDownloading = true
+    DispatchQueue.main.async {
+      self.isDownloading = true
+    }
     self.task.resume()
   }
   public func delete() {
