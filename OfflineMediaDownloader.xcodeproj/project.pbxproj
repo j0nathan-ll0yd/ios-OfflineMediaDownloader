@@ -13,6 +13,12 @@
 		C4609601243D335E00EB80BE /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609600243D335E00EB80BE /* FileHelper.swift */; };
 		C4609603243D336C00EB80BE /* CoreDataHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609602243D336C00EB80BE /* CoreDataHelper.swift */; };
 		C467C25923BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */; };
+		C49C44A6246B5C3900452F13 /* SignInWithApple.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44A5246B5C3900452F13 /* SignInWithApple.swift */; };
+		C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44A7246B5CA800452F13 /* LoginView.swift */; };
+		C49C44AA246B5CCB00452F13 /* SignInWithAppleDelegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44A9246B5CCB00452F13 /* SignInWithAppleDelegates.swift */; };
+		C49C44AD246D019D00452F13 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44AC246D019D00452F13 /* Keychain.swift */; };
+		C49C44B1246D01DD00452F13 /* UserDataKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */; };
+		C49C44B3246DCC0A00452F13 /* UserData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44B2246DCC0A00452F13 /* UserData.swift */; };
 		C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED0236DFF34001F10EB /* FileList.swift */; };
 		C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED1236DFF34001F10EB /* FileResponse.swift */; };
 		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
@@ -56,6 +62,12 @@
 		C4609600243D335E00EB80BE /* FileHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C4609602243D336C00EB80BE /* CoreDataHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = CoreDataHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C467C25823BC27350038F462 /* Sandbox.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Sandbox.xcdatamodel; sourceTree = "<group>"; };
+		C49C44A5246B5C3900452F13 /* SignInWithApple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInWithApple.swift; sourceTree = "<group>"; };
+		C49C44A7246B5CA800452F13 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		C49C44A9246B5CCB00452F13 /* SignInWithAppleDelegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInWithAppleDelegates.swift; sourceTree = "<group>"; };
+		C49C44AC246D019D00452F13 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDataKeychain.swift; sourceTree = "<group>"; };
+		C49C44B2246DCC0A00452F13 /* UserData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserData.swift; sourceTree = "<group>"; };
 		C4A91ED0236DFF34001F10EB /* FileList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileList.swift; sourceTree = "<group>"; };
 		C4A91ED1236DFF34001F10EB /* FileResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileResponse.swift; sourceTree = "<group>"; };
 		C4E186EB23242A4100BB883A /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -123,6 +135,15 @@
 			path = Helpers;
 			sourceTree = "<group>";
 		};
+		C49C44AB246D018200452F13 /* CredentialStorage */ = {
+			isa = PBXGroup;
+			children = (
+				C49C44AC246D019D00452F13 /* Keychain.swift */,
+				C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */,
+			);
+			path = CredentialStorage;
+			sourceTree = "<group>";
+		};
 		C4E186E223242A4100BB883A = {
 			isa = PBXGroup;
 			children = (
@@ -149,6 +170,7 @@
 		C4E186ED23242A4100BB883A /* OfflineMediaDownloader */ = {
 			isa = PBXGroup;
 			children = (
+				C49C44AB246D018200452F13 /* CredentialStorage */,
 				C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */,
 				C4E2FED123942F5000D881A9 /* OfflineMediaDownloader.entitlements */,
 				C4E1872623242B5A00BB883A /* Extensions */,
@@ -208,6 +230,7 @@
 				C4A91ED0236DFF34001F10EB /* FileList.swift */,
 				C4A91ED1236DFF34001F10EB /* FileResponse.swift */,
 				C4E1872423242B3C00BB883A /* File.swift */,
+				C49C44B2246DCC0A00452F13 /* UserData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -228,6 +251,9 @@
 				C4E1872A23242BBE00BB883A /* FileCellView.swift */,
 				C4F86A8B233B045800ABC233 /* AVPlayerView.swift */,
 				C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */,
+				C49C44A5246B5C3900452F13 /* SignInWithApple.swift */,
+				C49C44A7246B5CA800452F13 /* LoginView.swift */,
+				C49C44A9246B5CCB00452F13 /* SignInWithAppleDelegates.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -376,10 +402,16 @@
 				C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */,
 				C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */,
 				C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */,
+				C49C44AA246B5CCB00452F13 /* SignInWithAppleDelegates.swift in Sources */,
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
 				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,
+				C49C44B1246D01DD00452F13 /* UserDataKeychain.swift in Sources */,
+				C49C44B3246DCC0A00452F13 /* UserData.swift in Sources */,
 				C4609601243D335E00EB80BE /* FileHelper.swift in Sources */,
+				C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */,
+				C49C44A6246B5C3900452F13 /* SignInWithApple.swift in Sources */,
 				C421AFF7244F82FE0046F984 /* Environment.swift in Sources */,
+				C49C44AD246D019D00452F13 /* Keychain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

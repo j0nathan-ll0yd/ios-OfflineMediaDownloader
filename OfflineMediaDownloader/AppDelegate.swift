@@ -116,7 +116,7 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
     let sessionNumber = Int.random(in: 0 ... 500)
     let configuration = URLSessionConfiguration.background(withIdentifier: "MySession\(sessionNumber)")
     configuration.isDiscretionary = false
-    configuration.sessionSendsLaunchEvents = false
+    configuration.sessionSendsLaunchEvents = true
     configuration.timeoutIntervalForRequest = 180
     return configuration
   }

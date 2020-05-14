@@ -12,7 +12,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     let fileListView = FileListView(viewModel: viewModel)
     
     let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = UIHostingController(rootView: fileListView)
+    let loginView = LoginView(window:window)
+    window.rootViewController = UIHostingController(rootView: loginView)
     window.makeKeyAndVisible()
     self.window = window
   }
