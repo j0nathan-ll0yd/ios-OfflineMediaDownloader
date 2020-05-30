@@ -54,6 +54,30 @@ enum Server {
       .receive(on: DispatchQueue.main) // 6
       .eraseToAnyPublisher()
   }
+  static func registerUser(user: UserData, authorizationCode: String) -> AnyPublisher<Int, Error> {
+    
+    let parameters = [
+        "authorizationCode": authorizationCode,
+        "firstName": user.firstName,
+        "lastName": user.lastName
+    ] as [String : Any]
+    debugPrint(parameters)
+    
+    var request = generateRequest(pathPart: "registerUser", method: "POST")
+    let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
+    request.httpBody = jsonData
+    return URLSession.shared
+      .dataTaskPublisher(for: request)
+      .tryMap { result in
+        if let httpResponse = result.response as? HTTPURLResponse {
+          debugPrint(httpResponse)
+          return httpResponse.statusCode
+        }
+        return 500
+      }
+      .receive(on: DispatchQueue.main) // 6
+      .eraseToAnyPublisher()
+  }
   static func logEvent(message: Data) -> AnyCancellable {
     var request = generateRequest(pathPart: "logEvent", method: "POST")
     request.httpBody = message
