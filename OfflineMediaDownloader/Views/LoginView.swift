@@ -42,7 +42,7 @@ struct LoginView: View {
       ASAuthorizationPasswordProvider().createRequest()
     ]
 
-    //performSignIn(using: requests)
+    performSignIn(using: requests)
     #endif
     let provider = ASAuthorizationAppleIDProvider()
     let keychain = UserDataKeychain()
@@ -70,10 +70,8 @@ struct LoginView: View {
           print("Unknown.")
         }
       }
-    } catch let error as NSError {
+    } catch let error {
       print("Keychain error")
-      print(error.code)
-      print(error.domain)
       print(error.localizedDescription)
       debugPrint(error)
     }

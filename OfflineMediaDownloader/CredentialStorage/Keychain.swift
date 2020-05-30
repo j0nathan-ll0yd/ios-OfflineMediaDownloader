@@ -36,7 +36,7 @@ enum KeychainError: Error {
 }
 
 protocol Keychain {
-  associatedtype DataType: Codable, NSSecureCoding
+  associatedtype DataType: NSObject, Codable, NSSecureCoding
 
   var account: String { get set }
   var service: String { get set }
