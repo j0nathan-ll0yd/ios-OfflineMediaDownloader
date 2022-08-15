@@ -26,4 +26,17 @@ struct CoreDataHelper {
       fatalError("Could not save files. \(error), \(error.userInfo)")
     }
   }
+  static func truncateFiles() -> Void {
+    print("CoreDataHelper.truncateFiles")
+    do {
+      let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "File")
+      let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+      do {
+        try CoreDataHelper.managedContext().execute(deleteRequest)
+      } catch let error as NSError {
+        fatalError("Could not delete files. \(error), \(error.userInfo)")
+      }
+    }
+  }
 }

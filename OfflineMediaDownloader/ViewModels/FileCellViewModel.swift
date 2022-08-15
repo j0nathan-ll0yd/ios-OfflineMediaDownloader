@@ -13,7 +13,7 @@ final class FileCellViewModel: ObservableObject, Identifiable {
   private var session = (UIApplication.shared.delegate as! AppDelegate).session
   
   private lazy var task: URLSessionDownloadTask = {
-    let task = session.downloadTask(with: file.fileUrl!)
+    let task = session.downloadTask(with: file.url!)
     task.countOfBytesClientExpectsToReceive = file.size!.int64Value
     self.observation = task.progress.observe(\.fractionCompleted) { (progress, _) in
       print("Download progress \(String(Int(progress.fractionCompleted * 100)))")
@@ -30,7 +30,8 @@ final class FileCellViewModel: ObservableObject, Identifiable {
   
   public init(file: File) {
     self.file = file
-    self.location = FileHelper.filePath(url: file.fileUrl!)
+    debugPrint(file)
+    self.location = FileHelper.filePath(url: file.url!)
     if FileHelper.fileExists(file: file) {
       DispatchQueue.main.async {
         self.isDownloaded = true

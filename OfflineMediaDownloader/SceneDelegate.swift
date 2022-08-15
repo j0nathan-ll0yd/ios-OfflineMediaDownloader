@@ -8,11 +8,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     guard let windowScene = scene as? UIWindowScene else { return }
     
-    let viewModel = FileListViewModel()
-    let fileListView = FileListView(viewModel: viewModel)
+    // let viewModel = FileListViewModel()
+    // let fileListView = FileListView(viewModel: viewModel)
     
     let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = UIHostingController(rootView: fileListView)
+    let mainView = MainView()
+    window.rootViewController = UIHostingController(rootView: mainView)
     window.makeKeyAndVisible()
     self.window = window
   }

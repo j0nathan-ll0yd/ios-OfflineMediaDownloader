@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="15702" systemVersion="19C57" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17709" systemVersion="19H15" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="File" representedClassName=".File" syncable="YES">
-        <attribute name="eTag" optional="YES" attributeType="String"/>
-        <attribute name="fileUrl" optional="YES" attributeType="URI"/>
         <attribute name="key" optional="YES" attributeType="String"/>
-        <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="publishDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="size" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="storageClass" optional="YES" attributeType="String"/>
+        <attribute name="url" optional="YES" attributeType="URI"/>
         <uniquenessConstraints>
             <uniquenessConstraint>
                 <constraint value="key"/>
@@ -14,6 +12,6 @@
         </uniquenessConstraints>
     </entity>
     <elements>
-        <element name="File" positionX="-36" positionY="9" width="128" height="133"/>
+        <element name="File" positionX="-36" positionY="9" width="128" height="103"/>
     </elements>
 </model>

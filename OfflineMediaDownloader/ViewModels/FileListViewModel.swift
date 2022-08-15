@@ -7,7 +7,8 @@ final class FileListViewModel: ObservableObject, Identifiable {
   private var cancellableSink: Cancellable?
   
   init() {
-    searchLocal()
+    //searchLocal()
+    //searchRemote()
   }
     
   init(datasource: [FileCellViewModel], isLoading: Bool) {
@@ -23,7 +24,27 @@ final class FileListViewModel: ObservableObject, Identifiable {
     dataSource.remove(atOffsets: offsets)
   }
   
+  func addItem(url: URL?) -> Void {
+    debugPrint("addItem")
+    guard let fileUrl = url else {
+      print("Text is not valid URL")
+      return
+    }
+    self.cancellableSink = Server.addFile(url: fileUrl).sink(
+      receiveCompletion: { completion in
+        if case .failure(let err) = completion {
+          print("Retrieving data failed with error \(err)")
+        }
+      },
+      receiveValue: { fileResponse in
+        print("Added file")
+        debugPrint(fileResponse)
+      }
+    )
+  }
+  
   func searchLocal() {
+    print("FileListViewModel.searchLocal")
     let files = CoreDataHelper.getFiles()
     DispatchQueue.main.async {
       self.dataSource = files.map({ file in
@@ -34,6 +55,7 @@ final class FileListViewModel: ObservableObject, Identifiable {
   }
   
   func searchRemote() {
+    print("FileListViewModel.searchRemote")
     self.cancellableSink = Server.getFiles().sink(
       receiveCompletion: { completion in
         if case .failure(let err) = completion {
@@ -44,9 +66,11 @@ final class FileListViewModel: ObservableObject, Identifiable {
         CoreDataHelper.saveFiles()
         DispatchQueue.main.async {
           self.isLoading = false
-          self.dataSource = fileResponse.body.contents.map({ file in
-            return FileCellViewModel(file: file)
-          })
+          if (fileResponse.body != nil) {
+            self.dataSource = fileResponse.body!.contents.map({ file in
+              return FileCellViewModel(file: file)
+            })
+          }
         }
       }
     )

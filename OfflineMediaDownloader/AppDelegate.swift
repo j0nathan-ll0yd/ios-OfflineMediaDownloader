@@ -25,7 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     center.requestAuthorization(options: [.alert, .sound, .badge]) {
       [weak self] granted, error in
         
-      print("Permission granted: \(granted)")
+      //print("Permission granted: \(granted)")
       guard granted else { return }
       self?.getNotificationSettings()
     }
@@ -33,7 +33,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   
   func getNotificationSettings() {
     UNUserNotificationCenter.current().getNotificationSettings { settings in
-      print("Notification settings: \(settings)")
+      //print("Notification settings: \(settings)")
       guard settings.authorizationStatus == .authorized else { return }
       DispatchQueue.main.async {
         UIApplication.shared.registerForRemoteNotifications()
@@ -56,7 +56,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       print("Setting category to AVAudioSessionCategoryPlayback failed.")
     }
     
-    setupNotifications(application: application)
+    #if !targetEnvironment(simulator)
+      setupNotifications(application: application)
+      //KeychainHelper.deleteToken()
+      //KeychainHelper.deleteUserData()
+      //KeychainHelper.deleteDeviceData()
+    #endif
     return true
   }
 }
@@ -75,7 +80,10 @@ extension AppDelegate {
         if case .failure(let err) = completion {
           print("Failed to register device with error \(err)")
         }
-      }, receiveValue: { _ in }
+      }, receiveValue: { response in
+        let deviceData = DeviceData(endpointArn: response.body.endpointArn)
+        KeychainHelper.storeDeviceData(deviceData: deviceData)
+      }
     )
   }
 }
@@ -116,7 +124,7 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
     let sessionNumber = Int.random(in: 0 ... 500)
     let configuration = URLSessionConfiguration.background(withIdentifier: "MySession\(sessionNumber)")
     configuration.isDiscretionary = false
-    configuration.sessionSendsLaunchEvents = false
+    configuration.sessionSendsLaunchEvents = true
     configuration.timeoutIntervalForRequest = 180
     return configuration
   }
@@ -132,7 +140,7 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
   }
   
   func downloadFileInBackground(file: File) {
-    let task = session.downloadTask(with: file.fileUrl!)
+    let task = session.downloadTask(with: file.url!)
     task.countOfBytesClientExpectsToReceive = file.size!.int64Value
     self.observation = task.progress.observe(\.fractionCompleted) { (progress, _) in
       print("Download progress \(String(Int(progress.fractionCompleted * 100)))")
