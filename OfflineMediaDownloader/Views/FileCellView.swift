@@ -62,3 +62,11 @@ struct FileCellView : View {
     }
   }
 }
+
+#if DEBUG
+struct FileCellViewBody_Previews: PreviewProvider {
+  static var previews: some View {
+    return FileCellViewBody(file: TestHelper.getDefaultFile()!)
+  }
+}
+#endif

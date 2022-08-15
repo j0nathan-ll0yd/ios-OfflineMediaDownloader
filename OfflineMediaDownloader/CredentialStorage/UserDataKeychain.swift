@@ -32,6 +32,6 @@ struct UserDataKeychain: Keychain {
   typealias DataType = UserData
   
   // Make sure the account name doesn't match the bundle identifier!
-  var account = "OfflineMediaDownloader.SignInWithApple.Details"
+  var account = "\(Bundle.main.bundleIdentifier!).Details"
   var service = "userIdentifier"
 }
