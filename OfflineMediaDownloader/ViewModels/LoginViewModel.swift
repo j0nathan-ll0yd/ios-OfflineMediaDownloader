@@ -12,6 +12,8 @@ final class LoginViewModel: ObservableObject, Identifiable {
       print("Login successful")
       if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
         debugPrint(appleIDCredential)
+        // TODO: If user already registered in the past; but deleted the App; they would NOT send the email param; but would be unregistered
+        // This is done using the https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens endpoint
         // email will only exist on register, not login
         if (appleIDCredential.email != nil) {
           handleRegisterUser(credential: appleIDCredential)

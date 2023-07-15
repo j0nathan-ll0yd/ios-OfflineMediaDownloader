@@ -12,7 +12,7 @@ final class MainViewModel: ObservableObject, Identifiable {
   private var cancellableSink: Cancellable?
   
   init() {
-    activate()
+    connectEventBus()
     determineLoginStatus()
   }
   
@@ -59,7 +59,7 @@ final class MainViewModel: ObservableObject, Identifiable {
     self.hasLoaded = true
   }
   
-  func activate() {
+  func connectEventBus() {
     print("MainViewModel.activate")
     cancellableSink = NotificationCenter.default
       .publisher(for: Notification.Name("com.publisher.combine"))

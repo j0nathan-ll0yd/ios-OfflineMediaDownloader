@@ -10,9 +10,10 @@ extension CodingUserInfoKey {
 // https://medium.com/@pratheeshdhayadev/codable-nsmanagedobject-coredata-e9f42670a441
 public class File: NSManagedObject, Identifiable, Codable {
   enum CodingKeys: String, CodingKey {
-    case key, publishDate, size, url
+    case fileId, key, publishDate, size, url
   }
   
+  @NSManaged public var fileId: String
   @NSManaged public var key: String
   @NSManaged public var publishDate: Date?
   @NSManaged public var size: NSNumber?
@@ -31,6 +32,7 @@ public class File: NSManagedObject, Identifiable, Codable {
     
     let values = try decoder.container(keyedBy: CodingKeys.self)
     key = try values.decode(String.self, forKey: .key)
+    fileId = try values.decode(String.self, forKey: .fileId)
     let sizeInteger = try values.decode(Int.self, forKey: .size)
     size = NSNumber(integerLiteral: sizeInteger)
     
@@ -51,6 +53,7 @@ public class File: NSManagedObject, Identifiable, Codable {
   }
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(fileId, forKey: .fileId)
     try container.encode(key, forKey: .key)
     try container.encode(publishDate, forKey: .publishDate)
     try container.encode(Int(truncating: size!), forKey: .size)

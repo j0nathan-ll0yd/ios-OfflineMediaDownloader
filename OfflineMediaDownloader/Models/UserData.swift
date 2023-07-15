@@ -27,7 +27,7 @@ public class UserData: NSObject, Codable, NSCoding, NSSecureCoding {
   
   convenience required public init?(coder: NSCoder) {
     guard let email = coder.decodeObject(forKey: "email") as? String else { fatalError("Missing 'email' in keychain'") }
-    guard let identifier = coder.decodeObject(forKey: "identifier") as? String else { fatalError("Missing 'email' in keychain'") }
+    guard let identifier = coder.decodeObject(forKey: "identifier") as? String else { fatalError("Missing 'identifier' in keychain'") }
     let firstName = coder.decodeObject(forKey: "firstName") as? String ?? ""
     let lastName = coder.decodeObject(forKey: "lastName") as? String ?? ""
     self.init(email: email, firstName: firstName, identifier:identifier, lastName: lastName)

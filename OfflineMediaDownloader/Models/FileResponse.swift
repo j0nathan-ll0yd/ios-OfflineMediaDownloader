@@ -10,3 +10,8 @@ struct FileResponse: Decodable {
   var error: ErrorDetail?
   var requestId: String
 }
+
+struct ErrorResponse: Decodable {
+  var error: ErrorDetail
+  var requestId: String
+}

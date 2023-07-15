@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AVKit
 
 struct FileCellViewBody : View {
   var file: File
@@ -25,9 +26,11 @@ struct FileCellViewBody : View {
 struct FileCellView : View {
   @ObservedObject var viewModel: FileCellViewModel
   @State var showVideo: Bool = false
+  @State var player: AVPlayer
   
   init(viewModel: FileCellViewModel) {
     self.viewModel = viewModel
+    self.player = AVPlayer()
   }
   
   var body: some View {
@@ -37,11 +40,33 @@ struct FileCellView : View {
         FileCellViewBody(file: self.viewModel.file)
         if viewModel.isDownloaded {
           Button(action: { self.showVideo.toggle() }) {
-            Image(systemName: "play.circle").sheet(
+            Image(systemName: "play.circle").fullScreenCover(
               isPresented: $showVideo,
               onDismiss: { print("Modal dismissed. State now: \(self.showVideo)")}
             ) {
-              AVPlayerView(url: self.viewModel.location)
+              VideoPlayer(player: self.player)
+                .onAppear(perform: {
+                  let asset: AVURLAsset = AVURLAsset(url: self.viewModel.location)
+                  let playerItem = AVPlayerItem(asset: asset)
+                  self.player = AVPlayer(playerItem:playerItem)
+                  self.player.playImmediately(atRate: 1.0)
+                })
+                .onDisappear(perform: { player.pause() })
+                .edgesIgnoringSafeArea(.all)
+                .gesture(
+                  DragGesture(minimumDistance: 20, coordinateSpace: .global)
+                    .onEnded { value in
+                        let horizontalAmount = value.translation.width
+                        let verticalAmount = value.translation.height
+                        if abs(horizontalAmount) > abs(verticalAmount) {
+                          print(horizontalAmount < 0 ? "left swipe" : "right swipe")
+                        } else {
+                          print(verticalAmount < 0 ? "up swipe" : "down swipe")
+                          if (verticalAmount > 0) {
+                            self.showVideo = false
+                          }
+                        }
+                    })
             }
           }
         }

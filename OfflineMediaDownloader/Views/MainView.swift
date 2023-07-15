@@ -12,7 +12,7 @@ struct MainView: View {
       DiagnosticView()
     }
     else if mainViewModel.hasLoaded == false {
-      ProgressView()
+      ProgressView().progressViewStyle(CircularProgressViewStyle())
     }
     else if mainViewModel.userStatus == .loginRequired || mainViewModel.userStatus == .registrationRequired {
       LoginView(
@@ -21,13 +21,27 @@ struct MainView: View {
       )
     }
     else {
-      FileListView(
-        fileListViewModel: fileListViewModel,
-        mainViewModel: mainViewModel
-      ).onAppear {
-        fileListViewModel.searchLocal()
-        fileListViewModel.searchRemote()
+      TabView {
+        FileListView(
+          fileListViewModel: fileListViewModel,
+          mainViewModel: mainViewModel
+        ).onAppear {
+          fileListViewModel.searchLocal()
+        }.tabItem {
+          Label("Files", systemImage: "list.bullet")
+        }
+        DiagnosticView().tabItem {
+          Label("Account", systemImage: "person.crop.circle")
+        }
       }
     }
   }
 }
+
+#if DEBUG
+struct MainView_Previews: PreviewProvider {
+  static var previews: some View {
+    MainView()
+  }
+}
+#endif

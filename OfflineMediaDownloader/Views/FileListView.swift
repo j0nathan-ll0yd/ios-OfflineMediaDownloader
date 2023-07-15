@@ -1,11 +1,12 @@
 import SwiftUI
 
 let kPreviewBackground = Color(red: 237/255.0, green: 85/255.0, blue: 101/255.0)
-
 struct FileListView: View {
   @ObservedObject var fileListViewModel: FileListViewModel
   @ObservedObject var mainViewModel: MainViewModel
-  @State private var showingSheet = false
+  @State private var showActionSheet = false
+  @State private var isAnimating = false
+  let animation = Animation.linear.repeatForever(autoreverses: false).speed(0.5)
 
   init(fileListViewModel: FileListViewModel, mainViewModel: MainViewModel) {
     self.fileListViewModel = fileListViewModel
@@ -26,45 +27,76 @@ struct FileListView: View {
   }
   
   var body: some View {
-    HStack {
-      if fileListViewModel.isLoading {
-        ZStack {
-          kPreviewBackground.edgesIgnoringSafeArea(.all)
-          VStack { ActivityIndicator().frame(width: 50, height: 50) }.foregroundColor(Color.white)
-        }
-      }
-      else {
+    LoadingView(isShowing: $fileListViewModel.isLoading) {
+      VStack {
         NavigationView {
           List(self.fileListViewModel.dataSource) { fileCellViewModel in
-              FileCellView(viewModel: fileCellViewModel)
+            FileCellView(viewModel: fileCellViewModel)
           }
           .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             self.fileListViewModel.searchLocal()
           }
           .navigationBarTitle(Text("Files"))
           .navigationBarItems(trailing:
-              HStack {
-                Button(action: { self.fileListViewModel.searchRemote() }) {
-                  Label("Refresh", systemImage: "arrow.clockwise.circle")
-                }
-                Menu {
-                  if UIPasteboard.general.hasStrings {
-                    Button(action: { self.fileListViewModel.addItem(url: self.handleAddFromClipboard())}) {
-                          Label("From Clipboard", systemImage: "doc.on.clipboard")
+            HStack {
+              if (self.fileListViewModel.pendingFileIds.count > 0) {
+                NavigationLink {
+                  PendingFileView(fileIds: self.fileListViewModel.pendingFileIds)
+                } label: {
+                  Label("Pending", systemImage: "hourglass.circle")
+                    .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                    .onAppear {
+                      print("Spinner appeared")
+                      print(isAnimating)
+                      DispatchQueue.main.async {
+                        withAnimation(animation) {
+                          isAnimating = true
+                        }
                       }
-                  }
-                }
-                label: {
-                    Label("Add", systemImage: "plus.circle")
-                }
-              }.onTapGesture {
-                if mainViewModel.registrationStatus == .unregistered {
-                  EventHelper.emit(event: PromptRegistration())
+                    }.onDisappear {
+                      print("Spinner disappeared")
+                      print(isAnimating)
+                    }
                 }
               }
+              Button(action: { self.fileListViewModel.searchRemote() }) {
+                Label("Refresh", systemImage: "arrow.clockwise.circle")
+              }
+              Button(action: {
+                if mainViewModel.registrationStatus == .unregistered {
+                  EventHelper.emit(event: PromptRegistration())
+                } else {
+                  self.showActionSheet = true
+                }
+              }) {
+                Label("Add", systemImage: "plus.circle")
+              }.confirmationDialog(
+                Text("Hello"),
+                isPresented: $showActionSheet
+              ) {
+                if UIPasteboard.general.hasStrings {
+                  Button("From Clipboard", role: .destructive) {
+                    self.fileListViewModel.addItem(url: self.handleAddFromClipboard())
+                  }
+                }
+                Button("Cancel", role: .cancel) {
+                  showActionSheet = false
+                }
+              }
+            }
           )
         }
       }
     }
   }
 }
+
+#if DEBUG
+struct FileListViewView_Previews: PreviewProvider {
+  static var previews: some View {
+    let fileListViewModel: FileListViewModel = FileListViewModel()
+    let mainViewModel: MainViewModel = MainViewModel()
+    FileListView(fileListViewModel: fileListViewModel, mainViewModel: mainViewModel)
+  }
+}
+#endif

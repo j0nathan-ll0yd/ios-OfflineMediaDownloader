@@ -22,6 +22,13 @@
 		C4609601243D335E00EB80BE /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609600243D335E00EB80BE /* FileHelper.swift */; };
 		C4609603243D336C00EB80BE /* CoreDataHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609602243D336C00EB80BE /* CoreDataHelper.swift */; };
 		C467C25923BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */; };
+		C474BE0D28D50AAD00C4A6A4 /* PendingFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */; };
+		C474BE0F28D50C4100C4A6A4 /* PendingFileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */; };
+		C474BE1128D511F000C4A6A4 /* UnencryptedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */; };
+		C474BE1328D6339100C4A6A4 /* PendingFileMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */; };
+		C474BE1528DA476600C4A6A4 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1428DA476600C4A6A4 /* LoadingView.swift */; };
+		C474BE1728DA7A9C00C4A6A4 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1628DA7A9C00C4A6A4 /* String.swift */; };
+		C474BE1928DB816100C4A6A4 /* DownloadFileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */; };
 		C479CD272592F6A900520612 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479CD262592F6A900520612 /* MainView.swift */; };
 		C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44A7246B5CA800452F13 /* LoginView.swift */; };
 		C49C44AD246D019D00452F13 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44AC246D019D00452F13 /* Keychain.swift */; };
@@ -106,6 +113,13 @@
 		C4609600243D335E00EB80BE /* FileHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C4609602243D336C00EB80BE /* CoreDataHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = CoreDataHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C467C25823BC27350038F462 /* Sandbox.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Sandbox.xcdatamodel; sourceTree = "<group>"; };
+		C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileView.swift; sourceTree = "<group>"; };
+		C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileViewModel.swift; sourceTree = "<group>"; };
+		C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnencryptedDataStore.swift; sourceTree = "<group>"; };
+		C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileMessageView.swift; sourceTree = "<group>"; };
+		C474BE1428DA476600C4A6A4 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		C474BE1628DA7A9C00C4A6A4 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
+		C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadFileResponse.swift; sourceTree = "<group>"; };
 		C479CD262592F6A900520612 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		C49C44A7246B5CA800452F13 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C49C44AC246D019D00452F13 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
@@ -297,6 +311,7 @@
 				C41C4D162597A9E2000064B3 /* LoginViewModel.swift */,
 				C4A281BA25C6831700D1F19B /* MainViewModel.swift */,
 				C4BEA31625F4466A003F0539 /* DiagnosticViewModel.swift */,
+				C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -315,6 +330,8 @@
 				C4A01C1F257D5AF9003B5F36 /* Token.swift */,
 				C4A281C425C6845F00D1F19B /* Event.swift */,
 				C4411F1825D8639600ED81D0 /* DeviceData.swift */,
+				C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */,
+				C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -324,6 +341,7 @@
 			children = (
 				C4E1872723242B6A00BB883A /* DateFormatter.swift */,
 				C421AFF6244F82FE0046F984 /* Environment.swift */,
+				C474BE1628DA7A9C00C4A6A4 /* String.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -341,6 +359,9 @@
 				C41426AC25E1F5A5002B56F0 /* ErrorMessageView.swift */,
 				C4BEA31125F42148003F0539 /* DiagnosticView.swift */,
 				C4BEA33525F53D6A003F0539 /* RegistrationMessageView.swift */,
+				C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */,
+				C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */,
+				C474BE1428DA476600C4A6A4 /* LoadingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -478,11 +499,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				C46095FE243D32A500EB80BE /* Server.swift in Sources */,
+				C474BE1128D511F000C4A6A4 /* UnencryptedDataStore.swift in Sources */,
 				C41426A825E1F533002B56F0 /* LogoView.swift in Sources */,
 				C467C25923BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld in Sources */,
 				C4A01C25257D5CA7003B5F36 /* KeychainHelper.swift in Sources */,
 				C4609603243D336C00EB80BE /* CoreDataHelper.swift in Sources */,
 				C4BEA33125F4A668003F0539 /* LoginStatus.swift in Sources */,
+				C474BE1328D6339100C4A6A4 /* PendingFileMessageView.swift in Sources */,
 				C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */,
 				C4E1872B23242BBE00BB883A /* FileCellView.swift in Sources */,
 				C4A281C025C6845300D1F19B /* EventHelper.swift in Sources */,
@@ -511,15 +534,20 @@
 				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
 				C4BEA33625F53D6A003F0539 /* RegistrationMessageView.swift in Sources */,
 				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,
+				C474BE1928DB816100C4A6A4 /* DownloadFileResponse.swift in Sources */,
 				C49C44B1246D01DD00452F13 /* UserDataKeychain.swift in Sources */,
+				C474BE0F28D50C4100C4A6A4 /* PendingFileViewModel.swift in Sources */,
 				C4411F1925D8639600ED81D0 /* DeviceData.swift in Sources */,
 				C4BEA31725F4466A003F0539 /* DiagnosticViewModel.swift in Sources */,
 				C49C44B3246DCC0A00452F13 /* UserData.swift in Sources */,
 				C4A01C13257321C2003B5F36 /* LoginUserResponse.swift in Sources */,
 				C4A01C0E25732192003B5F36 /* TokenResponse.swift in Sources */,
+				C474BE1528DA476600C4A6A4 /* LoadingView.swift in Sources */,
+				C474BE0D28D50AAD00C4A6A4 /* PendingFileView.swift in Sources */,
 				C4609601243D335E00EB80BE /* FileHelper.swift in Sources */,
 				C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */,
 				C421AFF7244F82FE0046F984 /* Environment.swift in Sources */,
+				C474BE1728DA7A9C00C4A6A4 /* String.swift in Sources */,
 				C49C44AD246D019D00452F13 /* Keychain.swift in Sources */,
 				C4A281BB25C6831700D1F19B /* MainViewModel.swift in Sources */,
 			);
@@ -620,7 +648,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -676,7 +704,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

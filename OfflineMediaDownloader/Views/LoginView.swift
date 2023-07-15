@@ -26,12 +26,12 @@ struct LoginView: View {
         LogoView()
         VStack {
           SignInWithAppleButton(buttonStatus,
-          onRequest: { (request) in
+                                onRequest: { (request) in
             request.requestedScopes = [.fullName, .email]
             request.nonce = ""
             request.state = ""
           },
-          onCompletion: loginViewModel.handleCompletion(result:))
+                                onCompletion: loginViewModel.handleCompletion(result:))
         }
         .signInWithAppleButtonStyle(.black)
         .frame(width: 250, height: 50)

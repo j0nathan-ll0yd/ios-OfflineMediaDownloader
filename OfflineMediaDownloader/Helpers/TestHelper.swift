@@ -14,7 +14,7 @@ struct TestHelper {
       let decoder = JSONDecoder()
       let file = try decoder.decode(File.self, from: json)
       return file
-    } catch let error {
+    } catch _ {
       print("Error JSONING")
     }
     return nil

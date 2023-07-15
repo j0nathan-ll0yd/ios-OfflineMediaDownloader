@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17709" systemVersion="19H15" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21279" systemVersion="21G115" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="File" representedClassName=".File" syncable="YES">
+        <attribute name="fileId" optional="YES" attributeType="String"/>
         <attribute name="key" optional="YES" attributeType="String"/>
         <attribute name="publishDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="size" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
@@ -11,7 +12,4 @@
             </uniquenessConstraint>
         </uniquenessConstraints>
     </entity>
-    <elements>
-        <element name="File" positionX="-36" positionY="9" width="128" height="103"/>
-    </elements>
 </model>

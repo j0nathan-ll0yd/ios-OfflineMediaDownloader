@@ -77,8 +77,12 @@ extension AppDelegate {
     let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
     self.subscription = Server.registerDevice(token: token).sink(
       receiveCompletion: { completion in
+        // Two cases:
+        // 1: user already registered and token is invalid
+        // 2: user hasn't registered and the request just failed
         if case .failure(let err) = completion {
           print("Failed to register device with error \(err)")
+          debugPrint(completion)
         }
       }, receiveValue: { response in
         let deviceData = DeviceData(endpointArn: response.body.endpointArn)
@@ -96,6 +100,10 @@ extension AppDelegate {
     if let aps = userInfo["aps"] as? NSDictionary {
       print("userInfo[aps]")
       debugPrint(aps)
+      if (aps["health"] != nil) {
+        print ("Recieved healthcheck")
+        // TODO: Send a request to the server to complete the cycle
+      }
     }
     
     if let file = userInfo["file"] as? NSDictionary {
@@ -156,6 +164,7 @@ extension AppDelegate: URLSessionDelegate, URLSessionDownloadDelegate {
     do {
       let filePath = FileHelper.filePath(url: url)
       try FileManager.default.copyItem(at: location, to: filePath)
+      EventHelper.emit(event: BackgroundDownloadComplete())
     } catch (let writeError) {
       self.logSink = Server.logEvent(message: Data("downloadTask.didFinishDownloadingTo.error \(String(describing: writeError))".utf8))
     }

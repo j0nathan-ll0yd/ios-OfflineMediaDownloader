@@ -1,11 +1,3 @@
-//
-//  DiagnosticViewModel.swift
-//  OfflineMediaDownloader
-//
-//  Created by Jonathan Lloyd on 3/6/21.
-//  Copyright © 2021 Jonathan Lloyd. All rights reserved.
-//
-
 import Foundation
 import SwiftUI
 import Combine

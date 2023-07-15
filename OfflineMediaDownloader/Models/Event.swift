@@ -29,3 +29,7 @@ class LoginComplete: Event {
 class ToggleDiagnosticMode: Event {
   
 }
+
+class BackgroundDownloadComplete: Event {
+  
+}
