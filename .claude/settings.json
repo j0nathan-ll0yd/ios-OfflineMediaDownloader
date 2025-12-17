@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [[ \"$CLAUDE_FILE_PATHS\" == *.swift ]]; then Scripts/validate-ios-version.sh \"$CLAUDE_FILE_PATHS\"; fi'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'if [[ \"$CLAUDE_FILE_PATHS\" == *.swift ]]; then Scripts/validate-tca-patterns.sh \"$CLAUDE_FILE_PATHS\"; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}

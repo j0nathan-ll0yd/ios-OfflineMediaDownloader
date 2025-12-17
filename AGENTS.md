@@ -22,7 +22,7 @@ When you detect a new convention, document it in `docs/wiki/Meta/Emerging-Conven
 ## Project Overview
 
 ### Tech Stack
-- **iOS 18+**, **Swift 6.1**
+- **iOS 26+**, **Swift 6.1**
 - **The Composable Architecture (TCA)** 1.22.2+
 - **Valet** for Keychain/Secure Enclave storage
 - **CoreData** for local file persistence
@@ -122,6 +122,43 @@ NotificationCenter.default.post(name: .loginComplete, object: nil)
 // ✅ CORRECT - Delegate action
 return .send(.delegate(.loginCompleted))
 ```
+
+#### 4. iOS 26+ Only - No Backwards Compatibility
+**iOS 26 is the minimum deployment target.** NEVER add backwards compatibility code.
+
+```swift
+// ❌ FORBIDDEN - availability check for older iOS
+@available(iOS 17, *)
+func modernFeature() { }
+
+// ❌ FORBIDDEN - runtime availability check
+if #available(iOS 18, *) {
+    useNewAPI()
+} else {
+    useFallback()
+}
+
+// ❌ FORBIDDEN - unavailability check
+if #unavailable(iOS 17) {
+    useLegacyAPI()
+}
+
+// ✅ CORRECT - just use iOS 26 APIs directly
+func modernFeature() {
+    useNewAPI()  // Available on iOS 26+, no check needed
+}
+```
+
+**Rationale:**
+- Single deployment target eliminates conditional code complexity
+- Full access to iOS 26 APIs without fallbacks
+- Cleaner, more maintainable codebase
+- No testing burden for multiple iOS versions
+
+**What to do instead:**
+- Use iOS 26 APIs directly without availability checks
+- If an API doesn't exist in iOS 26, it's not available for this project
+- Never add shims or workarounds for older iOS versions
 
 ### Required Patterns
 
