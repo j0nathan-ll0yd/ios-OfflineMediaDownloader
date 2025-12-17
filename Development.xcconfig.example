@@ -1,0 +1,19 @@
+//
+//  Development.xcconfig
+//  OfflineMediaDownloader
+//
+//  Created by Jonathan Lloyd on 4/21/20.
+//  Copyright © 2020 Jonathan Lloyd. All rights reserved.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// Copy this file to Development.xcconfig and fill in your values
+
+// Your API Gateway API Key (from AWS Console → API Gateway → API Keys → iOSAppKey)
+MEDIA_DOWNLOADER_API_KEY = YOUR_API_KEY_HERE
+
+// Your API Gateway or CloudFront URL (use $() to escape //)
+// Example: https:/$()/abc123.cloudfront.net/
+MEDIA_DOWNLOADER_BASE_PATH = https:/$()/YOUR_DOMAIN_HERE/

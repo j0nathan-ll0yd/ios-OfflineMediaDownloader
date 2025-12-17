@@ -1,60 +1,95 @@
 # Offline Media Downloader
 
-This is the companion iOS App that hooks in to [the backend for downloading media (e.g. YouTube videos)](https://github.com/j0nathan-ll0yd/aws-cloudformation-file-download-app).
+A modern iOS app for downloading and managing offline media files, built with The Composable Architecture (TCA).
+
+## Overview
+
+This app serves as the companion iOS client for the [AWS media downloader backend](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader). It allows users to download media files (e.g., YouTube videos) to their device for offline viewing.
+
+## Architecture
+
+- **iOS 18+**, **Swift 6.1**
+- **The Composable Architecture (TCA)** 1.22.2+
+- **Valet** for Keychain/Secure Enclave storage
+- **CoreData** for local file persistence
+
+### Feature Hierarchy
+
+```
+App Entry Point (OfflineMediaDownloaderApp)
+└── RootFeature (launch, auth routing)
+    ├── LoginFeature (Sign in with Apple)
+    └── MainFeature (TabView container)
+        ├── FileListFeature
+        │   └── FileCellFeature[] (per-file downloads, playback)
+        └── DiagnosticFeature (keychain inspection, debug)
+```
+
+## Key Features
+
+- **Sign in with Apple** authentication
+- **Push notifications** for new file availability
+- **Background downloads** via URLSession
+- **Offline support** with CoreData persistence
+- **Video playback** with AVKit
+
+## Project Structure
+
+```
+├── AGENTS.md                    # AI assistant context
+├── App/
+│   ├── Features/                # TCA Reducers
+│   ├── Views/                   # SwiftUI Views
+│   ├── Dependencies/            # Dependency Clients
+│   ├── Models/                  # Data models
+│   └── Extensions/              # Swift extensions
+├── Docs/
+│   └── wiki/                    # Architecture documentation
+├── OfflineMediaDownloader.xcodeproj
+├── OfflineMediaDownloaderTests/
+└── OfflineMediaDownloaderUITests/
+```
 
 ## Getting Started
 
-1. [Install](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#installation) the backend source code on your local machine.
-2. [Deploy](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#deployment) the application to your AWS account.
-3. [Set the environment variables](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader#setting-env-variables) in Xcode from your deployment.
-    * **MEDIA_DOWNLOADER_API_KEY** = The iOSAppKey from the API Gateway
-    * **MEDIA_DOWNLOADER_BASE_PATH** = The invoke URL of the API Gateway
-    
-That's it! You should now be able to launch and use the App.
+### Prerequisites
 
-> **NOTE**: If you don't see any files yet, it's likely because you haven't downloaded a file to your S3 bucket. You can do this easily by running the `test-remote-hook` command under the [Live Testing](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#live-testing) instructions.
+1. Xcode 16+
+2. macOS 15+
+3. An Apple Developer account (for push notifications and Sign in with Apple)
 
-## Project Tenants
+### Backend Setup
 
-* Minimal external dependencies.
-* Leverage new technologies introduced with iOS 13: [SwiftUI](https://developer.apple.com/xcode/swiftui/) & [Combine](https://developer.apple.com/documentation/combine).
+1. [Install](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#installation) the backend source code
+2. [Deploy](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader#deployment) the application to your AWS account
 
-## Project Features
+### Environment Configuration
 
-* Uses the [MVVM architecture](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel).
-* Supports registering for and receiving push notifications.
-* Supports background downloads.
-* Uses [CoreData](https://developer.apple.com/documentation/coredata) for persistence and offline support.
+1. Copy `Development.xcconfig.example` to `Development.xcconfig`
+2. Configure the following variables:
 
-# Installation
+| Variable | Description |
+|----------|-------------|
+| `MEDIA_DOWNLOADER_API_KEY` | API Gateway iOSAppKey |
+| `MEDIA_DOWNLOADER_BASE_PATH` | API Gateway invoke URL |
 
-* Xcode Version 11.4
-* MacOS Version 10.15.3 Catalina
+> **Note**: Use `$()` to escape `//` in URLs (e.g., `https:$()/$()/example.com`)
 
-## Setting ENV Variables
+### Finding Your AWS Values
 
-If you need additional help setting the environment variables. I have included screenshots from the AWS console for your reference.
+**API Key**: AWS Console → API Gateway → API Keys → iOSAppKey → Show
 
-### MEDIA_DOWNLOADER_API_KEY
+**Base Path**: AWS Console → API Gateway → Dashboard → Invocation URL
 
-Navigate to the Amazon API Gateway from your deployment and select **API Keys** on the left. Select the **iOSAppKey**. Select **Show** to reveal the key.
+## Documentation
 
-![API Gateway, API Keys](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-finding-api-key.png)
+Comprehensive architecture documentation is available in [Docs/wiki/](Docs/wiki/):
 
-### MEDIA_DOWNLOADER_BASE_PATH
+- [TCA Patterns](Docs/wiki/TCA/) - Reducer, dependency, and effect patterns
+- [View Conventions](Docs/wiki/Views/) - SwiftUI + TCA integration
+- [Testing](Docs/wiki/Testing/) - TestStore and dependency mocking
+- [Infrastructure](Docs/wiki/Infrastructure/) - CoreData, Keychain, push notifications
 
-Navigate to the Amazon API Gateway from your deployment and select **Dashboard** on the left. The invocation URL will appear on the top of the page.
+## License
 
-![API Gateway, Invoke URL](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-finding-base-path.png)
-
-### Environment variables in Xcode
-
-1. Add a new Configuration Setting file to the project named **Development.xcconfig**.
-
-![Xcode, Development.xcconfig](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file.png)
-
-2. Add your environment variables to the file.
-
-![Xcode, Environment Variables](https://lifegames-github-assets.s3.amazonaws.com/ios-OfflineMediaDownloader/getting-started-setting-env-variables-new-file-content.png)
-
-> **NOTE**: You may have noticed some strangeness with the `MEDIA_DOWNLOADER_BASE_PATH` formatting. This is due to the way characters are escaped in xcconfig files. In order to have the `//` in `https://`, we need to split it with an empty variable substitution via `$()`. 
+Private repository - All rights reserved.

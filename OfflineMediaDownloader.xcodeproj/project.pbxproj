@@ -3,183 +3,89 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C41426A025DB4D44002B56F0 /* UserStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C414269F25DB4D44002B56F0 /* UserStatus.swift */; };
-		C41426A825E1F533002B56F0 /* LogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41426A725E1F532002B56F0 /* LogoView.swift */; };
-		C41426AD25E1F5A5002B56F0 /* ErrorMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41426AC25E1F5A5002B56F0 /* ErrorMessageView.swift */; };
-		C41426B225E1F5DC002B56F0 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41426B125E1F5DC002B56F0 /* Constants.swift */; };
-		C41426C025E22E2E002B56F0 /* TestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41426BF25E22E2E002B56F0 /* TestHelper.swift */; };
-		C41C4D172597A9E2000064B3 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41C4D162597A9E2000064B3 /* LoginViewModel.swift */; };
-		C421AFF7244F82FE0046F984 /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C421AFF6244F82FE0046F984 /* Environment.swift */; };
-		C4411F0C25D85DDE00ED81D0 /* RegisterDeviceResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4411F0B25D85DDE00ED81D0 /* RegisterDeviceResponse.swift */; };
-		C4411F1125D860CE00ED81D0 /* DeviceKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4411F1025D860CE00ED81D0 /* DeviceKeychain.swift */; };
-		C4411F1925D8639600ED81D0 /* DeviceData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4411F1825D8639600ED81D0 /* DeviceData.swift */; };
-		C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */; };
-		C46095FE243D32A500EB80BE /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46095FD243D32A500EB80BE /* Server.swift */; };
-		C4609601243D335E00EB80BE /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609600243D335E00EB80BE /* FileHelper.swift */; };
-		C4609603243D336C00EB80BE /* CoreDataHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4609602243D336C00EB80BE /* CoreDataHelper.swift */; };
-		C467C25923BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */; };
-		C474BE0D28D50AAD00C4A6A4 /* PendingFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */; };
-		C474BE0F28D50C4100C4A6A4 /* PendingFileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */; };
-		C474BE1128D511F000C4A6A4 /* UnencryptedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */; };
-		C474BE1328D6339100C4A6A4 /* PendingFileMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */; };
-		C474BE1528DA476600C4A6A4 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1428DA476600C4A6A4 /* LoadingView.swift */; };
-		C474BE1728DA7A9C00C4A6A4 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1628DA7A9C00C4A6A4 /* String.swift */; };
-		C474BE1928DB816100C4A6A4 /* DownloadFileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */; };
-		C479CD272592F6A900520612 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479CD262592F6A900520612 /* MainView.swift */; };
-		C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44A7246B5CA800452F13 /* LoginView.swift */; };
-		C49C44AD246D019D00452F13 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44AC246D019D00452F13 /* Keychain.swift */; };
-		C49C44B1246D01DD00452F13 /* UserDataKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */; };
-		C49C44B3246DCC0A00452F13 /* UserData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49C44B2246DCC0A00452F13 /* UserData.swift */; };
-		C4A01C09257320F9003B5F36 /* RegisterUserResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C08257320F9003B5F36 /* RegisterUserResponse.swift */; };
-		C4A01C0E25732192003B5F36 /* TokenResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C0D25732192003B5F36 /* TokenResponse.swift */; };
-		C4A01C13257321C2003B5F36 /* LoginUserResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C12257321C2003B5F36 /* LoginUserResponse.swift */; };
-		C4A01C1B257ACCB8003B5F36 /* TokenKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C1A257ACCB8003B5F36 /* TokenKeychain.swift */; };
-		C4A01C20257D5AF9003B5F36 /* Token.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C1F257D5AF9003B5F36 /* Token.swift */; };
-		C4A01C25257D5CA7003B5F36 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A01C24257D5CA7003B5F36 /* KeychainHelper.swift */; };
-		C4A281BB25C6831700D1F19B /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A281BA25C6831700D1F19B /* MainViewModel.swift */; };
-		C4A281C025C6845300D1F19B /* EventHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A281BF25C6845300D1F19B /* EventHelper.swift */; };
-		C4A281C525C6845F00D1F19B /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A281C425C6845F00D1F19B /* Event.swift */; };
-		C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED0236DFF34001F10EB /* FileList.swift */; };
-		C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A91ED1236DFF34001F10EB /* FileResponse.swift */; };
-		C4BEA31225F42148003F0539 /* DiagnosticView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4BEA31125F42148003F0539 /* DiagnosticView.swift */; };
-		C4BEA31725F4466A003F0539 /* DiagnosticViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4BEA31625F4466A003F0539 /* DiagnosticViewModel.swift */; };
-		C4BEA32525F4A28F003F0539 /* RegistrationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4BEA32425F4A28F003F0539 /* RegistrationStatus.swift */; };
-		C4BEA33125F4A668003F0539 /* LoginStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4BEA33025F4A668003F0539 /* LoginStatus.swift */; };
-		C4BEA33625F53D6A003F0539 /* RegistrationMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4BEA33525F53D6A003F0539 /* RegistrationMessageView.swift */; };
-		C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186EE23242A4100BB883A /* AppDelegate.swift */; };
-		C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F023242A4100BB883A /* SceneDelegate.swift */; };
-		C4E186F323242A4100BB883A /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E186F223242A4100BB883A /* FileListView.swift */; };
-		C4E186F523242A4200BB883A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C4E186F423242A4200BB883A /* Assets.xcassets */; };
-		C4E186F823242A4200BB883A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C4E186F723242A4200BB883A /* Preview Assets.xcassets */; };
-		C4E186FB23242A4200BB883A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C4E186F923242A4200BB883A /* LaunchScreen.storyboard */; };
-		C4E1870623242A4300BB883A /* SandboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1870523242A4300BB883A /* SandboxTests.swift */; };
-		C4E1871123242A4300BB883A /* SandboxUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1871023242A4300BB883A /* SandboxUITests.swift */; };
-		C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1871F23242B0300BB883A /* FileListViewModel.swift */; };
-		C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1872123242B1800BB883A /* FileCellViewModel.swift */; };
-		C4E1872523242B3C00BB883A /* File.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1872423242B3C00BB883A /* File.swift */; };
-		C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1872723242B6A00BB883A /* DateFormatter.swift */; };
-		C4E1872B23242BBE00BB883A /* FileCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1872A23242BBE00BB883A /* FileCellView.swift */; };
-		C4F86A8C233B045800ABC233 /* AVPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F86A8B233B045800ABC233 /* AVPlayerView.swift */; };
+		C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41DD8BD2CC6C6F500F041C6 /* Constants.swift */; };
+		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
+		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		C4E1870223242A4200BB883A /* PBXContainerItemProxy */ = {
+		C41DD89A2CC6C52700F041C6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = C4E186E323242A4100BB883A /* Project object */;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = C4E186EA23242A4100BB883A;
-			remoteInfo = Sandbox;
+			remoteGlobalIDString = C41DD8832CC6C52600F041C6;
+			remoteInfo = OfflineMediaDownloader;
 		};
-		C4E1870D23242A4300BB883A /* PBXContainerItemProxy */ = {
+		C41DD8A42CC6C52700F041C6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = C4E186E323242A4100BB883A /* Project object */;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = C4E186EA23242A4100BB883A;
-			remoteInfo = Sandbox;
+			remoteGlobalIDString = C41DD8832CC6C52600F041C6;
+			remoteInfo = OfflineMediaDownloader;
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		C4A2819025C65F6D00D1F19B /* Embed App Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-			);
-			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		C414269F25DB4D44002B56F0 /* UserStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStatus.swift; sourceTree = "<group>"; };
-		C41426A725E1F532002B56F0 /* LogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoView.swift; sourceTree = "<group>"; };
-		C41426AC25E1F5A5002B56F0 /* ErrorMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorMessageView.swift; sourceTree = "<group>"; };
-		C41426B125E1F5DC002B56F0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
-		C41426BF25E22E2E002B56F0 /* TestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHelper.swift; sourceTree = "<group>"; };
-		C41C4D162597A9E2000064B3 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
-		C421AFF5244F80AE0046F984 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
-		C421AFF6244F82FE0046F984 /* Environment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
-		C4411F0B25D85DDE00ED81D0 /* RegisterDeviceResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterDeviceResponse.swift; sourceTree = "<group>"; };
-		C4411F1025D860CE00ED81D0 /* DeviceKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceKeychain.swift; sourceTree = "<group>"; };
-		C4411F1825D8639600ED81D0 /* DeviceData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceData.swift; sourceTree = "<group>"; };
-		C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicator.swift; sourceTree = "<group>"; };
-		C46095FD243D32A500EB80BE /* Server.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C4609600243D335E00EB80BE /* FileHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C4609602243D336C00EB80BE /* CoreDataHelper.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = CoreDataHelper.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C467C25823BC27350038F462 /* Sandbox.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Sandbox.xcdatamodel; sourceTree = "<group>"; };
-		C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileView.swift; sourceTree = "<group>"; };
-		C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileViewModel.swift; sourceTree = "<group>"; };
-		C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnencryptedDataStore.swift; sourceTree = "<group>"; };
-		C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingFileMessageView.swift; sourceTree = "<group>"; };
-		C474BE1428DA476600C4A6A4 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
-		C474BE1628DA7A9C00C4A6A4 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
-		C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadFileResponse.swift; sourceTree = "<group>"; };
-		C479CD262592F6A900520612 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
-		C49C44A7246B5CA800452F13 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		C49C44AC246D019D00452F13 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
-		C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDataKeychain.swift; sourceTree = "<group>"; };
-		C49C44B2246DCC0A00452F13 /* UserData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserData.swift; sourceTree = "<group>"; };
-		C4A01C08257320F9003B5F36 /* RegisterUserResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterUserResponse.swift; sourceTree = "<group>"; };
-		C4A01C0D25732192003B5F36 /* TokenResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenResponse.swift; sourceTree = "<group>"; };
-		C4A01C12257321C2003B5F36 /* LoginUserResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginUserResponse.swift; sourceTree = "<group>"; };
-		C4A01C1A257ACCB8003B5F36 /* TokenKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenKeychain.swift; sourceTree = "<group>"; };
-		C4A01C1F257D5AF9003B5F36 /* Token.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Token.swift; sourceTree = "<group>"; };
-		C4A01C24257D5CA7003B5F36 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
-		C4A281BA25C6831700D1F19B /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
-		C4A281BF25C6845300D1F19B /* EventHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventHelper.swift; sourceTree = "<group>"; };
-		C4A281C425C6845F00D1F19B /* Event.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Event.swift; sourceTree = "<group>"; };
-		C4A91ED0236DFF34001F10EB /* FileList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileList.swift; sourceTree = "<group>"; };
-		C4A91ED1236DFF34001F10EB /* FileResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileResponse.swift; sourceTree = "<group>"; };
-		C4BEA31125F42148003F0539 /* DiagnosticView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticView.swift; sourceTree = "<group>"; };
-		C4BEA31625F4466A003F0539 /* DiagnosticViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticViewModel.swift; sourceTree = "<group>"; };
-		C4BEA32425F4A28F003F0539 /* RegistrationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationStatus.swift; sourceTree = "<group>"; };
-		C4BEA33025F4A668003F0539 /* LoginStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginStatus.swift; sourceTree = "<group>"; };
-		C4BEA33525F53D6A003F0539 /* RegistrationMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationMessageView.swift; sourceTree = "<group>"; };
-		C4E186EB23242A4100BB883A /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4E186EE23242A4100BB883A /* AppDelegate.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C4E186F023242A4100BB883A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		C4E186F223242A4100BB883A /* FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
-		C4E186F423242A4200BB883A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		C4E186F723242A4200BB883A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		C4E186FA23242A4200BB883A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		C4E186FC23242A4200BB883A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C4E1870123242A4200BB883A /* OfflineMediaDownloaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4E1870523242A4300BB883A /* SandboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxTests.swift; sourceTree = "<group>"; };
-		C4E1870723242A4300BB883A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C4E1870C23242A4300BB883A /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4E1871023242A4300BB883A /* SandboxUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxUITests.swift; sourceTree = "<group>"; };
-		C4E1871223242A4300BB883A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C4E1871F23242B0300BB883A /* FileListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListViewModel.swift; sourceTree = "<group>"; };
-		C4E1872123242B1800BB883A /* FileCellViewModel.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = FileCellViewModel.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C4E1872423242B3C00BB883A /* File.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = File.swift; sourceTree = "<group>"; tabWidth = 2; };
-		C4E1872723242B6A00BB883A /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
-		C4E1872A23242BBE00BB883A /* FileCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCellView.swift; sourceTree = "<group>"; };
-		C4E2FED123942F5000D881A9 /* OfflineMediaDownloader.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OfflineMediaDownloader.entitlements; sourceTree = "<group>"; };
-		C4F86A8B233B045800ABC233 /* AVPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVPlayerView.swift; sourceTree = "<group>"; };
+		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C41DD8BD2CC6C6F500F041C6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C41DD9322CC99C2E00F041C6 /* Exceptions for "App" folder in "OfflineMediaDownloader" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C41DD8862CC6C52600F041C6 /* App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C41DD9322CC99C2E00F041C6 /* Exceptions for "App" folder in "OfflineMediaDownloader" target */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OfflineMediaDownloaderTests;
+			sourceTree = "<group>";
+		};
+		C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OfflineMediaDownloaderUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
-		C4E186E823242A4100BB883A /* Frameworks */ = {
+		C41DD8812CC6C52600F041C6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */,
+				C41DD9242CC81B8100F041C6 /* Valet in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C41DD8962CC6C52700F041C6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C4E186FE23242A4200BB883A /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C4E1870923242A4300BB883A /* Frameworks */ = {
+		C41DD8A02CC6C52700F041C6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -189,302 +95,175 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C46095FC243D328200EB80BE /* Networking */ = {
+		C41DD87B2CC6C52600F041C6 = {
 			isa = PBXGroup;
 			children = (
-				C46095FD243D32A500EB80BE /* Server.swift */,
-			);
-			path = Networking;
-			sourceTree = "<group>";
-		};
-		C46095FF243D335400EB80BE /* Helpers */ = {
-			isa = PBXGroup;
-			children = (
-				C4609600243D335E00EB80BE /* FileHelper.swift */,
-				C4609602243D336C00EB80BE /* CoreDataHelper.swift */,
-				C4A01C24257D5CA7003B5F36 /* KeychainHelper.swift */,
-				C4A281BF25C6845300D1F19B /* EventHelper.swift */,
-				C41426BF25E22E2E002B56F0 /* TestHelper.swift */,
-			);
-			path = Helpers;
-			sourceTree = "<group>";
-		};
-		C49C44AB246D018200452F13 /* CredentialStorage */ = {
-			isa = PBXGroup;
-			children = (
-				C49C44AC246D019D00452F13 /* Keychain.swift */,
-				C49C44B0246D01DD00452F13 /* UserDataKeychain.swift */,
-				C4A01C1A257ACCB8003B5F36 /* TokenKeychain.swift */,
-				C4411F1025D860CE00ED81D0 /* DeviceKeychain.swift */,
-			);
-			path = CredentialStorage;
-			sourceTree = "<group>";
-		};
-		C4BEA32925F4A33A003F0539 /* Enums */ = {
-			isa = PBXGroup;
-			children = (
-				C414269F25DB4D44002B56F0 /* UserStatus.swift */,
-				C4BEA32425F4A28F003F0539 /* RegistrationStatus.swift */,
-				C4BEA33025F4A668003F0539 /* LoginStatus.swift */,
-			);
-			path = Enums;
-			sourceTree = "<group>";
-		};
-		C4E186E223242A4100BB883A = {
-			isa = PBXGroup;
-			children = (
-				C421AFF5244F80AE0046F984 /* Development.xcconfig */,
-				C4E186ED23242A4100BB883A /* OfflineMediaDownloader */,
-				C4E1870423242A4200BB883A /* OfflineMediaDownloaderTests */,
-				C4E1870F23242A4300BB883A /* OfflineMediaDownloaderUITests */,
-				C4E186EC23242A4100BB883A /* Products */,
+				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
+				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
+				C41DD8862CC6C52600F041C6 /* App */,
+				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
+				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
+				C41DD91A2CC6E34400F041C6 /* Frameworks */,
+				C41DD8852CC6C52600F041C6 /* Products */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
 			tabWidth = 2;
 		};
-		C4E186EC23242A4100BB883A /* Products */ = {
+		C41DD8852CC6C52600F041C6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C4E186EB23242A4100BB883A /* OfflineMediaDownloader.app */,
-				C4E1870123242A4200BB883A /* OfflineMediaDownloaderTests.xctest */,
-				C4E1870C23242A4300BB883A /* OfflineMediaDownloaderUITests.xctest */,
+				C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */,
+				C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */,
+				C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		C4E186ED23242A4100BB883A /* OfflineMediaDownloader */ = {
+		C41DD91A2CC6E34400F041C6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				C4BEA32925F4A33A003F0539 /* Enums */,
-				C49C44AB246D018200452F13 /* CredentialStorage */,
-				C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */,
-				C4E2FED123942F5000D881A9 /* OfflineMediaDownloader.entitlements */,
-				C4E1872623242B5A00BB883A /* Extensions */,
-				C46095FF243D335400EB80BE /* Helpers */,
-				C46095FC243D328200EB80BE /* Networking */,
-				C4E1872323242B3300BB883A /* Models */,
-				C4E1872923242BB200BB883A /* Views */,
-				C4E1871E23242AE400BB883A /* ViewModels */,
-				C4E186EE23242A4100BB883A /* AppDelegate.swift */,
-				C4E186F023242A4100BB883A /* SceneDelegate.swift */,
-				C4E186F423242A4200BB883A /* Assets.xcassets */,
-				C4E186F923242A4200BB883A /* LaunchScreen.storyboard */,
-				C4E186FC23242A4200BB883A /* Info.plist */,
-				C4E186F623242A4200BB883A /* Preview Content */,
-				C41426B125E1F5DC002B56F0 /* Constants.swift */,
 			);
-			path = OfflineMediaDownloader;
-			sourceTree = "<group>";
-		};
-		C4E186F623242A4200BB883A /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				C4E186F723242A4200BB883A /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		C4E1870423242A4200BB883A /* OfflineMediaDownloaderTests */ = {
-			isa = PBXGroup;
-			children = (
-				C4E1870523242A4300BB883A /* SandboxTests.swift */,
-				C4E1870723242A4300BB883A /* Info.plist */,
-			);
-			path = OfflineMediaDownloaderTests;
-			sourceTree = "<group>";
-		};
-		C4E1870F23242A4300BB883A /* OfflineMediaDownloaderUITests */ = {
-			isa = PBXGroup;
-			children = (
-				C4E1871023242A4300BB883A /* SandboxUITests.swift */,
-				C4E1871223242A4300BB883A /* Info.plist */,
-			);
-			path = OfflineMediaDownloaderUITests;
-			sourceTree = "<group>";
-		};
-		C4E1871E23242AE400BB883A /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				C4E1871F23242B0300BB883A /* FileListViewModel.swift */,
-				C4E1872123242B1800BB883A /* FileCellViewModel.swift */,
-				C41C4D162597A9E2000064B3 /* LoginViewModel.swift */,
-				C4A281BA25C6831700D1F19B /* MainViewModel.swift */,
-				C4BEA31625F4466A003F0539 /* DiagnosticViewModel.swift */,
-				C474BE0E28D50C4100C4A6A4 /* PendingFileViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		C4E1872323242B3300BB883A /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				C4A91ED0236DFF34001F10EB /* FileList.swift */,
-				C4A91ED1236DFF34001F10EB /* FileResponse.swift */,
-				C4E1872423242B3C00BB883A /* File.swift */,
-				C49C44B2246DCC0A00452F13 /* UserData.swift */,
-				C4A01C08257320F9003B5F36 /* RegisterUserResponse.swift */,
-				C4411F0B25D85DDE00ED81D0 /* RegisterDeviceResponse.swift */,
-				C4A01C0D25732192003B5F36 /* TokenResponse.swift */,
-				C4A01C12257321C2003B5F36 /* LoginUserResponse.swift */,
-				C4A01C1F257D5AF9003B5F36 /* Token.swift */,
-				C4A281C425C6845F00D1F19B /* Event.swift */,
-				C4411F1825D8639600ED81D0 /* DeviceData.swift */,
-				C474BE1028D511F000C4A6A4 /* UnencryptedDataStore.swift */,
-				C474BE1828DB816100C4A6A4 /* DownloadFileResponse.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		C4E1872623242B5A00BB883A /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-				C4E1872723242B6A00BB883A /* DateFormatter.swift */,
-				C421AFF6244F82FE0046F984 /* Environment.swift */,
-				C474BE1628DA7A9C00C4A6A4 /* String.swift */,
-			);
-			path = Extensions;
-			sourceTree = "<group>";
-		};
-		C4E1872923242BB200BB883A /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				C4E186F223242A4100BB883A /* FileListView.swift */,
-				C4E1872A23242BBE00BB883A /* FileCellView.swift */,
-				C4F86A8B233B045800ABC233 /* AVPlayerView.swift */,
-				C44F5BA2236F5FED00B48DE4 /* ActivityIndicator.swift */,
-				C49C44A7246B5CA800452F13 /* LoginView.swift */,
-				C479CD262592F6A900520612 /* MainView.swift */,
-				C41426A725E1F532002B56F0 /* LogoView.swift */,
-				C41426AC25E1F5A5002B56F0 /* ErrorMessageView.swift */,
-				C4BEA31125F42148003F0539 /* DiagnosticView.swift */,
-				C4BEA33525F53D6A003F0539 /* RegistrationMessageView.swift */,
-				C474BE0C28D50AAD00C4A6A4 /* PendingFileView.swift */,
-				C474BE1228D6339100C4A6A4 /* PendingFileMessageView.swift */,
-				C474BE1428DA476600C4A6A4 /* LoadingView.swift */,
-			);
-			path = Views;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C4E186EA23242A4100BB883A /* OfflineMediaDownloader */ = {
+		C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C4E1871523242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloader" */;
+			buildConfigurationList = C41DD8AD2CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloader" */;
 			buildPhases = (
-				C4E186E723242A4100BB883A /* Sources */,
-				C4E186E823242A4100BB883A /* Frameworks */,
-				C4E186E923242A4100BB883A /* Resources */,
-				C4A2819025C65F6D00D1F19B /* Embed App Extensions */,
+				C41DD8802CC6C52600F041C6 /* Sources */,
+				C41DD8812CC6C52600F041C6 /* Frameworks */,
+				C41DD8822CC6C52600F041C6 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C41DD8862CC6C52600F041C6 /* App */,
 			);
 			name = OfflineMediaDownloader;
-			productName = Sandbox;
-			productReference = C4E186EB23242A4100BB883A /* OfflineMediaDownloader.app */;
+			packageProductDependencies = (
+				C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */,
+				C41DD9232CC81B8100F041C6 /* Valet */,
+			);
+			productName = OfflineMediaDownloader;
+			productReference = C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C4E1870023242A4200BB883A /* OfflineMediaDownloaderTests */ = {
+		C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C4E1871823242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderTests" */;
+			buildConfigurationList = C41DD8B02CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderTests" */;
 			buildPhases = (
-				C4E186FD23242A4200BB883A /* Sources */,
-				C4E186FE23242A4200BB883A /* Frameworks */,
-				C4E186FF23242A4200BB883A /* Resources */,
+				C41DD8952CC6C52700F041C6 /* Sources */,
+				C41DD8962CC6C52700F041C6 /* Frameworks */,
+				C41DD8972CC6C52700F041C6 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				C4E1870323242A4200BB883A /* PBXTargetDependency */,
+				C41DD89B2CC6C52700F041C6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 			);
 			name = OfflineMediaDownloaderTests;
-			productName = SandboxTests;
-			productReference = C4E1870123242A4200BB883A /* OfflineMediaDownloaderTests.xctest */;
+			packageProductDependencies = (
+			);
+			productName = OfflineMediaDownloaderTests;
+			productReference = C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		C4E1870B23242A4300BB883A /* OfflineMediaDownloaderUITests */ = {
+		C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C4E1871B23242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderUITests" */;
+			buildConfigurationList = C41DD8B32CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderUITests" */;
 			buildPhases = (
-				C4E1870823242A4300BB883A /* Sources */,
-				C4E1870923242A4300BB883A /* Frameworks */,
-				C4E1870A23242A4300BB883A /* Resources */,
+				C41DD89F2CC6C52700F041C6 /* Sources */,
+				C41DD8A02CC6C52700F041C6 /* Frameworks */,
+				C41DD8A12CC6C52700F041C6 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				C4E1870E23242A4300BB883A /* PBXTargetDependency */,
+				C41DD8A52CC6C52700F041C6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 			);
 			name = OfflineMediaDownloaderUITests;
-			productName = SandboxUITests;
-			productReference = C4E1870C23242A4300BB883A /* OfflineMediaDownloaderUITests.xctest */;
+			packageProductDependencies = (
+			);
+			productName = OfflineMediaDownloaderUITests;
+			productReference = C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		C4E186E323242A4100BB883A /* Project object */ = {
+		C41DD87C2CC6C52600F041C6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 1230;
-				LastUpgradeCheck = 1230;
-				ORGANIZATIONNAME = "Jonathan Lloyd";
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
-					C4E186EA23242A4100BB883A = {
-						CreatedOnToolsVersion = 11.0;
+					C41DD8832CC6C52600F041C6 = {
+						CreatedOnToolsVersion = 16.0;
 					};
-					C4E1870023242A4200BB883A = {
-						CreatedOnToolsVersion = 11.0;
-						TestTargetID = C4E186EA23242A4100BB883A;
+					C41DD8982CC6C52700F041C6 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = C41DD8832CC6C52600F041C6;
 					};
-					C4E1870B23242A4300BB883A = {
-						CreatedOnToolsVersion = 11.0;
-						TestTargetID = C4E186EA23242A4100BB883A;
+					C41DD8A22CC6C52700F041C6 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = C41DD8832CC6C52600F041C6;
 					};
 				};
 			};
-			buildConfigurationList = C4E186E623242A4100BB883A /* Build configuration list for PBXProject "OfflineMediaDownloader" */;
-			compatibilityVersion = "Xcode 9.3";
+			buildConfigurationList = C41DD87F2CC6C52600F041C6 /* Build configuration list for PBXProject "OfflineMediaDownloader" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = C4E186E223242A4100BB883A;
-			productRefGroup = C4E186EC23242A4100BB883A /* Products */;
+			mainGroup = C41DD87B2CC6C52600F041C6;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C4E186EA23242A4100BB883A /* OfflineMediaDownloader */,
-				C4E1870023242A4200BB883A /* OfflineMediaDownloaderTests */,
-				C4E1870B23242A4300BB883A /* OfflineMediaDownloaderUITests */,
+				C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */,
+				C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
+				C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C4E186E923242A4100BB883A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C4E186FB23242A4200BB883A /* LaunchScreen.storyboard in Resources */,
-				C4E186F823242A4200BB883A /* Preview Assets.xcassets in Resources */,
-				C4E186F523242A4200BB883A /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C4E186FF23242A4200BB883A /* Resources */ = {
+		C41DD8822CC6C52600F041C6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C4E1870A23242A4300BB883A /* Resources */ = {
+		C41DD8972CC6C52700F041C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C41DD8A12CC6C52700F041C6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -494,117 +273,53 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		C4E186E723242A4100BB883A /* Sources */ = {
+		C41DD8802CC6C52600F041C6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C46095FE243D32A500EB80BE /* Server.swift in Sources */,
-				C474BE1128D511F000C4A6A4 /* UnencryptedDataStore.swift in Sources */,
-				C41426A825E1F533002B56F0 /* LogoView.swift in Sources */,
-				C467C25923BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld in Sources */,
-				C4A01C25257D5CA7003B5F36 /* KeychainHelper.swift in Sources */,
-				C4609603243D336C00EB80BE /* CoreDataHelper.swift in Sources */,
-				C4BEA33125F4A668003F0539 /* LoginStatus.swift in Sources */,
-				C474BE1328D6339100C4A6A4 /* PendingFileMessageView.swift in Sources */,
-				C4A91ED3236DFF34001F10EB /* FileResponse.swift in Sources */,
-				C4E1872B23242BBE00BB883A /* FileCellView.swift in Sources */,
-				C4A281C025C6845300D1F19B /* EventHelper.swift in Sources */,
-				C4E186EF23242A4100BB883A /* AppDelegate.swift in Sources */,
-				C4A281C525C6845F00D1F19B /* Event.swift in Sources */,
-				C4E1872523242B3C00BB883A /* File.swift in Sources */,
-				C4BEA32525F4A28F003F0539 /* RegistrationStatus.swift in Sources */,
-				C41426C025E22E2E002B56F0 /* TestHelper.swift in Sources */,
-				C41426AD25E1F5A5002B56F0 /* ErrorMessageView.swift in Sources */,
-				C44F5BA3236F5FED00B48DE4 /* ActivityIndicator.swift in Sources */,
-				C4A01C09257320F9003B5F36 /* RegisterUserResponse.swift in Sources */,
-				C4E186F123242A4100BB883A /* SceneDelegate.swift in Sources */,
-				C4411F0C25D85DDE00ED81D0 /* RegisterDeviceResponse.swift in Sources */,
-				C4A01C1B257ACCB8003B5F36 /* TokenKeychain.swift in Sources */,
-				C4F86A8C233B045800ABC233 /* AVPlayerView.swift in Sources */,
-				C479CD272592F6A900520612 /* MainView.swift in Sources */,
-				C4BEA31225F42148003F0539 /* DiagnosticView.swift in Sources */,
-				C4E1872823242B6A00BB883A /* DateFormatter.swift in Sources */,
-				C41426A025DB4D44002B56F0 /* UserStatus.swift in Sources */,
-				C4E1872023242B0300BB883A /* FileListViewModel.swift in Sources */,
-				C4A91ED2236DFF34001F10EB /* FileList.swift in Sources */,
-				C41C4D172597A9E2000064B3 /* LoginViewModel.swift in Sources */,
-				C41426B225E1F5DC002B56F0 /* Constants.swift in Sources */,
-				C4A01C20257D5AF9003B5F36 /* Token.swift in Sources */,
-				C4411F1125D860CE00ED81D0 /* DeviceKeychain.swift in Sources */,
-				C4E186F323242A4100BB883A /* FileListView.swift in Sources */,
-				C4BEA33625F53D6A003F0539 /* RegistrationMessageView.swift in Sources */,
-				C4E1872223242B1800BB883A /* FileCellViewModel.swift in Sources */,
-				C474BE1928DB816100C4A6A4 /* DownloadFileResponse.swift in Sources */,
-				C49C44B1246D01DD00452F13 /* UserDataKeychain.swift in Sources */,
-				C474BE0F28D50C4100C4A6A4 /* PendingFileViewModel.swift in Sources */,
-				C4411F1925D8639600ED81D0 /* DeviceData.swift in Sources */,
-				C4BEA31725F4466A003F0539 /* DiagnosticViewModel.swift in Sources */,
-				C49C44B3246DCC0A00452F13 /* UserData.swift in Sources */,
-				C4A01C13257321C2003B5F36 /* LoginUserResponse.swift in Sources */,
-				C4A01C0E25732192003B5F36 /* TokenResponse.swift in Sources */,
-				C474BE1528DA476600C4A6A4 /* LoadingView.swift in Sources */,
-				C474BE0D28D50AAD00C4A6A4 /* PendingFileView.swift in Sources */,
-				C4609601243D335E00EB80BE /* FileHelper.swift in Sources */,
-				C49C44A8246B5CA800452F13 /* LoginView.swift in Sources */,
-				C421AFF7244F82FE0046F984 /* Environment.swift in Sources */,
-				C474BE1728DA7A9C00C4A6A4 /* String.swift in Sources */,
-				C49C44AD246D019D00452F13 /* Keychain.swift in Sources */,
-				C4A281BB25C6831700D1F19B /* MainViewModel.swift in Sources */,
+				C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C4E186FD23242A4200BB883A /* Sources */ = {
+		C41DD8952CC6C52700F041C6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C4E1870623242A4300BB883A /* SandboxTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C4E1870823242A4300BB883A /* Sources */ = {
+		C41DD89F2CC6C52700F041C6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C4E1871123242A4300BB883A /* SandboxUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		C4E1870323242A4200BB883A /* PBXTargetDependency */ = {
+		C41DD89B2CC6C52700F041C6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C4E186EA23242A4100BB883A /* OfflineMediaDownloader */;
-			targetProxy = C4E1870223242A4200BB883A /* PBXContainerItemProxy */;
+			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
+			targetProxy = C41DD89A2CC6C52700F041C6 /* PBXContainerItemProxy */;
 		};
-		C4E1870E23242A4300BB883A /* PBXTargetDependency */ = {
+		C41DD8A52CC6C52700F041C6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C4E186EA23242A4100BB883A /* OfflineMediaDownloader */;
-			targetProxy = C4E1870D23242A4300BB883A /* PBXContainerItemProxy */;
+			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
+			targetProxy = C41DD8A42CC6C52700F041C6 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXVariantGroup section */
-		C4E186F923242A4200BB883A /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				C4E186FA23242A4200BB883A /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
-
 /* Begin XCBuildConfiguration section */
-		C4E1871323242A4300BB883A /* Debug */ = {
+		C41DD8AB2CC6C52700F041C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -634,7 +349,8 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -648,25 +364,29 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				"INFOPLIST_FILE[sdk=iphoneos*]" = "";
+				INFOPLIST_KEY_WKExtensionDelegateClassName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		C4E1871423242A4300BB883A /* Release */ = {
+		C41DD8AC2CC6C52700F041C6 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -696,7 +416,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -704,203 +425,234 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				INFOPLIST_KEY_WKExtensionDelegateClassName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		C4E1871623242A4300BB883A /* Debug */ = {
+		C41DD8AE2CC6C52700F041C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = OfflineMediaDownloader/OfflineMediaDownloader.entitlements;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_ASSET_PATHS = "\"OfflineMediaDownloader/Preview Content\"";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = P328YB6M54;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = OfflineMediaDownloader/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_WKExtensionDelegateClassName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
-		C4E1871723242A4300BB883A /* Release */ = {
+		C41DD8AF2CC6C52700F041C6 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = OfflineMediaDownloader/OfflineMediaDownloader.entitlements;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_ASSET_PATHS = "\"OfflineMediaDownloader/Preview Content\"";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = P328YB6M54;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = OfflineMediaDownloader/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_WKExtensionDelegateClassName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
-		C4E1871923242A4300BB883A /* Debug */ = {
+		C41DD8B12CC6C52700F041C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P328YB6M54;
-				INFOPLIST_FILE = SandboxTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = lifegames.SandboxTests;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/OfflineMediaDownloader";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OfflineMediaDownloader";
 			};
 			name = Debug;
 		};
-		C4E1871A23242A4300BB883A /* Release */ = {
+		C41DD8B22CC6C52700F041C6 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P328YB6M54;
-				INFOPLIST_FILE = SandboxTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = lifegames.SandboxTests;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/OfflineMediaDownloader";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OfflineMediaDownloader";
 			};
 			name = Release;
 		};
-		C4E1871C23242A4300BB883A /* Debug */ = {
+		C41DD8B42CC6C52700F041C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P328YB6M54;
-				INFOPLIST_FILE = SandboxUITests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = lifegames.SandboxUITests;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Sandbox;
+				TEST_TARGET_NAME = OfflineMediaDownloader;
 			};
 			name = Debug;
 		};
-		C4E1871D23242A4300BB883A /* Release */ = {
+		C41DD8B52CC6C52700F041C6 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C421AFF5244F80AE0046F984 /* Development.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P328YB6M54;
-				INFOPLIST_FILE = SandboxUITests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = lifegames.SandboxUITests;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Sandbox;
+				TEST_TARGET_NAME = OfflineMediaDownloader;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C4E186E623242A4100BB883A /* Build configuration list for PBXProject "OfflineMediaDownloader" */ = {
+		C41DD87F2CC6C52600F041C6 /* Build configuration list for PBXProject "OfflineMediaDownloader" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C4E1871323242A4300BB883A /* Debug */,
-				C4E1871423242A4300BB883A /* Release */,
+				C41DD8AB2CC6C52700F041C6 /* Debug */,
+				C41DD8AC2CC6C52700F041C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C4E1871523242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloader" */ = {
+		C41DD8AD2CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloader" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C4E1871623242A4300BB883A /* Debug */,
-				C4E1871723242A4300BB883A /* Release */,
+				C41DD8AE2CC6C52700F041C6 /* Debug */,
+				C41DD8AF2CC6C52700F041C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C4E1871823242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderTests" */ = {
+		C41DD8B02CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C4E1871923242A4300BB883A /* Debug */,
-				C4E1871A23242A4300BB883A /* Release */,
+				C41DD8B12CC6C52700F041C6 /* Debug */,
+				C41DD8B22CC6C52700F041C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C4E1871B23242A4300BB883A /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderUITests" */ = {
+		C41DD8B32CC6C52700F041C6 /* Build configuration list for PBXNativeTarget "OfflineMediaDownloaderUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C4E1871C23242A4300BB883A /* Debug */,
-				C4E1871D23242A4300BB883A /* Release */,
+				C41DD8B42CC6C52700F041C6 /* Debug */,
+				C41DD8B52CC6C52700F041C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCVersionGroup section */
-		C467C25723BC27350038F462 /* OfflineMediaDownloader.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-				C467C25823BC27350038F462 /* Sandbox.xcdatamodel */,
-			);
-			currentVersion = C467C25823BC27350038F462 /* Sandbox.xcdatamodel */;
-			path = OfflineMediaDownloader.xcdatamodeld;
-			sourceTree = SOURCE_ROOT;
-			versionGroupType = wrapper.xcdatamodel;
+/* Begin XCRemoteSwiftPackageReference section */
+		C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.15.1;
+			};
 		};
-/* End XCVersionGroup section */
+		C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Square/Valet";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+		C41DD9232CC81B8100F041C6 /* Valet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */;
+			productName = Valet;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = C4E186E323242A4100BB883A /* Project object */;
+	rootObject = C41DD87C2CC6C52600F041C6 /* Project object */;
 }
