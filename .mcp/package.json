@@ -1,0 +1,17 @@
+{
+  "name": "ios-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for iOS convention enforcement",
+  "type": "module",
+  "main": "server.ts",
+  "scripts": {
+    "start": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
