@@ -111,7 +111,7 @@ struct RootFeature {
       case let .deviceRegistrationResponse(.success(response)):
         let endpointArn = response.body.endpointArn
         return .run { _ in
-          try await keychainClient.setDeviceData(DeviceData(endpointArn: endpointArn))
+          try await keychainClient.setDeviceData(Device(endpointArn: endpointArn))
         }
 
       case let .deviceRegistrationResponse(.failure(error)):

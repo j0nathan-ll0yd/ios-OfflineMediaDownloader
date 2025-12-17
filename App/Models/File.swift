@@ -28,7 +28,7 @@ struct File: Equatable, Identifiable, Codable, Sendable {
   var authorUser: String?
   var contentType: String?
   var description: String?
-  var status: String?
+  var status: FileStatus?
   var title: String?
 
   var id: String { fileId }
@@ -68,7 +68,7 @@ struct File: Equatable, Identifiable, Codable, Sendable {
     authorUser = try values.decodeIfPresent(String.self, forKey: .authorUser)
     contentType = try values.decodeIfPresent(String.self, forKey: .contentType)
     description = try values.decodeIfPresent(String.self, forKey: .description)
-    status = try values.decodeIfPresent(String.self, forKey: .status)
+    status = try values.decodeIfPresent(FileStatus.self, forKey: .status)
     title = try values.decodeIfPresent(String.self, forKey: .title)
   }
 
@@ -103,7 +103,7 @@ extension File {
     self.authorUser = entity.authorUser
     self.contentType = entity.contentType
     self.description = entity.fileDescription
-    self.status = entity.status
+    self.status = entity.status.flatMap { FileStatus(rawValue: $0) }
     self.title = entity.title
   }
 
@@ -130,7 +130,7 @@ extension File {
     entity.authorUser = authorUser
     entity.contentType = contentType
     entity.fileDescription = description
-    entity.status = status
+    entity.status = status?.rawValue
     entity.title = title
 
     return entity

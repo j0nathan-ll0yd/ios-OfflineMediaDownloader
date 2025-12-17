@@ -6,35 +6,11 @@ import Valet
 
 // MARK: - Models
 
-struct UserData: Equatable, Codable, Sendable {
-  let email: String
-  let firstName: String
-  let identifier: String
-  let lastName: String
-}
-
-struct DeviceData: Equatable, Codable, Sendable {
-  let endpointArn: String
-}
-
-struct TokenResponse: Decodable {
-  let token: String
-  let expiresAt: Double?
-  let sessionId: String?
-  let userId: String?
-}
-
-struct LoginResponse: Decodable {
-  let body: TokenResponse?
-  let error: ErrorDetail?
-  let requestId: String
-}
-
 enum LoginFeatureError: Error {
   case invalidAuthorizationCredential
 }
 
-private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idToken: String, userData: UserData?) {
+private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idToken: String, userData: User?) {
   debugPrint(authorization)
   guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
     throw LoginFeatureError.invalidAuthorizationCredential
@@ -52,7 +28,7 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
   // Apple's privacy model returns nil for fullName on subsequent sign-ins
   let hasFullName = credential.fullName?.givenName != nil || credential.fullName?.familyName != nil
   if hasFullName, let email = credential.email {
-    let userData = UserData(
+    let userData = User(
       email: email,
       firstName: credential.fullName?.givenName ?? "",
       identifier: credential.user,
@@ -72,7 +48,7 @@ struct LoginFeature: Reducer {
     var registrationStatus: RegistrationStatus = .unregistered
     var loginStatus: LoginStatus = .unauthenticated
     var errorMessage: String?
-    var pendingUserData: UserData?
+    var pendingUserData: User?
   }
 
   enum Action {
