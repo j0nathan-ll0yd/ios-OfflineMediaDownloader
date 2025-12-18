@@ -10,6 +10,8 @@ struct FileCellFeature {
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
     var isDownloaded: Bool = false  // Cached to avoid fileClient.fileExists() in view body
+    var showDeleteConfirmation: Bool = false
+    var isDeleting: Bool = false
 
     /// File is pending when metadata is received but no download URL is available yet
     var isPending: Bool { file.url == nil }
@@ -22,6 +24,9 @@ struct FileCellFeature {
     case downloadButtonTapped
     case cancelDownloadButtonTapped
     case deleteButtonTapped
+    case confirmDelete
+    case cancelDelete
+    case deleteResponse(Result<Void, Error>)
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
@@ -31,6 +36,7 @@ struct FileCellFeature {
     enum Delegate: Equatable {
       case fileDeleted(File)
       case playFile(File)
+      case deleteFailed(String)
     }
   }
 
@@ -109,14 +115,38 @@ struct FileCellFeature {
         return .none
 
       case .deleteButtonTapped:
+        state.showDeleteConfirmation = true
+        return .none
+
+      case .confirmDelete:
+        state.showDeleteConfirmation = false
+        state.isDeleting = true
         let file = state.file
         return .run { send in
-          try await coreDataClient.deleteFile(file)
-          if let url = file.url, fileClient.fileExists(url) {
-            try await fileClient.deleteFile(url)
-          }
-          await send(.delegate(.fileDeleted(file)))
+          await send(.deleteResponse(Result {
+            // 1. Delete from server
+            try await serverClient.deleteFile(file.fileId)
+            // 2. Delete local file if downloaded
+            if let url = file.url, fileClient.fileExists(url) {
+              try await fileClient.deleteFile(url)
+            }
+            // 3. Delete from CoreData
+            try await coreDataClient.deleteFile(file)
+          }))
         }
+
+      case .cancelDelete:
+        state.showDeleteConfirmation = false
+        return .none
+
+      case .deleteResponse(.success):
+        state.isDeleting = false
+        return .send(.delegate(.fileDeleted(state.file)))
+
+      case let .deleteResponse(.failure(error)):
+        state.isDeleting = false
+        print("❌ File deletion failed: \(error.localizedDescription)")
+        return .send(.delegate(.deleteFailed(error.localizedDescription)))
 
       case .delegate:
         return .none

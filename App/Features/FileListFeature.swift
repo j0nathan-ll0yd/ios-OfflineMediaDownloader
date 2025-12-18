@@ -184,6 +184,10 @@ struct FileListFeature {
         state.playingFile = file
         return .none
 
+      case let .files(.element(id: _, action: .delegate(.deleteFailed(message)))):
+        state.errorMessage = "Delete failed: \(message)"
+        return .none
+
       case .dismissPlayer:
         state.playingFile = nil
         return .none

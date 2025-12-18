@@ -119,6 +119,31 @@ struct FileCellView: View {
       Spacer()
     }
     .padding(.vertical, 6)
+    .opacity(store.isDeleting ? 0.5 : 1.0)
+    .contextMenu {
+      Button(role: .destructive) {
+        store.send(.deleteButtonTapped)
+      } label: {
+        Label("Delete", systemImage: "trash")
+      }
+    }
+    .confirmationDialog(
+      "Delete File",
+      isPresented: Binding(
+        get: { store.showDeleteConfirmation },
+        set: { _ in store.send(.cancelDelete) }
+      ),
+      titleVisibility: .visible
+    ) {
+      Button("Delete", role: .destructive) {
+        store.send(.confirmDelete)
+      }
+      Button("Cancel", role: .cancel) {
+        store.send(.cancelDelete)
+      }
+    } message: {
+      Text("Are you sure you want to delete \"\(store.file.title ?? store.file.key)\"? This action cannot be undone.")
+    }
     .onAppear {
       store.send(.onAppear)
     }

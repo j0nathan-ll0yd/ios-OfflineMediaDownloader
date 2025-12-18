@@ -33,6 +33,7 @@ struct ServerClient {
   var loginUser: @Sendable (_ idToken: String) async throws -> LoginResponse
   var getFiles: @Sendable () async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
+  var deleteFile: @Sendable (_ fileId: String) async throws -> Void
 }
 
 extension DependencyValues {
@@ -216,6 +217,22 @@ extension ServerClient: DependencyKey {
         throw ServerClientError.internalServerError(message: error.message)
       }
       return fileResponse
+    },
+    deleteFile: { fileId in
+      print("📡 ServerClient.deleteFile called with fileId: \(fileId)")
+      var request = try await generateRequest(pathPart: "files/\(fileId)", method: "DELETE")
+      #if DEBUG
+      debugPrint(request)
+      #endif
+      let (_, response) = try await URLSession.shared.data(for: request)
+      if let httpResponse = response as? HTTPURLResponse {
+        print("📡 ServerClient.deleteFile HTTP status: \(httpResponse.statusCode)")
+        // Accept 200, 204 (No Content), or 202 (Accepted) as success
+        guard (200...299).contains(httpResponse.statusCode) else {
+          throw ServerClientError.internalServerError(message: "Failed to delete file: HTTP \(httpResponse.statusCode)")
+        }
+      }
+      try checkUnauthorized(response)
     }
   )
 }
@@ -268,6 +285,9 @@ extension ServerClient {
         error: nil,
         requestId: "test-request-id"
       )
+    },
+    deleteFile: { _ in
+      // No-op for tests
     }
   )
 }
