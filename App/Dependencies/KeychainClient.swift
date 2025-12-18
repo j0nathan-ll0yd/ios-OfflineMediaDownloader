@@ -27,13 +27,13 @@ enum KeychainKeys: String {
 
 @DependencyClient
 struct KeychainClient {
-  var getUserData: @Sendable () async throws -> UserData
+  var getUserData: @Sendable () async throws -> User
   var getJwtToken: @Sendable () async throws -> String?
-  var getDeviceData: @Sendable () async throws -> DeviceData?
+  var getDeviceData: @Sendable () async throws -> Device?
   var getUserIdentifier: @Sendable () async throws -> String?
-  var setUserData: @Sendable (_ userData: UserData) async throws -> Void
+  var setUserData: @Sendable (_ userData: User) async throws -> Void
   var setJwtToken: @Sendable (_ token: String) async throws -> Void
-  var setDeviceData: @Sendable (_ deviceData: DeviceData) async throws -> Void
+  var setDeviceData: @Sendable (_ deviceData: Device) async throws -> Void
   var deleteUserData: @Sendable () async throws -> Void
   var deleteJwtToken: @Sendable () async throws -> Void
   var deleteDeviceData: @Sendable () async throws -> Void
@@ -54,7 +54,7 @@ enum KeychainError: Error {
 extension KeychainClient: DependencyKey {
   static let liveValue = KeychainClient(
     getUserData: {
-      let userData = UserData(
+      let userData = User(
         email: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.email.rawValue),
         firstName: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.firstName.rawValue),
         identifier: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue),
@@ -77,7 +77,7 @@ extension KeychainClient: DependencyKey {
     getDeviceData: {
       do {
         let endpointArn = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.endpointArn.rawValue)
-        return DeviceData(endpointArn: endpointArn)
+        return Device(endpointArn: endpointArn)
       } catch {
         let nsError = error as NSError
         if nsError.code != -25300 {

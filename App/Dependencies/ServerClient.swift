@@ -28,7 +28,7 @@ private func generateRequest(pathPart: String, method: String = "POST") async th
 @DependencyClient
 struct ServerClient {
   var registerDevice: @Sendable (_ token: String) async throws -> RegisterDeviceResponse
-  var registerUser: @Sendable (_ userData: UserData, _ idToken: String) async throws -> LoginResponse
+  var registerUser: @Sendable (_ userData: User, _ idToken: String) async throws -> LoginResponse
   var loginUser: @Sendable (_ idToken: String) async throws -> LoginResponse
   var getFiles: @Sendable () async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
