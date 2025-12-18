@@ -35,6 +35,7 @@ struct FileListFeature {
     case refreshFileState(String)  // fileId
     case delegate(Delegate)
 
+    @CasePathable
     enum Delegate: Equatable {
       case authenticationRequired
     }

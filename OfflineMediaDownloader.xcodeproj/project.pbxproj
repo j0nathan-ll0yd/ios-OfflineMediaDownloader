@@ -626,6 +626,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = APITypes;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -644,13 +651,6 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = APITypes;
-		};
-/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
