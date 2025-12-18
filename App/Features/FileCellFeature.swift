@@ -27,6 +27,7 @@ struct FileCellFeature {
     case downloadFailed(String)
     case delegate(Delegate)
 
+    @CasePathable
     enum Delegate: Equatable {
       case fileDeleted(File)
       case playFile(File)

@@ -2,6 +2,7 @@
 import Foundation
 import ComposableArchitecture
 import UIKit
+import APITypes
 
 private func generateRequest(pathPart: String, method: String = "POST") async throws -> URLRequest {
   @Dependency(\.keychainClient) var keychainClient

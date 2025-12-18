@@ -8,11 +8,11 @@
 
 import Foundation
 
-struct EndpointResponse: Decodable {
+struct EndpointResponse: Codable, Sendable {
   var endpointArn: String
 }
 
-public struct RegisterDeviceResponse: Decodable {
+public struct RegisterDeviceResponse: Codable, Sendable {
   var body: EndpointResponse
   var error: ErrorDetail?
   var requestId: String

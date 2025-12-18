@@ -1,8 +1,8 @@
 import Foundation
 
-struct TokenResponse: Decodable {
-  let token: String
-  let expiresAt: Double?
-  let sessionId: String?
-  let userId: String?
+struct TokenResponse: Codable, Sendable {
+  var token: String
+  var expiresAt: Double?
+  var sessionId: String?
+  var userId: String?
 }

@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import APITypes
 
 // Cached date formatter for YYYYMMDD format (API responses)
 private let fileDateFormatter: DateFormatter = {
@@ -134,5 +135,37 @@ extension File {
     entity.title = title
 
     return entity
+  }
+}
+
+// MARK: - Generated Type Conversion
+extension File {
+  /// Initialize from generated API type
+  init(from api: APIFile) {
+    self.fileId = api.fileId
+    self.key = api.key ?? ""
+    self.size = api.size.map { Int($0) }
+    self.url = api.url.flatMap { URL(string: $0) }
+    self.authorName = api.authorName
+    self.authorUser = api.authorUser
+    self.contentType = api.contentType
+    self.description = api.description
+    self.title = api.title
+
+    // Convert generated FileStatus enum to domain FileStatus
+    // The generator wraps allOf references in a payload struct with value1
+    if let apiStatus = api.status?.value1 {
+      self.status = FileStatus(from: apiStatus)
+    } else {
+      self.status = nil
+    }
+
+    // Parse publish date from string
+    if let dateString = api.publishDate {
+      self.publishDate = fileDateFormatter.date(from: dateString)
+                       ?? fileDateFormatterISO.date(from: dateString)
+    } else {
+      self.publishDate = nil
+    }
   }
 }

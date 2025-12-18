@@ -10,6 +10,7 @@
 		C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41DD8BD2CC6C6F500F041C6 /* Constants.swift */; };
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
+		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +76,7 @@
 			files = (
 				C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */,
 				C41DD9242CC81B8100F041C6 /* Valet in Frameworks */,
+				C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +151,7 @@
 			packageProductDependencies = (
 				C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */,
 				C41DD9232CC81B8100F041C6 /* Valet */,
+				C41DD9412D12ABC100F041C6 /* APITypes */,
 			);
 			productName = OfflineMediaDownloader;
 			productReference = C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */;
@@ -235,6 +238,7 @@
 			packageReferences = (
 				C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
+				C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
@@ -641,6 +645,13 @@
 		};
 /* End XCRemoteSwiftPackageReference section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = APITypes;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -651,6 +662,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */;
 			productName = Valet;
+		};
+		C41DD9412D12ABC100F041C6 /* APITypes */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = APITypes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

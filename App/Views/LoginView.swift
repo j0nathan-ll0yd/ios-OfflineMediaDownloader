@@ -58,6 +58,7 @@ struct LoginFeature: Reducer {
     case signInWithAppleButtonTapped(Result<ASAuthorization, Error>)
     case delegate(Delegate)
 
+    @CasePathable
     enum Delegate: Equatable {
       case loginCompleted
       case registrationCompleted
