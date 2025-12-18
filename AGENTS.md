@@ -203,6 +203,47 @@ extension MyClient {
 
 ---
 
+## Naming Conventions
+
+### Type Naming
+
+| Pattern | Usage | Examples |
+|---------|-------|----------|
+| Simple nouns | Domain models | `User`, `File`, `Device` |
+| `*View` | SwiftUI views | `FileListView`, `LoginView` |
+| `*Feature` | TCA reducers | `FileListFeature`, `LoginFeature` |
+| `*Client` | Dependency clients | `ServerClient`, `KeychainClient` |
+| `*Response` | API responses | `TokenResponse`, `LoginResponse` |
+| `*Error` | Error types | `ServerClientError`, `KeychainError` |
+
+### Property Naming
+
+| Pattern | Format | Examples |
+|---------|--------|----------|
+| All properties | camelCase | `fileId`, `authorName`, `createdAt` |
+| IDs | `<entity>Id` | `fileId`, `userId`, `deviceId` |
+| Timestamps | `<action>At` | `createdAt`, `expiresAt` |
+| Booleans | `is<Condition>` | `isDownloaded`, `isPending` |
+
+### Enum Values
+
+| Context | Format | Examples |
+|---------|--------|----------|
+| Swift cases | lowercase | `.queued`, `.downloaded`, `.failed` |
+| Raw values (API) | PascalCase | `"Queued"`, `"Downloaded"` |
+
+### File Organization
+
+| Directory | Contents |
+|-----------|----------|
+| `App/Models/` | Domain models (User, File, Device) |
+| `App/Features/` | TCA reducers (*Feature) |
+| `App/Views/` | SwiftUI views (*View) |
+| `App/Dependencies/` | Dependency clients (*Client) |
+| `App/Enums/` | Shared enumerations (FileStatus) |
+
+---
+
 ## TCA Patterns Reference
 
 ### Reducer Template
