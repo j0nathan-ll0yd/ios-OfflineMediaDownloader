@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 @testable import OfflineMediaDownloader
@@ -13,9 +14,6 @@ struct LoginFeatureTests {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     } withDependencies: {
-      $0.serverClient.loginUser = { _ in
-        LoginResponse(body: TokenResponse(token: "test-jwt-token"), error: nil, requestId: "123")
-      }
       $0.keychainClient.setJwtToken = { _ in }
     }
 
@@ -50,7 +48,7 @@ struct LoginFeatureTests {
   @Test("Registration success stores token, user data, and notifies delegate")
   func registrationSuccess() async throws {
     var state = LoginFeature.State()
-    state.pendingUserData = UserData(
+    state.pendingUserData = User(
       email: "test@example.com",
       firstName: "Test",
       identifier: "user-123",
@@ -75,6 +73,22 @@ struct LoginFeatureTests {
 
     await store.receive(\.delegate.registrationCompleted)
   }
+
+  @MainActor
+  @Test("Login response with nil body sets error message")
+  func loginResponseNilBody() async throws {
+    let store = TestStore(initialState: LoginFeature.State()) {
+      LoginFeature()
+    }
+
+    await store.send(.loginResponse(.success(LoginResponse(
+      body: nil,
+      error: nil,
+      requestId: "123"
+    )))) {
+      $0.errorMessage = "Invalid response: missing token"
+    }
+  }
 }
 
 // MARK: - RootFeature Tests
@@ -89,13 +103,15 @@ struct RootFeatureTests {
       RootFeature()
     } withDependencies: {
       $0.authenticationClient.determineLoginStatus = { .unauthenticated }
+      $0.keychainClient.getUserIdentifier = { nil }
     }
 
     await store.send(.didFinishLaunching) {
-      $0.isLaunching = false
+      $0.launchStatus = "Checking authentication..."
     }
 
     await store.receive(\.loginStatusResponse) {
+      $0.isLaunching = false
       $0.isAuthenticated = false
     }
   }
@@ -170,14 +186,10 @@ struct FileListFeatureTests {
       $0.coreDataClient.getFiles = { [] }
     }
 
-    await store.send(.onAppear) {
-      $0.isLoading = true
-    }
+    // onAppear does NOT set isLoading - only refreshButtonTapped does
+    await store.send(.onAppear)
 
-    await store.receive(\.localFilesLoaded) {
-      $0.isLoading = false
-      $0.files = []
-    }
+    await store.receive(\.localFilesLoaded)
   }
 
   @MainActor
@@ -189,7 +201,7 @@ struct FileListFeatureTests {
       $0.serverClient.getFiles = {
         FileResponse(body: FileList(contents: [], keyCount: 0), error: nil, requestId: "123")
       }
-      $0.coreDataClient.saveContext = { }
+      $0.coreDataClient.cacheFiles = { _ in }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -224,21 +236,20 @@ struct FileListFeatureTests {
 struct FileCellFeatureTests {
 
   @MainActor
-  @Test("Download button starts download")
-  func downloadButtonStartsDownload() async throws {
+  @Test("onAppear checks file existence")
+  func onAppearChecksFileExistence() async throws {
     let testFile = TestHelper.getDefaultFile()
 
     let store = TestStore(initialState: FileCellFeature.State(file: testFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.fileClient.fileExists = { _ in true }
     }
 
-    await store.send(.downloadButtonTapped) {
-      $0.isDownloading = true
-    }
+    await store.send(.onAppear)
 
-    await store.receive(\.downloadProgressUpdated) {
-      $0.downloadProgress = 1.0
-      $0.isDownloading = false
+    await store.receive(\.checkFileExistence) {
+      $0.isDownloaded = true
     }
   }
 
@@ -259,8 +270,8 @@ struct FileCellFeatureTests {
   }
 
   @MainActor
-  @Test("Play button does not change state")
-  func playButtonNoStateChange() async throws {
+  @Test("Play button sends delegate action")
+  func playButtonSendsDelegate() async throws {
     let testFile = TestHelper.getDefaultFile()
 
     let store = TestStore(initialState: FileCellFeature.State(file: testFile)) {
@@ -268,6 +279,7 @@ struct FileCellFeatureTests {
     }
 
     await store.send(.playButtonTapped)
+    await store.receive(\.delegate.playFile)
   }
 }
 
@@ -279,12 +291,14 @@ struct DiagnosticFeatureTests {
   @MainActor
   @Test("onAppear loads keychain items")
   func onAppearLoadsKeychainItems() async throws {
+    // Token is truncated to prefix(50) + "..." in DiagnosticFeature
+    let testToken = "test-token-012345678901234567890123456789012345678"  // 50 chars exactly
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
-      $0.keychainClient.getJwtToken = { "test-token" }
+      $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = {
-        UserData(email: "test@test.com", firstName: "Test", identifier: "123", lastName: "User")
+        User(email: "test@test.com", firstName: "Test", identifier: "123", lastName: "User")
       }
       $0.keychainClient.getDeviceData = { nil }
     }
@@ -296,7 +310,7 @@ struct DiagnosticFeatureTests {
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
       $0.keychainItems = [
-        KeychainItem(name: "Token", displayValue: "test-token...", itemType: .token),
+        KeychainItem(name: "Token", displayValue: testToken + "...", itemType: .token),
         KeychainItem(name: "UserData", displayValue: "Test User (test@test.com)", itemType: .userData)
       ]
     }

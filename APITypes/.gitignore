@@ -1,0 +1,11 @@
+# Swift Package Manager build artifacts
+.build/
+.swiftpm/
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# Generated code is in .build/plugins/ and should not be committed

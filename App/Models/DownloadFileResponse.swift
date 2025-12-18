@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct DownloadFileResponseDetail: Decodable {
+struct DownloadFileResponseDetail: Codable, Sendable {
   var status: String
 }
 
-struct DownloadFileResponse: Decodable {
+struct DownloadFileResponse: Codable, Sendable {
   var body: DownloadFileResponseDetail?
   var error: ErrorDetail?
   var requestId: String

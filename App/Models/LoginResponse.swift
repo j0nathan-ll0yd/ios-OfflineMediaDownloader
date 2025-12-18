@@ -1,7 +1,7 @@
 import Foundation
 
-struct LoginResponse: Decodable {
-  let body: TokenResponse?
-  let error: ErrorDetail?
-  let requestId: String
+struct LoginResponse: Codable, Sendable {
+  var body: TokenResponse?
+  var error: ErrorDetail?
+  var requestId: String
 }
