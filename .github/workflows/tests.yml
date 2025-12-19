@@ -29,7 +29,7 @@ env:
 jobs:
   test:
     name: Run Tests
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 30
 
     steps:
@@ -104,6 +104,17 @@ jobs:
           echo "Using fallback simulator: $FALLBACK"
           echo "device=$FALLBACK" >> "$GITHUB_OUTPUT"
 
+      - name: Boot Simulator
+        run: |
+          # Pre-boot the simulator to avoid timeout issues
+          DEVICE_ID="${{ steps.simulator.outputs.device_id }}"
+          if [ -n "$DEVICE_ID" ]; then
+            echo "Booting simulator $DEVICE_ID..."
+            xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+            # Wait for simulator to be ready
+            sleep 10
+          fi
+
       - name: Build for Testing
         run: |
           set -o pipefail
@@ -128,8 +139,10 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             -resultBundlePath TestResults.xcresult \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 300 \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty --color --report junit --output test-results.xml
+            2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -161,7 +174,7 @@ jobs:
 
   build-check:
     name: Build Check (Release)
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 20
 
     steps:
