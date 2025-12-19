@@ -2,24 +2,36 @@ import Foundation
 
 // https://thoughtbot.com/blog/let-s-setup-your-ios-environments
 public enum Environment {
+  /// Check if running in a test environment
+  private static var isTestEnvironment: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
+    NSClassFromString("XCTestCase") != nil
+  }
+
   private static let infoDictionary: [String: Any] = {
-    guard let dict = Bundle.main.infoDictionary else {
-      fatalError("Plist file not found")
-    }
-    return dict
+    // In test environments, Bundle.main.infoDictionary may be nil or missing keys
+    Bundle.main.infoDictionary ?? [:]
   }()
-    
+
   static let basePath: String = {
-    guard let basePath = Environment.infoDictionary["MEDIA_DOWNLOADER_BASE_PATH"] as? String else {
-      fatalError("MEDIA_DOWNLOADER_BASE_PATH not set in plist for this environment")
+    if let basePath = Environment.infoDictionary["MEDIA_DOWNLOADER_BASE_PATH"] as? String {
+      return basePath
     }
-    return basePath
+    // Fallback for test environments
+    if isTestEnvironment {
+      return "https://test.example.com/"
+    }
+    fatalError("MEDIA_DOWNLOADER_BASE_PATH not set in plist for this environment")
   }()
 
   static let apiKey: String = {
-    guard let apiKey = Environment.infoDictionary["MEDIA_DOWNLOADER_API_KEY"] as? String else {
-      fatalError("MEDIA_DOWNLOADER_API_KEY not set in plist for this environment")
+    if let apiKey = Environment.infoDictionary["MEDIA_DOWNLOADER_API_KEY"] as? String {
+      return apiKey
     }
-    return apiKey
+    // Fallback for test environments
+    if isTestEnvironment {
+      return "test-api-key"
+    }
+    fatalError("MEDIA_DOWNLOADER_API_KEY not set in plist for this environment")
   }()
 }
