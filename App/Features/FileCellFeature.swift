@@ -10,6 +10,7 @@ struct FileCellFeature {
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
     var isDownloaded: Bool = false  // Cached to avoid fileClient.fileExists() in view body
+    @Presents var alert: AlertState<Action.Alert>?
 
     /// File is pending when metadata is received but no download URL is available yet
     var isPending: Bool { file.url == nil }
@@ -25,7 +26,14 @@ struct FileCellFeature {
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
+    case alert(PresentationAction<Alert>)
     case delegate(Delegate)
+
+    @CasePathable
+    enum Alert: Equatable {
+      case retryDownload
+      case dismiss
+    }
 
     @CasePathable
     enum Delegate: Equatable {
@@ -106,6 +114,25 @@ struct FileCellFeature {
         print("❌ Download failed: \(message)")
         state.isDownloading = false
         state.downloadProgress = 0
+        let fileName = state.file.title ?? state.file.key
+        state.alert = AlertState {
+          TextState("Download Failed")
+        } actions: {
+          ButtonState(action: .retryDownload) {
+            TextState("Retry")
+          }
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Failed to download \"\(fileName)\": \(message)")
+        }
+        return .none
+
+      case .alert(.presented(.retryDownload)):
+        return .send(.downloadButtonTapped)
+
+      case .alert:
         return .none
 
       case .deleteButtonTapped:
@@ -122,5 +149,6 @@ struct FileCellFeature {
         return .none
       }
     }
+    .ifLet(\.$alert, action: \.alert)
   }
 }

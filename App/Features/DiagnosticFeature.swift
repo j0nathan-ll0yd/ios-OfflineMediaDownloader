@@ -22,6 +22,7 @@ struct DiagnosticFeature {
     var keychainItems: [KeychainItem] = []
     var showDebugActions: Bool = false
     var isLoading: Bool = false
+    @Presents var alert: AlertState<Action.Alert>?
   }
 
   enum Action {
@@ -32,6 +33,13 @@ struct DiagnosticFeature {
     case keychainItemDeleted
     case truncateFilesButtonTapped
     case filesTruncated
+    case showError(AppError)
+    case alert(PresentationAction<Alert>)
+
+    @CasePathable
+    enum Alert: Equatable {
+      case dismiss
+    }
   }
 
   @Dependency(\.keychainClient) var keychainClient
@@ -90,15 +98,19 @@ struct DiagnosticFeature {
         state.keychainItems.remove(atOffsets: indexSet)
 
         return .run { send in
-          switch item.itemType {
-          case .token:
-            try await keychainClient.deleteJwtToken()
-          case .userData:
-            try await keychainClient.deleteUserData()
-          case .deviceData:
-            try await keychainClient.deleteDeviceData()
+          do {
+            switch item.itemType {
+            case .token:
+              try await keychainClient.deleteJwtToken()
+            case .userData:
+              try await keychainClient.deleteUserData()
+            case .deviceData:
+              try await keychainClient.deleteDeviceData()
+            }
+            await send(.keychainItemDeleted)
+          } catch {
+            await send(.showError(.keychainError(operation: "delete \(item.name)")))
           }
-          await send(.keychainItemDeleted)
         }
 
       case .keychainItemDeleted:
@@ -106,13 +118,33 @@ struct DiagnosticFeature {
 
       case .truncateFilesButtonTapped:
         return .run { send in
-          try await coreDataClient.truncateFiles()
-          await send(.filesTruncated)
+          do {
+            try await coreDataClient.truncateFiles()
+            await send(.filesTruncated)
+          } catch {
+            await send(.showError(.storageError(operation: "truncate files")))
+          }
         }
 
       case .filesTruncated:
         return .none
+
+      case let .showError(appError):
+        state.alert = AlertState {
+          TextState(appError.title)
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState(appError.message)
+        }
+        return .none
+
+      case .alert:
+        return .none
       }
     }
+    .ifLet(\.$alert, action: \.alert)
   }
 }

@@ -55,6 +55,7 @@ struct DiagnosticView: View {
       .onAppear {
         store.send(.onAppear)
       }
+      .alert($store.scope(state: \.alert, action: \.alert))
     }
   }
 }

@@ -142,7 +142,7 @@ struct RootFeature {
         state.main = nil
         // Keep registration status if user was previously registered
         state.login.loginStatus = .unauthenticated
-        state.login.errorMessage = nil
+        state.login.alert = nil
         return .run { [keychainClient] _ in
           // Check if user is registered (has identifier in keychain)
           let isRegistered = (try? await keychainClient.getUserIdentifier()) != nil

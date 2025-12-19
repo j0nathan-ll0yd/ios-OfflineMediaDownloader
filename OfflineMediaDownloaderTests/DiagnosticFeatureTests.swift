@@ -219,6 +219,104 @@ struct DiagnosticFeatureTests {
     #expect(truncateCalled == true)
   }
 
+  // MARK: - Error Handling Tests
+
+  @MainActor
+  @Test("Delete keychain error shows alert")
+  func deleteKeychainError() async throws {
+    var state = DiagnosticFeature.State()
+    state.keychainItems = [
+      KeychainItem(name: "Token", displayValue: "test...", itemType: .token)
+    ]
+
+    let store = TestStore(initialState: state) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.keychainClient.deleteJwtToken = { throw KeychainError.unableToStore }
+    }
+
+    await store.send(.deleteKeychainItem(IndexSet(integer: 0))) {
+      $0.keychainItems.remove(at: 0)
+    }
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Security Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Failed to delete Token secure data.")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("Truncate files error shows alert")
+  func truncateFilesError() async throws {
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.coreDataClient.truncateFiles = { throw CoreDataError.deleteFailed("Permission denied") }
+    }
+
+    await store.send(.truncateFilesButtonTapped)
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Storage Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Failed to truncate files local data.")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("ShowError action creates alert state")
+  func showErrorCreatesAlert() async throws {
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    }
+
+    await store.send(.showError(.keychainError(operation: "read"))) {
+      $0.alert = AlertState {
+        TextState("Security Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Failed to read secure data.")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("Alert dismiss clears alert state")
+  func alertDismissClearsState() async throws {
+    var state = DiagnosticFeature.State()
+    state.alert = AlertState {
+      TextState("Test")
+    } actions: {
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
+
+    let store = TestStore(initialState: state) {
+      DiagnosticFeature()
+    }
+
+    await store.send(.alert(.dismiss)) {
+      $0.alert = nil
+    }
+  }
+
   // MARK: - Initial State Tests
 
   @MainActor
@@ -228,6 +326,7 @@ struct DiagnosticFeatureTests {
     #expect(state.keychainItems.isEmpty)
     #expect(state.showDebugActions == false)
     #expect(state.isLoading == false)
+    #expect(state.alert == nil)
   }
 
   // MARK: - KeychainItem Tests

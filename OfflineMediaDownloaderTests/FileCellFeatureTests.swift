@@ -89,7 +89,7 @@ struct FileCellFeatureTests {
   }
 
   @MainActor
-  @Test("Download failure resets state and logs error")
+  @Test("Download failure resets state and shows alert")
   func downloadFails() async throws {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
@@ -112,6 +112,57 @@ struct FileCellFeatureTests {
     await store.receive(\.downloadFailed) {
       $0.isDownloading = false
       $0.downloadProgress = 0
+      $0.alert = AlertState {
+        TextState("Download Failed")
+      } actions: {
+        ButtonState(action: .retryDownload) {
+          TextState("Retry")
+        }
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Failed to download \"Test Video.mp4\": Network timeout")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("Download failure retry triggers download")
+  func downloadFailureRetry() async throws {
+    var state = FileCellFeature.State(file: TestData.sampleFile)
+    state.alert = AlertState {
+      TextState("Download Failed")
+    } actions: {
+      ButtonState(action: .retryDownload) {
+        TextState("Retry")
+      }
+    }
+
+    let store = TestStore(initialState: state) {
+      FileCellFeature()
+    } withDependencies: {
+      $0.downloadClient.downloadFile = { _, _ in
+        AsyncStream { continuation in
+          continuation.yield(.completed(localURL: URL(fileURLWithPath: "/tmp/test.mp4")))
+          continuation.finish()
+        }
+      }
+    }
+
+    await store.send(.alert(.presented(.retryDownload))) {
+      $0.alert = nil
+    }
+
+    await store.receive(\.downloadButtonTapped) {
+      $0.isDownloading = true
+      $0.downloadProgress = 0
+    }
+
+    await store.receive(\.downloadCompleted) {
+      $0.isDownloading = false
+      $0.downloadProgress = 1.0
+      $0.isDownloaded = true
     }
   }
 

@@ -47,7 +47,7 @@ struct LoginFeature: Reducer {
   struct State: Equatable {
     var registrationStatus: RegistrationStatus = .unregistered
     var loginStatus: LoginStatus = .unauthenticated
-    var errorMessage: String?
+    @Presents var alert: AlertState<Action.Alert>?
     var pendingUserData: User?
   }
 
@@ -56,7 +56,14 @@ struct LoginFeature: Reducer {
     case loginResponse(Result<LoginResponse, Error>)
     case registrationResponse(Result<LoginResponse, Error>)
     case signInWithAppleButtonTapped(Result<ASAuthorization, Error>)
+    case showError(AppError)
+    case alert(PresentationAction<Alert>)
     case delegate(Delegate)
+
+    @CasePathable
+    enum Alert: Equatable {
+      case dismiss
+    }
 
     @CasePathable
     enum Delegate: Equatable {
@@ -87,14 +94,13 @@ struct LoginFeature: Reducer {
     Reduce { state, action in
       switch action {
       case .loginButtonTapped:
-        state.errorMessage = nil
+        state.alert = nil
         return .none
 
       case let .loginResponse(.success(response)):
         debugPrint("LoginFeature: loginResponse success, body: \(String(describing: response.body))")
         guard let token = response.body?.token else {
-          state.errorMessage = "Invalid response: missing token"
-          return .none
+          return .send(.showError(.loginFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
         print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
@@ -109,8 +115,7 @@ struct LoginFeature: Reducer {
       case let .registrationResponse(.success(response)):
         debugPrint("LoginFeature: registrationResponse success, body: \(String(describing: response.body))")
         guard let token = response.body?.token else {
-          state.errorMessage = "Invalid response: missing token"
-          return .none
+          return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
         print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
@@ -129,12 +134,10 @@ struct LoginFeature: Reducer {
         }
 
       case let .loginResponse(.failure(error)):
-        state.errorMessage = error.localizedDescription
-        return .none
+        return .send(.showError(AppError.from(error)))
 
       case let .registrationResponse(.failure(error)):
-        state.errorMessage = error.localizedDescription
-        return .none
+        return .send(.showError(AppError.from(error)))
 
       case let .signInWithAppleButtonTapped(.success(result)):
         // Store pending user data for registration
@@ -146,7 +149,21 @@ struct LoginFeature: Reducer {
         }.cancellable(id: CancelID.signIn, cancelInFlight: true)
 
       case let .signInWithAppleButtonTapped(.failure(error)):
-        state.errorMessage = error.localizedDescription
+        return .send(.showError(AppError.from(error)))
+
+      case let .showError(appError):
+        state.alert = AlertState {
+          TextState(appError.title)
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState(appError.message)
+        }
+        return .none
+
+      case .alert:
         return .none
 
       case .delegate:
@@ -154,6 +171,7 @@ struct LoginFeature: Reducer {
         return .none
       }
     }
+    .ifLet(\.$alert, action: \.alert)
   }
 }
 
@@ -164,10 +182,6 @@ struct LoginView: View {
     ZStack {
       yellow.edgesIgnoringSafeArea(.all)
       VStack {
-        if store.errorMessage != nil {
-          ErrorMessageView(message: store.errorMessage!)
-          Spacer().frame(height: 25)
-        }
         RegistrationStatusView(status: store.registrationStatus)
         Spacer().frame(height: 25)
         LoginStatusView(status: store.loginStatus)
@@ -196,6 +210,7 @@ struct LoginView: View {
         .frame(width: 250, height: 50)
       }
     }
+    .alert($store.scope(state: \.alert, action: \.alert))
   }
 }
 

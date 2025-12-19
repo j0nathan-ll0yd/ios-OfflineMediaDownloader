@@ -189,7 +189,7 @@ struct RootFeatureTests {
       $0.isAuthenticated = false
       $0.main = nil
       $0.login.loginStatus = .unauthenticated
-      $0.login.errorMessage = nil
+      $0.login.alert = nil
     }
   }
 

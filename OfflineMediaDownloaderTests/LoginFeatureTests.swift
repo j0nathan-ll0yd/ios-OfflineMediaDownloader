@@ -25,40 +25,70 @@ struct LoginFeatureTests {
   }
 
   @MainActor
-  @Test("Login response with nil body sets error message")
+  @Test("Login response with nil body shows alert")
   func loginResponseNilBody() async throws {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
 
-    await store.send(.loginResponse(.success(TestData.loginResponseNilBody))) {
-      $0.errorMessage = "Invalid response: missing token"
+    await store.send(.loginResponse(.success(TestData.loginResponseNilBody)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Login Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Invalid response: missing token")
+      }
     }
   }
 
   // MARK: - Login Failure Tests
 
   @MainActor
-  @Test("Login failure sets error message")
+  @Test("Login failure shows alert")
   func loginFailure() async throws {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
 
-    await store.send(.loginResponse(.failure(TestData.TestNetworkError.serverError))) {
-      $0.errorMessage = "Internal server error"
+    await store.send(.loginResponse(.failure(TestData.TestNetworkError.serverError)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Server Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Internal server error")
+      }
     }
   }
 
   @MainActor
-  @Test("Network error during login shows connection message")
+  @Test("Network error during login shows connection alert")
   func loginNetworkError() async throws {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
 
-    await store.send(.loginResponse(.failure(TestData.TestNetworkError.notConnected))) {
-      $0.errorMessage = "The Internet connection appears to be offline."
+    await store.send(.loginResponse(.failure(TestData.TestNetworkError.notConnected)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("No Connection")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Please check your internet connection and try again.")
+      }
     }
   }
 
@@ -86,7 +116,7 @@ struct LoginFeatureTests {
   }
 
   @MainActor
-  @Test("Registration response with nil body sets error message")
+  @Test("Registration response with nil body shows alert")
   func registrationResponseNilBody() async throws {
     var state = LoginFeature.State()
     state.pendingUserData = TestData.sampleUser
@@ -95,8 +125,18 @@ struct LoginFeatureTests {
       LoginFeature()
     }
 
-    await store.send(.registrationResponse(.success(TestData.loginResponseNilBody))) {
-      $0.errorMessage = "Invalid response: missing token"
+    await store.send(.registrationResponse(.success(TestData.loginResponseNilBody)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Registration Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Invalid response: missing token")
+      }
     }
   }
 
@@ -112,9 +152,18 @@ struct LoginFeatureTests {
       LoginFeature()
     }
 
-    await store.send(.registrationResponse(.failure(TestData.TestNetworkError.serverError))) {
-      $0.errorMessage = "Internal server error"
-      // pendingUserData should still be preserved
+    await store.send(.registrationResponse(.failure(TestData.TestNetworkError.serverError)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Server Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Internal server error")
+      }
     }
 
     // Verify pendingUserData is still set
@@ -125,35 +174,47 @@ struct LoginFeatureTests {
   // Note: ASAuthorization cannot be easily mocked, so we only test error handling
 
   @MainActor
-  @Test("Sign in with Apple failure shows error message")
+  @Test("Sign in with Apple failure shows alert")
   func signInWithAppleFailure() async throws {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
 
-    await store.send(.signInWithAppleButtonTapped(.failure(TestData.TestNetworkError.serverError))) {
-      $0.errorMessage = "Internal server error"
+    await store.send(.signInWithAppleButtonTapped(.failure(TestData.TestNetworkError.serverError)))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Server Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Internal server error")
+      }
     }
   }
-
-  // Note: Keychain storage error tests removed due to TCA's strict effect verification.
-  // When the effect throws, TCA expects specific error handling which isn't implemented.
-  // This scenario is best tested through integration tests.
 
   // MARK: - Login Button Tests
 
   @MainActor
-  @Test("Login button clears error message")
-  func loginButtonClearsError() async throws {
+  @Test("Login button clears alert")
+  func loginButtonClearsAlert() async throws {
     var state = LoginFeature.State()
-    state.errorMessage = "Previous error"
+    state.alert = AlertState {
+      TextState("Previous Error")
+    } actions: {
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
 
     let store = TestStore(initialState: state) {
       LoginFeature()
     }
 
     await store.send(.loginButtonTapped) {
-      $0.errorMessage = nil
+      $0.alert = nil
     }
   }
 
@@ -165,7 +226,50 @@ struct LoginFeatureTests {
     let state = LoginFeature.State()
     #expect(state.loginStatus == .unauthenticated)
     #expect(state.registrationStatus == .unregistered)
-    #expect(state.errorMessage == nil)
+    #expect(state.alert == nil)
     #expect(state.pendingUserData == nil)
+  }
+
+  // MARK: - ShowError Tests
+
+  @MainActor
+  @Test("ShowError action creates alert state")
+  func showErrorCreatesAlert() async throws {
+    let store = TestStore(initialState: LoginFeature.State()) {
+      LoginFeature()
+    }
+
+    await store.send(.showError(.invalidAppleCredential)) {
+      $0.alert = AlertState {
+        TextState("Sign In Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Could not verify your Apple ID credentials. Please try again.")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("Alert dismiss clears alert state")
+  func alertDismissClearsState() async throws {
+    var state = LoginFeature.State()
+    state.alert = AlertState {
+      TextState("Test")
+    } actions: {
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
+
+    let store = TestStore(initialState: state) {
+      LoginFeature()
+    }
+
+    await store.send(.alert(.dismiss)) {
+      $0.alert = nil
+    }
   }
 }
