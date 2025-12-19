@@ -66,7 +66,9 @@ jobs:
           xcodebuild -resolvePackageDependencies \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -clonedSourcePackagesDirPath SourcePackages
+            -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
 
       - name: Find Simulator
         id: simulator
@@ -102,6 +104,8 @@ jobs:
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
             -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             | xcpretty --color
 
@@ -113,6 +117,8 @@ jobs:
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
             -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             | xcpretty --color --report junit --output test-results.xml
@@ -199,5 +205,7 @@ jobs:
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
             -configuration Release \
             -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             | xcpretty --color
