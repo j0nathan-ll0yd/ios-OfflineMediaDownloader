@@ -107,7 +107,7 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty --color
+            2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
 
       - name: Run Tests
         run: |
@@ -178,6 +178,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
+      - name: Resolve Dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
+
       - name: Find Simulator
         id: simulator
         run: |
@@ -208,4 +217,4 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty --color
+            2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
