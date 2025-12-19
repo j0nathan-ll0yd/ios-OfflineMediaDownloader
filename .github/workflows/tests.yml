@@ -167,15 +167,21 @@ jobs:
             echo "### Test Results" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            # Parse test counts from JUnit XML
-            TESTS=$(grep -o 'tests="[0-9]*"' test-results.xml | head -1 | grep -o '[0-9]*')
-            FAILURES=$(grep -o 'failures="[0-9]*"' test-results.xml | head -1 | grep -o '[0-9]*')
+            # Parse test counts from JUnit XML (with fallbacks for empty results)
+            TESTS=$(grep -o 'tests="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
+            FAILURES=$(grep -o 'failures="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
+
+            if [ -z "$TESTS" ]; then TESTS="0"; fi
+            if [ -z "$FAILURES" ]; then FAILURES="0"; fi
 
             if [ "$FAILURES" = "0" ]; then
               echo "✅ All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ $FAILURES of $TESTS tests failed" >> $GITHUB_STEP_SUMMARY
             fi
+          else
+            echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No test results file found" >> $GITHUB_STEP_SUMMARY
           fi
 
   build-check:
