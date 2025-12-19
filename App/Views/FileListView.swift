@@ -144,83 +144,33 @@ struct FileListView: View {
 
   var body: some View {
     NavigationStack {
-      Group {
-        if store.isLoading && store.files.isEmpty {
-          ProgressView("Loading files...")
-        } else if store.files.isEmpty {
-          VStack(spacing: 16) {
-            Image(systemName: "film.stack")
-              .font(.system(size: 60))
-              .foregroundColor(.secondary)
-            Text("No files yet")
-              .font(.headline)
-            Text("Tap + to add a video from your clipboard")
-              .font(.subheadline)
-              .foregroundColor(.secondary)
+      fileListContent
+        .navigationTitle("Files")
+        .toolbar { toolbarContent }
+        .confirmationDialog(
+          "Add Video",
+          isPresented: Binding(
+            get: { store.showAddConfirmation },
+            set: { _ in store.send(.confirmationDismissed) }
+          ),
+          titleVisibility: .visible
+        ) {
+          Button("From Clipboard") {
+            store.send(.addFromClipboard)
           }
-        } else {
-          List {
-            ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
-              FileCellView(store: cellStore)
-            }
-            .onDelete { indexSet in
-              store.send(.deleteFiles(indexSet))
-            }
-          }
-          .refreshable {
-            store.send(.refreshButtonTapped)
+          Button("Cancel", role: .cancel) {
+            store.send(.confirmationDismissed)
           }
         }
-      }
-      .navigationTitle("Files")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          HStack {
-            if !store.pendingFileIds.isEmpty {
-              NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
-                Image(systemName: "clock.arrow.circlepath")
-                  .foregroundColor(.orange)
-              }
-            }
-
-            Button {
-              store.send(.refreshButtonTapped)
-            } label: {
-              Image(systemName: "arrow.clockwise")
-            }
-            .disabled(store.isLoading)
-
-            Button {
-              store.send(.addButtonTapped)
-            } label: {
-              Image(systemName: "plus")
-            }
-          }
+        .alert($store.scope(state: \.alert, action: \.alert))
+        .navigationDestination(
+          item: $store.scope(state: \.selectedFile, action: \.detail)
+        ) { detailStore in
+          FileDetailView(store: detailStore)
         }
-      }
-      .confirmationDialog(
-        "Add Video",
-        isPresented: Binding(
-          get: { store.showAddConfirmation },
-          set: { _ in store.send(.confirmationDismissed) }
-        ),
-        titleVisibility: .visible
-      ) {
-        // Always show button - validation happens in the action handler
-        // (UIPasteboard.hasStrings can block main thread for >1s on first access)
-        Button("From Clipboard") {
-          store.send(.addFromClipboard)
-        }
-        Button("Cancel", role: .cancel) {
-          store.send(.confirmationDismissed)
-        }
-      }
-      .alert($store.scope(state: \.alert, action: \.alert))
     }
     .onAppear {
       store.send(.onAppear)
-      // Pre-warm pasteboard access in background to avoid first-tap latency
-      // (UIPasteboard initialization can block main thread for >1s on first access)
       Task.detached(priority: .background) {
         _ = UIPasteboard.general.hasStrings
       }
@@ -231,17 +181,89 @@ struct FileListView: View {
         set: { _ in store.send(.dismissPlayer) }
       )
     ) { file in
-      if let remoteURL = file.url {
-        let localURL = fileClient.filePath(remoteURL)
-        VideoPlayerView(url: localURL) {
-          store.send(.dismissPlayer)
-        }
-      } else {
-        Text("No URL available for this file")
-          .foregroundColor(.white)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .background(Color.black)
+      videoPlayerContent(for: file)
+    }
+  }
+
+  // MARK: - File List Content
+
+  @ViewBuilder
+  private var fileListContent: some View {
+    if store.isLoading && store.files.isEmpty {
+      ProgressView("Loading files...")
+    } else if store.files.isEmpty {
+      VStack(spacing: 16) {
+        Image(systemName: "film.stack")
+          .font(.system(size: 60))
+          .foregroundColor(.secondary)
+        Text("No files yet")
+          .font(.headline)
+        Text("Tap + to add a video from your clipboard")
+          .font(.subheadline)
+          .foregroundColor(.secondary)
       }
+    } else {
+      List {
+        ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
+          FileCellView(store: cellStore)
+            .contentShape(Rectangle())
+            .onTapGesture {
+              store.send(.fileTapped(cellStore.state))
+            }
+        }
+        .onDelete { indexSet in
+          store.send(.deleteFiles(indexSet))
+        }
+      }
+      .refreshable {
+        store.send(.refreshButtonTapped)
+      }
+    }
+  }
+
+  // MARK: - Toolbar
+
+  @ToolbarContentBuilder
+  private var toolbarContent: some ToolbarContent {
+    ToolbarItem(placement: .topBarTrailing) {
+      HStack {
+        if !store.pendingFileIds.isEmpty {
+          NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
+            Image(systemName: "clock.arrow.circlepath")
+              .foregroundColor(.orange)
+          }
+        }
+
+        Button {
+          store.send(.refreshButtonTapped)
+        } label: {
+          Image(systemName: "arrow.clockwise")
+        }
+        .disabled(store.isLoading)
+
+        Button {
+          store.send(.addButtonTapped)
+        } label: {
+          Image(systemName: "plus")
+        }
+      }
+    }
+  }
+
+  // MARK: - Video Player
+
+  @ViewBuilder
+  private func videoPlayerContent(for file: File) -> some View {
+    if let remoteURL = file.url {
+      let localURL = fileClient.filePath(remoteURL)
+      VideoPlayerView(url: localURL) {
+        store.send(.dismissPlayer)
+      }
+    } else {
+      Text("No URL available for this file")
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
   }
 }

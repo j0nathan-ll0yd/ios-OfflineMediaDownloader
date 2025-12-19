@@ -10,6 +10,7 @@ struct FileListFeature {
     var pendingFileIds: [String] = []
     var isLoading: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
+    @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
     var playingFile: File?
     /// Stores the pending URL for retry actions
@@ -31,6 +32,8 @@ struct FileListFeature {
     case deleteFiles(IndexSet)
     case dismissPlayer
     case alert(PresentationAction<Alert>)
+    case detail(PresentationAction<FileDetailFeature.Action>)
+    case fileTapped(FileCellFeature.State)
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
@@ -262,9 +265,35 @@ struct FileListFeature {
         // Trigger onAppear for the specific file cell to re-check download status
         return .send(.files(.element(id: fileId, action: .onAppear)))
 
+      case let .fileTapped(fileState):
+        // Navigate to file detail view
+        state.selectedFile = FileDetailFeature.State(
+          file: fileState.file,
+          isDownloaded: fileState.isDownloaded,
+          isDownloading: fileState.isDownloading,
+          downloadProgress: fileState.downloadProgress
+        )
+        return .none
+
+      // Handle delegate actions from FileDetailFeature
+      case let .detail(.presented(.delegate(.fileDeleted(file)))):
+        state.files.remove(id: file.fileId)
+        state.selectedFile = nil
+        return .none
+
+      case let .detail(.presented(.delegate(.playFile(file)))):
+        state.playingFile = file
+        return .none
+
+      case .detail:
+        return .none
+
       case .files:
         return .none
       }
+    }
+    .ifLet(\.$selectedFile, action: \.detail) {
+      FileDetailFeature()
     }
     .forEach(\.files, action: \.files) {
       FileCellFeature()
