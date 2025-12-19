@@ -5,13 +5,51 @@ import UserNotifications
 import AVFoundation
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-  let store = Store(initialState: RootFeature.State()) {
-    #if DEBUG
-    RootFeature()._printChanges()
-    #else
-    RootFeature()
-    #endif
+  /// Check if running as a test host (unit tests hosted by the app)
+  private static var isRunningTests: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
+    NSClassFromString("XCTestCase") != nil
   }
+
+  /// Store is lazy to avoid initialization when running as test host
+  lazy var store: StoreOf<RootFeature> = {
+    // When running tests, use a minimal store with test dependencies
+    if Self.isRunningTests {
+      return Store(initialState: RootFeature.State()) {
+        RootFeature()
+      } withDependencies: {
+        // Override dependencies that may crash in test environment
+        $0.authenticationClient = .testValue
+        $0.keychainClient = KeychainClient(
+          getUserData: { throw KeychainError.unableToStore },
+          getJwtToken: { nil },
+          getDeviceData: { nil },
+          getUserIdentifier: { nil },
+          setUserData: { _ in },
+          setJwtToken: { _ in },
+          setDeviceData: { _ in },
+          deleteUserData: { },
+          deleteJwtToken: { },
+          deleteDeviceData: { }
+        )
+        $0.serverClient = .testValue
+        $0.coreDataClient = .testValue
+        $0.downloadClient = .testValue
+        $0.fileClient = .testValue
+        $0.logger = .testValue
+      }
+    }
+
+    #if DEBUG
+    return Store(initialState: RootFeature.State()) {
+      RootFeature()._printChanges()
+    }
+    #else
+    return Store(initialState: RootFeature.State()) {
+      RootFeature()
+    }
+    #endif
+  }()
 
   func application(
     _ application: UIApplication,
