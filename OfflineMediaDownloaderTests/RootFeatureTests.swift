@@ -16,6 +16,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.authenticationClient.determineLoginStatus = { .unauthenticated }
       $0.keychainClient.getUserIdentifier = { nil }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.didFinishLaunching) {
@@ -35,6 +36,7 @@ struct RootFeatureTests {
       RootFeature()
     } withDependencies: {
       $0.authenticationClient.determineLoginStatus = { .authenticated }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.didFinishLaunching) {
@@ -56,6 +58,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.authenticationClient.determineLoginStatus = { .unauthenticated }
       $0.keychainClient.getUserIdentifier = { "user-123" }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.didFinishLaunching) {
@@ -183,6 +186,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.keychainClient.getUserIdentifier = { "user-123" }
       $0.keychainClient.deleteJwtToken = { }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.main(.delegate(.authenticationRequired))) {
@@ -242,6 +246,7 @@ struct RootFeatureTests {
       RootFeature()
     } withDependencies: {
       $0.fileClient.fileExists = { _ in true }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.backgroundDownloadCompleted(fileId: TestData.sampleFile.fileId))

@@ -101,6 +101,7 @@ struct FileCellFeatureTests {
           continuation.finish()
         }
       }
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.downloadButtonTapped) {

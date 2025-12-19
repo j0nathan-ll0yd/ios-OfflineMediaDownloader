@@ -46,6 +46,7 @@ struct FileCellFeature {
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
+  @Dependency(\.logger) var logger
 
   private enum CancelID { case download }
 
@@ -111,7 +112,7 @@ struct FileCellFeature {
         return .none
 
       case let .downloadFailed(message):
-        print("❌ Download failed: \(message)")
+        logger.error(.download, "Download failed", metadata: ["file": state.file.key, "error": message])
         state.isDownloading = false
         state.downloadProgress = 0
         let fileName = state.file.title ?? state.file.key
