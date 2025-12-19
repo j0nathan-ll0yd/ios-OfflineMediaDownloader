@@ -17,16 +17,19 @@ class ValetUtil {
   }()
 
   private init() {
-    // SecureEnclaveValet may not be available in CI/simulator environments
-    // Check availability before attempting to create it
-    if SecureEnclaveValet.isSupported() {
-      secureEnclave = SecureEnclaveValet.valet(
-        with: Identifier(nonEmpty: ValetUtil.identifier)!,
-        accessControl: .userPresence
-      )
-    } else {
-      secureEnclave = nil
-    }
+    // SecureEnclaveValet is not available in simulator environments
+    // and may fail on devices without Secure Enclave hardware
+    #if targetEnvironment(simulator)
+    secureEnclave = nil
+    #else
+    // Try to create SecureEnclaveValet, but it may fail on older devices
+    // or in certain CI environments
+    secureEnclave = SecureEnclaveValet.valet(
+      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      accessControl: .userPresence
+    )
+    #endif
+
     keychain = Valet.valet(
       with: Identifier(nonEmpty: ValetUtil.identifier)!,
       accessibility: .whenUnlocked
