@@ -88,19 +88,20 @@ jobs:
           echo "Available iPhone devices:"
           xcrun simctl list devices available | grep iPhone || true
 
-          # Find the first available iPhone simulator with a valid UDID
+          # Find an iPhone simulator with iOS 18+ (required by app deployment target)
+          # The jq filter specifically looks for iOS 18.x runtimes
           DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+            jq -r '.devices | to_entries[] | select(.key | contains("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
             head -1)
 
           if [ -n "$DEVICE_INFO" ]; then
             DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
             DEVICE_ID=$(echo "$DEVICE_INFO" | cut -d'|' -f2)
-            echo "Found simulator: $DEVICE_NAME ($DEVICE_ID)"
+            echo "Found iOS 18 simulator: $DEVICE_NAME ($DEVICE_ID)"
             echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
             echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
           else
-            echo "No iPhone simulators found, using generic destination"
+            echo "No iOS 18 iPhone simulators found, using generic destination"
             echo "device=Any iOS Simulator Device" >> "$GITHUB_OUTPUT"
             echo "device_id=" >> "$GITHUB_OUTPUT"
           fi
@@ -224,17 +225,17 @@ jobs:
       - name: Find Simulator
         id: simulator
         run: |
-          # Find the first available iPhone simulator
+          # Find an iPhone simulator with iOS 18+ (required by app deployment target)
           DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+            jq -r '.devices | to_entries[] | select(.key | contains("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
             head -1)
 
           if [ -n "$DEVICE_INFO" ]; then
             DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
-            echo "Found simulator: $DEVICE_NAME"
+            echo "Found iOS 18 simulator: $DEVICE_NAME"
             echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
           else
-            echo "No iPhone simulators found, using generic destination"
+            echo "No iOS 18 iPhone simulators found, using generic destination"
             echo "device=Any iOS Simulator Device" >> "$GITHUB_OUTPUT"
           fi
 
