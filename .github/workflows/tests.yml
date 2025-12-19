@@ -1,0 +1,203 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, main, develop]
+    paths:
+      - 'App/**'
+      - 'OfflineMediaDownloaderTests/**'
+      - 'OfflineMediaDownloader.xcodeproj/**'
+      - 'Package.swift'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [master, main, develop]
+    paths:
+      - 'App/**'
+      - 'OfflineMediaDownloaderTests/**'
+      - 'OfflineMediaDownloader.xcodeproj/**'
+      - 'Package.swift'
+      - '.github/workflows/tests.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: OfflineMediaDownloader
+  PROJECT: OfflineMediaDownloader.xcodeproj
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          # List available Xcode versions
+          ls -la /Applications/ | grep Xcode
+
+          # Select the latest Xcode (adjust path as needed for runner)
+          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH"
+          fi
+
+          # Show selected version
+          xcodebuild -version
+          xcrun simctl list runtimes
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Resolve Dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath SourcePackages
+
+      - name: Find Simulator
+        id: simulator
+        run: |
+          # Find the latest available iOS simulator
+          # Prefer iPhone 17 > iPhone 16 Pro > iPhone 16 > iPhone 15 Pro > iPhone 15
+          SIMULATORS=("iPhone 17" "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15")
+
+          for SIM in "${SIMULATORS[@]}"; do
+            DEVICE_ID=$(xcrun simctl list devices available -j | \
+              jq -r ".devices | to_entries[] | select(.key | contains(\"iOS\")) | .value[] | select(.name == \"$SIM\") | .udid" | \
+              head -1)
+            if [ -n "$DEVICE_ID" ]; then
+              echo "Found simulator: $SIM ($DEVICE_ID)"
+              echo "device=$SIM" >> "$GITHUB_OUTPUT"
+              echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
+          # Fallback: use first available iPhone simulator
+          FALLBACK=$(xcrun simctl list devices available -j | \
+            jq -r '.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone")) | .name' | \
+            head -1)
+          echo "Using fallback simulator: $FALLBACK"
+          echo "device=$FALLBACK" >> "$GITHUB_OUTPUT"
+
+      - name: Build for Testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color
+
+      - name: Run Tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color --report junit --output test-results.xml
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            TestResults.xcresult
+            test-results.xml
+          retention-days: 7
+
+      - name: Test Summary
+        if: always()
+        run: |
+          if [ -f test-results.xml ]; then
+            echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Parse test counts from JUnit XML
+            TESTS=$(grep -o 'tests="[0-9]*"' test-results.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' test-results.xml | head -1 | grep -o '[0-9]*')
+
+            if [ "$FAILURES" = "0" ]; then
+              echo "✅ All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ $FAILURES of $TESTS tests failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+  build-check:
+    name: Build Check (Release)
+    runs-on: macos-15
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH"
+          fi
+          xcodebuild -version
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Find Simulator
+        id: simulator
+        run: |
+          SIMULATORS=("iPhone 17" "iPhone 16 Pro" "iPhone 16" "iPhone 15 Pro" "iPhone 15")
+          for SIM in "${SIMULATORS[@]}"; do
+            DEVICE_ID=$(xcrun simctl list devices available -j | \
+              jq -r ".devices | to_entries[] | select(.key | contains(\"iOS\")) | .value[] | select(.name == \"$SIM\") | .udid" | \
+              head -1)
+            if [ -n "$DEVICE_ID" ]; then
+              echo "device=$SIM" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          FALLBACK=$(xcrun simctl list devices available -j | \
+            jq -r '.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone")) | .name' | \
+            head -1)
+          echo "device=$FALLBACK" >> "$GITHUB_OUTPUT"
+
+      - name: Build Release
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -configuration Release \
+            -clonedSourcePackagesDirPath SourcePackages \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --color
