@@ -36,6 +36,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create Development Configuration
+        run: |
+          cat > Development.xcconfig << 'EOF'
+          // CI Configuration - placeholder values for testing
+          MEDIA_DOWNLOADER_API_KEY = CI_PLACEHOLDER_KEY
+          MEDIA_DOWNLOADER_BASE_PATH = https:/$()/example.com/
+          EOF
+
       - name: Select Xcode
         run: |
           # List available Xcode versions
@@ -159,6 +167,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Create Development Configuration
+        run: |
+          cat > Development.xcconfig << 'EOF'
+          // CI Configuration - placeholder values for testing
+          MEDIA_DOWNLOADER_API_KEY = CI_PLACEHOLDER_KEY
+          MEDIA_DOWNLOADER_BASE_PATH = https:/$()/example.com/
+          EOF
 
       - name: Select Xcode
         run: |
