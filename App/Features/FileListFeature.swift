@@ -9,9 +9,11 @@ struct FileListFeature {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
     var pendingFileIds: [String] = []
     var isLoading: Bool = false
-    var errorMessage: String?
+    @Presents var alert: AlertState<Action.Alert>?
     var showAddConfirmation: Bool = false
     var playingFile: File?
+    /// Stores the pending URL for retry actions
+    var pendingAddUrl: URL?
   }
 
   enum Action {
@@ -20,8 +22,7 @@ struct FileListFeature {
     case addButtonTapped
     case addFromClipboard
     case confirmationDismissed
-    case clearError
-    case setError(String)
+    case showError(AppError)
     case addPendingFileId(String)
     case localFilesLoaded([File])
     case remoteFilesResponse(Result<FileResponse, Error>)
@@ -29,11 +30,19 @@ struct FileListFeature {
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
     case dismissPlayer
+    case alert(PresentationAction<Alert>)
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case refreshFileState(String)  // fileId
     case delegate(Delegate)
+
+    @CasePathable
+    enum Alert: Equatable {
+      case retryRefresh
+      case retryAddFile
+      case dismiss
+    }
 
     @CasePathable
     enum Delegate: Equatable {
@@ -103,12 +112,12 @@ struct FileListFeature {
 
       case let .remoteFilesResponse(.failure(error)):
         state.isLoading = false
+        let appError = AppError.from(error)
         // Check if this is an auth error - redirect to login
-        if let serverError = error as? ServerClientError, serverError == .unauthorized {
+        if appError.requiresReauth {
           return .send(.delegate(.authenticationRequired))
         }
-        state.errorMessage = error.localizedDescription
-        return .none
+        return .send(.showError(appError))
 
       case .addButtonTapped:
         state.showAddConfirmation = true
@@ -118,12 +127,46 @@ struct FileListFeature {
         state.showAddConfirmation = false
         return .none
 
-      case .clearError:
-        state.errorMessage = nil
+      case let .showError(appError):
+        // Build alert with optional retry button
+        if appError.isRetryable {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(action: .retryRefresh) {
+              TextState("Retry")
+            }
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        } else {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        }
         return .none
 
-      case let .setError(message):
-        state.errorMessage = message
+      case .alert(.presented(.retryRefresh)):
+        return .send(.refreshButtonTapped)
+
+      case .alert(.presented(.retryAddFile)):
+        guard let url = state.pendingAddUrl else { return .none }
+        return .run { send in
+          await send(.addFileResponse(Result {
+            try await serverClient.addFile(url: url)
+          }))
+        }
+
+      case .alert:
         return .none
 
       case let .addPendingFileId(fileId):
@@ -144,7 +187,7 @@ struct FileListFeature {
           }.value
 
           guard let (url, youtubeId) = result else {
-            await send(.setError("Invalid URL in clipboard"))
+            await send(.showError(.invalidClipboardUrl))
             return
           }
 
@@ -158,15 +201,16 @@ struct FileListFeature {
         }
 
       case .addFileResponse(.success):
+        state.pendingAddUrl = nil
         return .none
 
       case let .addFileResponse(.failure(error)):
+        let appError = AppError.from(error)
         // Check if this is an auth error - redirect to login
-        if let serverError = error as? ServerClientError, serverError == .unauthorized {
+        if appError.requiresReauth {
           return .send(.delegate(.authenticationRequired))
         }
-        state.errorMessage = error.localizedDescription
-        return .none
+        return .send(.showError(appError))
 
       case .delegate:
         return .none
@@ -225,5 +269,6 @@ struct FileListFeature {
     .forEach(\.files, action: \.files) {
       FileCellFeature()
     }
+    .ifLet(\.$alert, action: \.alert)
   }
 }

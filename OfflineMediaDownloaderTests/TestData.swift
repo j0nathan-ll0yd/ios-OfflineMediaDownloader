@@ -149,8 +149,20 @@ enum TestData {
     let message: String
     var errorDescription: String? { message }
 
-    static let notConnected = TestNetworkError(message: "The Internet connection appears to be offline.")
-    static let timeout = TestNetworkError(message: "The request timed out.")
+    /// NSError with NSURLErrorNotConnectedToInternet - properly detected by AppError.from()
+    static let notConnected = NSError(
+      domain: NSURLErrorDomain,
+      code: NSURLErrorNotConnectedToInternet,
+      userInfo: [NSLocalizedDescriptionKey: "The Internet connection appears to be offline."]
+    )
+
+    /// NSError with NSURLErrorTimedOut - properly detected by AppError.from()
+    static let timeout = NSError(
+      domain: NSURLErrorDomain,
+      code: NSURLErrorTimedOut,
+      userInfo: [NSLocalizedDescriptionKey: "The request timed out."]
+    )
+
     static let serverError = TestNetworkError(message: "Internal server error")
   }
 }

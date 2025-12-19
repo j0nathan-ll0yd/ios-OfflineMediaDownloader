@@ -106,8 +106,8 @@ struct FileListFeatureTests {
   // MARK: - Error Handling Tests
 
   @MainActor
-  @Test("Network error shows error message")
-  func networkErrorShowsMessage() async throws {
+  @Test("Network error shows alert with retry button")
+  func networkErrorShowsAlert() async throws {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
@@ -120,7 +120,21 @@ struct FileListFeatureTests {
 
     await store.receive(\.remoteFilesResponse.failure) {
       $0.isLoading = false
-      $0.errorMessage = "The Internet connection appears to be offline."
+    }
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("No Connection")
+      } actions: {
+        ButtonState(action: .retryRefresh) {
+          TextState("Retry")
+        }
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Please check your internet connection and try again.")
+      }
     }
   }
 
@@ -145,8 +159,8 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Server error with message shows error")
-  func serverErrorShowsMessage() async throws {
+  @Test("Server error with message shows alert")
+  func serverErrorShowsAlert() async throws {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
@@ -159,34 +173,94 @@ struct FileListFeatureTests {
 
     await store.receive(\.remoteFilesResponse.failure) {
       $0.isLoading = false
-      $0.errorMessage = "Database unavailable"
+    }
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Server Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Database unavailable")
+      }
     }
   }
 
   @MainActor
-  @Test("Clear error action resets error message")
-  func clearErrorResetsMessage() async throws {
+  @Test("ShowError action creates alert state")
+  func showErrorCreatesAlert() async throws {
+    let store = TestStore(initialState: FileListFeature.State()) {
+      FileListFeature()
+    }
+
+    await store.send(.showError(.invalidClipboardUrl)) {
+      $0.alert = AlertState {
+        TextState("Invalid URL")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("The clipboard does not contain a valid URL.")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("Alert dismiss clears alert state")
+  func alertDismissClearsState() async throws {
     var state = FileListFeature.State()
-    state.errorMessage = "Some error"
+    state.alert = AlertState {
+      TextState("Test")
+    } actions: {
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     }
 
-    await store.send(.clearError) {
-      $0.errorMessage = nil
+    await store.send(.alert(.dismiss)) {
+      $0.alert = nil
     }
   }
 
   @MainActor
-  @Test("Set error action sets error message")
-  func setErrorSetsMessage() async throws {
-    let store = TestStore(initialState: FileListFeature.State()) {
-      FileListFeature()
+  @Test("Alert retry triggers refresh")
+  func alertRetryTriggersRefresh() async throws {
+    var state = FileListFeature.State()
+    state.alert = AlertState {
+      TextState("No Connection")
+    } actions: {
+      ButtonState(action: .retryRefresh) {
+        TextState("Retry")
+      }
     }
 
-    await store.send(.setError("Custom error")) {
-      $0.errorMessage = "Custom error"
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { TestData.validFileResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+    }
+
+    await store.send(.alert(.presented(.retryRefresh))) {
+      $0.alert = nil
+    }
+
+    await store.receive(\.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+        FileCellFeature.State(file: $0)
+      })
     }
   }
 
@@ -212,6 +286,7 @@ struct FileListFeatureTests {
   @Test("Add file success adds pending file ID")
   func addFileAddsPendingId() async throws {
     var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -224,7 +299,9 @@ struct FileListFeatureTests {
       $0.pendingFileIds = ["youtube-video-id"]
     }
 
-    await store.send(.addFileResponse(.success(TestData.validAddFileResponse)))
+    await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
+      $0.pendingAddUrl = nil
+    }
   }
 
   @MainActor
@@ -239,14 +316,24 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Add file server error shows error message")
+  @Test("Add file server error shows alert")
   func addFileServerError() async throws {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL")))) {
-      $0.errorMessage = "Invalid URL"
+    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL"))))
+
+    await store.receive(\.showError) {
+      $0.alert = AlertState {
+        TextState("Server Error")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Invalid URL")
+      }
     }
   }
 

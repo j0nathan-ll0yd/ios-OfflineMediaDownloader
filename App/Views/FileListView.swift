@@ -214,19 +214,7 @@ struct FileListView: View {
           store.send(.confirmationDismissed)
         }
       }
-      .alert(
-        "Error",
-        isPresented: Binding(
-          get: { store.errorMessage != nil },
-          set: { if !$0 { store.send(.clearError) } }
-        )
-      ) {
-        Button("OK") {
-          store.send(.clearError)
-        }
-      } message: {
-        Text(store.errorMessage ?? "")
-      }
+      .alert($store.scope(state: \.alert, action: \.alert))
     }
     .onAppear {
       store.send(.onAppear)
