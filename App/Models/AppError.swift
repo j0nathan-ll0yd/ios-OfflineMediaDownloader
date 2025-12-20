@@ -153,16 +153,15 @@ extension AppError {
     }
 
     // Check for network-related NSErrors
-    if let nsError = error as? NSError {
-      if nsError.domain == NSURLErrorDomain {
-        switch nsError.code {
-        case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
-          return .networkUnavailable
-        case NSURLErrorTimedOut:
-          return .timeout
-        default:
-          break
-        }
+    let nsError = error as NSError
+    if nsError.domain == NSURLErrorDomain {
+      switch nsError.code {
+      case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
+        return .networkUnavailable
+      case NSURLErrorTimedOut:
+        return .timeout
+      default:
+        break
       }
     }
 

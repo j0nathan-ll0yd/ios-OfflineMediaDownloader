@@ -1,4 +1,4 @@
-public enum RegistrationStatus: Equatable {
+public enum RegistrationStatus: Equatable, Sendable {
   case registered
   case unregistered
 }

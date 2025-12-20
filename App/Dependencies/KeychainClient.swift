@@ -70,6 +70,15 @@ extension DependencyValues {
 
 enum KeychainError: Error {
   case unableToStore
+  case itemNotFound
+}
+
+/// Checks if an error represents "item not found" in the keychain.
+/// Valet throws its own KeychainError.itemNotFound, which we need to detect.
+private func isItemNotFoundError(_ error: Error) -> Bool {
+  // Check the string description since Valet's KeychainError is internal
+  let errorDescription = String(describing: error)
+  return errorDescription.contains("itemNotFound")
 }
 
 // MARK: - Live API implementation
@@ -88,9 +97,8 @@ extension KeychainClient: DependencyKey {
       do {
         return try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtToken.rawValue)
       } catch {
-        // errSecItemNotFound (-25300) is expected when token doesn't exist
-        let nsError = error as NSError
-        if nsError.code != -25300 {
+        // itemNotFound is expected when token doesn't exist - only log unexpected errors
+        if !isItemNotFoundError(error) {
           print("⚠️ KeychainClient.getJwtToken unexpected error: \(error)")
         }
         return nil
@@ -101,8 +109,8 @@ extension KeychainClient: DependencyKey {
         let endpointArn = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.endpointArn.rawValue)
         return Device(endpointArn: endpointArn)
       } catch {
-        let nsError = error as NSError
-        if nsError.code != -25300 {
+        // itemNotFound is expected when device data doesn't exist
+        if !isItemNotFoundError(error) {
           print("⚠️ KeychainClient.getDeviceData unexpected error: \(error)")
         }
         return nil
@@ -112,8 +120,8 @@ extension KeychainClient: DependencyKey {
       do {
         return try ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue)
       } catch {
-        let nsError = error as NSError
-        if nsError.code != -25300 {
+        // itemNotFound is expected when user hasn't registered
+        if !isItemNotFoundError(error) {
           print("⚠️ KeychainClient.getUserIdentifier unexpected error: \(error)")
         }
         return nil

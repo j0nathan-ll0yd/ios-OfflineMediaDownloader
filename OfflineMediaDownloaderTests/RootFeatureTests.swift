@@ -9,13 +9,14 @@ struct RootFeatureTests {
   // MARK: - Launch Flow Tests
 
   @MainActor
-  @Test("didFinishLaunching sets up app and checks login status - unauthenticated")
-  func didFinishLaunchingUnauthenticated() async throws {
+  @Test("didFinishLaunching sets up app and checks auth state - unregistered user")
+  func didFinishLaunchingUnregistered() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
-      $0.authenticationClient.determineLoginStatus = { .unauthenticated }
-      $0.keychainClient.getUserIdentifier = { nil }
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+      }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -23,9 +24,10 @@ struct RootFeatureTests {
       $0.launchStatus = "Checking authentication..."
     }
 
-    await store.receive(\.loginStatusResponse) {
+    await store.receive(\.authStateResponse) {
       $0.isLaunching = false
       $0.isAuthenticated = false
+      $0.login.registrationStatus = .unregistered
     }
   }
 
@@ -35,7 +37,9 @@ struct RootFeatureTests {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
-      $0.authenticationClient.determineLoginStatus = { .authenticated }
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .authenticated, registrationStatus: .registered)
+      }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -43,9 +47,10 @@ struct RootFeatureTests {
       $0.launchStatus = "Checking authentication..."
     }
 
-    await store.receive(\.loginStatusResponse) {
+    await store.receive(\.authStateResponse) {
       $0.isLaunching = false
       $0.isAuthenticated = true
+      $0.login.registrationStatus = .registered
       $0.main = MainFeature.State()
     }
   }
@@ -56,8 +61,9 @@ struct RootFeatureTests {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
-      $0.authenticationClient.determineLoginStatus = { .unauthenticated }
-      $0.keychainClient.getUserIdentifier = { "user-123" }
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+      }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -65,12 +71,9 @@ struct RootFeatureTests {
       $0.launchStatus = "Checking authentication..."
     }
 
-    await store.receive(\.loginStatusResponse) {
+    await store.receive(\.authStateResponse) {
       $0.isLaunching = false
       $0.isAuthenticated = false
-    }
-
-    await store.receive(\.setRegistrationStatus) {
       $0.login.registrationStatus = .registered
     }
   }
@@ -268,6 +271,8 @@ struct RootFeatureTests {
 
     let store = TestStore(initialState: state) {
       RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.backgroundDownloadFailed(fileId: "file-123", error: "Network error"))
@@ -283,6 +288,8 @@ struct RootFeatureTests {
 
     let store = TestStore(initialState: state) {
       RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.processedPushNotification(.unknown))

@@ -31,8 +31,7 @@ struct RootFeature {
 
   enum Action {
     case didFinishLaunching
-    case loginStatusResponse(LoginStatus)
-    case setRegistrationStatus(RegistrationStatus)
+    case authStateResponse(AuthState)
     case didRegisterForRemoteNotificationsWithDeviceToken(String)
     case didFailToRegisterForRemoteNotificationsWithError(Error)
     case deviceRegistrationResponse(Result<RegisterDeviceResponse, Error>)
@@ -67,36 +66,26 @@ struct RootFeature {
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
         setupNotifications()
-        return .run { [logger, authenticationClient] send in
-          let loginStatus = try await authenticationClient.determineLoginStatus()
-          logger.info(.lifecycle, "Auth check complete", metadata: ["status": "\(loginStatus)"])
-          await send(.loginStatusResponse(loginStatus))
+        return .run { [authenticationClient] send in
+          let authState = await authenticationClient.determineAuthState()
+          await send(.authStateResponse(authState))
         }
 
-      case let .loginStatusResponse(loginStatus):
-        logger.info(.lifecycle, "Processing login status", metadata: ["status": "\(loginStatus)"])
+      case let .authStateResponse(authState):
+        logger.info(.lifecycle, "Auth state determined", metadata: [
+          "loginStatus": "\(authState.loginStatus)",
+          "registrationStatus": "\(authState.registrationStatus)"
+        ])
         state.isLaunching = false  // Now safe to show appropriate screen
-        if loginStatus == .authenticated {
+        state.login.registrationStatus = authState.registrationStatus
+
+        if authState.isAuthenticated {
           logger.info(.auth, "User is authenticated - showing main view")
           state.isAuthenticated = true
           state.main = MainFeature.State()
         } else {
           logger.info(.auth, "User not authenticated - showing login view")
-          // Check if user was previously registered (has identifier in keychain)
-          // This updates the login screen to show correct registration status
-          return .run { [logger, keychainClient] send in
-            let isRegistered = (try? await keychainClient.getUserIdentifier()) != nil
-            logger.info(.auth, "User registration status", metadata: ["registered": isRegistered ? "true" : "false"])
-            if isRegistered {
-              await send(.setRegistrationStatus(.registered))
-            }
-          }
         }
-        return .none
-
-      case let .setRegistrationStatus(status):
-        logger.debug(.auth, "Setting registration status", metadata: ["status": "\(status)"])
-        state.login.registrationStatus = status
         return .none
 
       case let .didRegisterForRemoteNotificationsWithDeviceToken(token):
@@ -141,16 +130,13 @@ struct RootFeature {
       case .main(.delegate(.authenticationRequired)):
         state.isAuthenticated = false
         state.main = nil
-        // Keep registration status if user was previously registered
+        // Keep registration status - user is still registered, just needs to re-authenticate
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         return .run { [logger, keychainClient] _ in
-          // Check if user is registered (has identifier in keychain)
-          let isRegistered = (try? await keychainClient.getUserIdentifier()) != nil
           // Clear the stored JWT token since it's invalid
           try? await keychainClient.deleteJwtToken()
-          // Note: registrationStatus preserved from previous state
-          logger.info(.auth, "Session expired - redirecting to login", metadata: ["registered": isRegistered ? "true" : "false"])
+          logger.info(.auth, "Session expired - redirecting to login")
         }
 
       // MARK: - Push Notification Handling

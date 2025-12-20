@@ -1,3 +1,4 @@
+import ConcurrencyExtras
 import Foundation
 import Testing
 import ComposableArchitecture
@@ -220,59 +221,59 @@ struct FileCellFeatureTests {
   @MainActor
   @Test("Delete button triggers file deletion from CoreData and filesystem")
   func deleteRemovesFiles() async throws {
-    var coreDataDeleteCalled = false
-    var fileDeleteCalled = false
+    let coreDataDeleteCalled = LockIsolated(false)
+    let fileDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
-      $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled = true }
+      $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in true }
-      $0.fileClient.deleteFile = { _ in fileDeleteCalled = true }
+      $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
     }
 
     await store.send(.deleteButtonTapped)
     await store.receive(\.delegate.fileDeleted)
 
-    #expect(coreDataDeleteCalled == true)
-    #expect(fileDeleteCalled == true)
+    #expect(coreDataDeleteCalled.value == true)
+    #expect(fileDeleteCalled.value == true)
   }
 
   @MainActor
   @Test("Delete skips local file removal if not exists")
   func deleteSkipsIfNotExists() async throws {
-    var fileDeleteCalled = false
+    let fileDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
-      $0.fileClient.deleteFile = { _ in fileDeleteCalled = true }
+      $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
     }
 
     await store.send(.deleteButtonTapped)
     await store.receive(\.delegate.fileDeleted)
 
-    #expect(fileDeleteCalled == false)
+    #expect(fileDeleteCalled.value == false)
   }
 
   @MainActor
   @Test("Delete with nil URL still removes from CoreData")
   func deleteWithNilUrl() async throws {
-    var coreDataDeleteCalled = false
+    let coreDataDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
     } withDependencies: {
-      $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled = true }
+      $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in false }
     }
 
     await store.send(.deleteButtonTapped)
     await store.receive(\.delegate.fileDeleted)
 
-    #expect(coreDataDeleteCalled == true)
+    #expect(coreDataDeleteCalled.value == true)
   }
 
   // MARK: - Play Tests

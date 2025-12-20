@@ -12,6 +12,13 @@ import AuthenticationServices
 
 @DependencyClient
 struct AuthenticationClient {
+  /// Determines the complete authentication state including both login and registration status.
+  /// This is the preferred method for checking auth state on app launch.
+  var determineAuthState: @Sendable () async -> AuthState = {
+    AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+  }
+
+  /// Determines only the login status. Prefer `determineAuthState` for launch flows.
   var determineLoginStatus: @Sendable () async throws -> LoginStatus
 }
 
@@ -29,6 +36,60 @@ enum AuthenticationError: Error {
 // MARK: - Live API implementation
 extension AuthenticationClient: DependencyKey {
   static let liveValue = AuthenticationClient(
+    determineAuthState: {
+      @Dependency(\.keychainClient) var keychainClient
+      @Dependency(\.logger) var logger
+
+      // Check for user identifier in keychain to determine registration status
+      let userIdentifier: String?
+      do {
+        userIdentifier = try await keychainClient.getUserIdentifier()
+      } catch {
+        logger.warning(.auth, "Error reading user identifier from keychain", metadata: ["error": "\(error)"])
+        userIdentifier = nil
+      }
+
+      // No identifier means user has never registered
+      guard let currentUserIdentifier = userIdentifier else {
+        logger.info(.auth, "No user identifier found - user is unregistered")
+        return AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+      }
+
+      // User has registered before - check if their Apple ID credentials are still valid
+      let registrationStatus = RegistrationStatus.registered
+      let appleIDProvider = ASAuthorizationAppleIDProvider()
+
+      let result = await Result {
+        try await appleIDProvider.credentialState(forUserID: currentUserIdentifier)
+      }
+
+      let loginStatus: LoginStatus
+      switch result {
+      case .success(let credentialState):
+        switch credentialState {
+        case .authorized:
+          loginStatus = .authenticated
+          logger.info(.auth, "Apple ID credentials authorized")
+        case .revoked:
+          loginStatus = .unauthenticated
+          logger.info(.auth, "Apple ID credentials revoked")
+        case .notFound:
+          loginStatus = .unauthenticated
+          logger.info(.auth, "Apple ID credentials not found")
+        case .transferred:
+          loginStatus = .unauthenticated
+          logger.info(.auth, "Apple ID credentials transferred")
+        @unknown default:
+          loginStatus = .unauthenticated
+          logger.warning(.auth, "Unknown Apple ID credential state")
+        }
+      case .failure(let error):
+        logger.error(.auth, "Error checking Apple ID credential state", metadata: ["error": "\(error)"])
+        loginStatus = .unauthenticated
+      }
+
+      return AuthState(loginStatus: loginStatus, registrationStatus: registrationStatus)
+    },
     determineLoginStatus: {
       @Dependency(\.keychainClient) var keychainClient
 
@@ -62,6 +123,7 @@ extension AuthenticationClient: DependencyKey {
 // MARK: - Test/Preview implementation
 extension AuthenticationClient {
   static let testValue = AuthenticationClient(
+    determineAuthState: { AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered) },
     determineLoginStatus: { .unauthenticated }
   )
 }
