@@ -2,27 +2,24 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct FileCellFeature {
+struct FileDetailFeature {
   @ObservableState
-  struct State: Equatable, Identifiable {
+  struct State: Equatable {
     var file: File
-    var id: String { file.fileId }
+    var isDownloaded: Bool = false
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
-    var isDownloaded: Bool = false  // Cached to avoid fileClient.fileExists() in view body
     @Presents var alert: AlertState<Action.Alert>?
-
-    /// File is pending when metadata is received but no download URL is available yet
-    var isPending: Bool { file.url == nil }
   }
 
   enum Action {
     case onAppear
     case checkFileExistence(Bool)
-    case playButtonTapped
     case downloadButtonTapped
     case cancelDownloadButtonTapped
+    case playButtonTapped
     case deleteButtonTapped
+    case shareButtonTapped
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
@@ -32,17 +29,17 @@ struct FileCellFeature {
     @CasePathable
     enum Alert: Equatable {
       case retryDownload
+      case confirmDelete
       case dismiss
     }
 
     @CasePathable
     enum Delegate: Equatable {
-      case fileDeleted(File)
       case playFile(File)
+      case fileDeleted(File)
     }
   }
 
-  @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
@@ -54,7 +51,6 @@ struct FileCellFeature {
     Reduce { state, action in
       switch action {
       case .onAppear:
-        // Check file existence in background, cache result in state
         guard let url = state.file.url else { return .none }
         return .run { [fileClient] send in
           let exists = fileClient.fileExists(url)
@@ -65,13 +61,8 @@ struct FileCellFeature {
         state.isDownloaded = exists
         return .none
 
-      case .playButtonTapped:
-        return .send(.delegate(.playFile(state.file)))
-
       case .downloadButtonTapped:
-        guard let remoteURL = state.file.url else {
-          return .none
-        }
+        guard let remoteURL = state.file.url else { return .none }
         state.isDownloading = true
         state.downloadProgress = 0
         let expectedSize = Int64(state.file.size ?? 0)
@@ -108,7 +99,7 @@ struct FileCellFeature {
       case .downloadCompleted:
         state.isDownloading = false
         state.downloadProgress = 1.0
-        state.isDownloaded = true  // Update cached state
+        state.isDownloaded = true
         return .none
 
       case let .downloadFailed(message):
@@ -130,13 +121,34 @@ struct FileCellFeature {
         }
         return .none
 
+      case .playButtonTapped:
+        return .send(.delegate(.playFile(state.file)))
+
+      case .deleteButtonTapped:
+        let fileName = state.file.title ?? state.file.key
+        state.alert = AlertState {
+          TextState("Delete File?")
+        } actions: {
+          ButtonState(role: .destructive, action: .confirmDelete) {
+            TextState("Delete")
+          }
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("Cancel")
+          }
+        } message: {
+          TextState("Are you sure you want to delete \"\(fileName)\"? This action cannot be undone.")
+        }
+        return .none
+
+      case .shareButtonTapped:
+        // Share functionality would be implemented here
+        // For now, this is a placeholder
+        return .none
+
       case .alert(.presented(.retryDownload)):
         return .send(.downloadButtonTapped)
 
-      case .alert:
-        return .none
-
-      case .deleteButtonTapped:
+      case .alert(.presented(.confirmDelete)):
         let file = state.file
         return .run { send in
           try await coreDataClient.deleteFile(file)
@@ -145,6 +157,9 @@ struct FileCellFeature {
           }
           await send(.delegate(.fileDeleted(file)))
         }
+
+      case .alert:
+        return .none
 
       case .delegate:
         return .none

@@ -4,14 +4,36 @@ import Valet
 
 class ValetUtil {
   static var shared: ValetUtil = ValetUtil()
-  var secureEnclave: SecureEnclaveValet
+  var secureEnclave: SecureEnclaveValet?
   var keychain: Valet
-  
-  let identifier = "\(Bundle.main.bundleIdentifier!).Valet"
-  
+
+  // Use a safe identifier that works in both app and test environments
+  static let identifier: String = {
+    if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
+      return "\(bundleId).Valet"
+    }
+    // Fallback for test environments where bundleIdentifier may not be available
+    return "com.test.OfflineMediaDownloader.Valet"
+  }()
+
   private init() {
-    secureEnclave       = SecureEnclaveValet.valet(with: Identifier(nonEmpty: identifier)!, accessControl: .userPresence)
-    keychain            = Valet.valet(with: Identifier(nonEmpty: identifier)!, accessibility: .whenUnlocked)
+    // SecureEnclaveValet is not available in simulator environments
+    // and may fail on devices without Secure Enclave hardware
+    #if targetEnvironment(simulator)
+    secureEnclave = nil
+    #else
+    // Try to create SecureEnclaveValet, but it may fail on older devices
+    // or in certain CI environments
+    secureEnclave = SecureEnclaveValet.valet(
+      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      accessControl: .userPresence
+    )
+    #endif
+
+    keychain = Valet.valet(
+      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      accessibility: .whenUnlocked
+    )
   }
 }
 

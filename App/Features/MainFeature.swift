@@ -21,6 +21,7 @@ struct MainFeature {
     case diagnostic(DiagnosticFeature.Action)
     case delegate(Delegate)
 
+    @CasePathable
     enum Delegate: Equatable {
       case authenticationRequired
     }

@@ -53,6 +53,7 @@ struct RootFeature {
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
+  @Dependency(\.logger) var logger
 
   var body: some ReducerOf<Self> {
     Scope(state: \.login, action: \.login) {
@@ -64,28 +65,28 @@ struct RootFeature {
       case .didFinishLaunching:
         // Keep isLaunching = true until auth check completes
         state.launchStatus = "Checking authentication..."
-        print("🚀 App launched - checking authentication status")
+        logger.info(.lifecycle, "App launched - checking authentication status")
         setupNotifications()
-        return .run { send in
+        return .run { [logger, authenticationClient] send in
           let loginStatus = try await authenticationClient.determineLoginStatus()
-          print("🚀 Auth check complete: \(loginStatus)")
+          logger.info(.lifecycle, "Auth check complete", metadata: ["status": "\(loginStatus)"])
           await send(.loginStatusResponse(loginStatus))
         }
 
       case let .loginStatusResponse(loginStatus):
-        print("🚀 Processing login status: \(loginStatus)")
+        logger.info(.lifecycle, "Processing login status", metadata: ["status": "\(loginStatus)"])
         state.isLaunching = false  // Now safe to show appropriate screen
         if loginStatus == .authenticated {
-          print("🚀 User is authenticated - showing main view")
+          logger.info(.auth, "User is authenticated - showing main view")
           state.isAuthenticated = true
           state.main = MainFeature.State()
         } else {
-          print("🚀 User not authenticated - showing login view")
+          logger.info(.auth, "User not authenticated - showing login view")
           // Check if user was previously registered (has identifier in keychain)
           // This updates the login screen to show correct registration status
-          return .run { send in
+          return .run { [logger, keychainClient] send in
             let isRegistered = (try? await keychainClient.getUserIdentifier()) != nil
-            print("🚀 User registration status: \(isRegistered ? "registered" : "not registered")")
+            logger.info(.auth, "User registration status", metadata: ["registered": isRegistered ? "true" : "false"])
             if isRegistered {
               await send(.setRegistrationStatus(.registered))
             }
@@ -94,7 +95,7 @@ struct RootFeature {
         return .none
 
       case let .setRegistrationStatus(status):
-        print("🚀 Setting registration status: \(status)")
+        logger.debug(.auth, "Setting registration status", metadata: ["status": "\(status)"])
         state.login.registrationStatus = status
         return .none
 
@@ -142,14 +143,14 @@ struct RootFeature {
         state.main = nil
         // Keep registration status if user was previously registered
         state.login.loginStatus = .unauthenticated
-        state.login.errorMessage = nil
-        return .run { [keychainClient] _ in
+        state.login.alert = nil
+        return .run { [logger, keychainClient] _ in
           // Check if user is registered (has identifier in keychain)
           let isRegistered = (try? await keychainClient.getUserIdentifier()) != nil
           // Clear the stored JWT token since it's invalid
           try? await keychainClient.deleteJwtToken()
           // Note: registrationStatus preserved from previous state
-          print("🔄 Session expired - redirecting to login (registered: \(isRegistered))")
+          logger.info(.auth, "Session expired - redirecting to login", metadata: ["registered": isRegistered ? "true" : "false"])
         }
 
       // MARK: - Push Notification Handling
@@ -177,7 +178,7 @@ struct RootFeature {
 
             // Check if file already exists locally
             if fileClient.fileExists(url) {
-              print("📥 File already downloaded, skipping: \(fileId)")
+              logger.info(.download, "File already downloaded, skipping", metadata: ["fileId": fileId])
               // Still need to refresh state to show as downloaded
               await send(.main(.fileList(.refreshFileState(fileId))))
               return
@@ -187,7 +188,7 @@ struct RootFeature {
           }
 
         case .unknown:
-          print("📥 Unknown push notification type")
+          logger.warning(.push, "Unknown push notification type")
           return .none
         }
 
@@ -197,8 +198,8 @@ struct RootFeature {
 
       case let .downloadReadyProcessed(fileId, _, url, size):
         // Start background download
-        return .run { [downloadClient] send in
-          print("📥 Starting background download for \(fileId)")
+        return .run { [logger, downloadClient] send in
+          logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
           let stream = downloadClient.downloadFile(url, size)
           for await progress in stream {
             switch progress {
@@ -214,12 +215,12 @@ struct RootFeature {
         }
 
       case let .backgroundDownloadCompleted(fileId):
-        print("📥 Background download completed: \(fileId)")
+        logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
         // Forward to MainFeature to refresh file state
         return .send(.main(.fileList(.refreshFileState(fileId))))
 
       case let .backgroundDownloadFailed(fileId, error):
-        print("📥 Background download failed for \(fileId): \(error)")
+        logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
         return .none
 
       case .main:
