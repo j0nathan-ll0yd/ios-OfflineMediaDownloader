@@ -1,4 +1,4 @@
-public enum LoginStatus: Equatable {
+public enum LoginStatus: Equatable, Sendable {
   case authenticated
   case unauthenticated
 }

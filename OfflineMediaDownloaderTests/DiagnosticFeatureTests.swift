@@ -1,3 +1,4 @@
+import ConcurrencyExtras
 import Foundation
 import Testing
 import ComposableArchitecture
@@ -117,7 +118,7 @@ struct DiagnosticFeatureTests {
   @MainActor
   @Test("Delete token removes from keychain and list")
   func deleteToken() async throws {
-    var deleteTokenCalled = false
+    let deleteTokenCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
       KeychainItem(name: "Token", displayValue: "test...", itemType: .token),
@@ -127,7 +128,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
-      $0.keychainClient.deleteJwtToken = { deleteTokenCalled = true }
+      $0.keychainClient.deleteJwtToken = { deleteTokenCalled.setValue(true) }
     }
 
     await store.send(.deleteKeychainItem(IndexSet(integer: 0))) {
@@ -135,13 +136,13 @@ struct DiagnosticFeatureTests {
     }
 
     await store.receive(\.keychainItemDeleted)
-    #expect(deleteTokenCalled == true)
+    #expect(deleteTokenCalled.value == true)
   }
 
   @MainActor
   @Test("Delete user data removes from keychain and list")
   func deleteUserData() async throws {
-    var deleteUserDataCalled = false
+    let deleteUserDataCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
       KeychainItem(name: "UserData", displayValue: "Test User", itemType: .userData)
@@ -150,7 +151,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
-      $0.keychainClient.deleteUserData = { deleteUserDataCalled = true }
+      $0.keychainClient.deleteUserData = { deleteUserDataCalled.setValue(true) }
     }
 
     await store.send(.deleteKeychainItem(IndexSet(integer: 0))) {
@@ -158,13 +159,13 @@ struct DiagnosticFeatureTests {
     }
 
     await store.receive(\.keychainItemDeleted)
-    #expect(deleteUserDataCalled == true)
+    #expect(deleteUserDataCalled.value == true)
   }
 
   @MainActor
   @Test("Delete device data removes from keychain and list")
   func deleteDeviceData() async throws {
-    var deleteDeviceDataCalled = false
+    let deleteDeviceDataCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
       KeychainItem(name: "DeviceData", displayValue: "arn:aws:sns:test", itemType: .deviceData)
@@ -173,7 +174,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
-      $0.keychainClient.deleteDeviceData = { deleteDeviceDataCalled = true }
+      $0.keychainClient.deleteDeviceData = { deleteDeviceDataCalled.setValue(true) }
     }
 
     await store.send(.deleteKeychainItem(IndexSet(integer: 0))) {
@@ -181,7 +182,7 @@ struct DiagnosticFeatureTests {
     }
 
     await store.receive(\.keychainItemDeleted)
-    #expect(deleteDeviceDataCalled == true)
+    #expect(deleteDeviceDataCalled.value == true)
   }
 
   @MainActor
@@ -205,18 +206,18 @@ struct DiagnosticFeatureTests {
   @MainActor
   @Test("Truncate files calls coreDataClient")
   func truncateFiles() async throws {
-    var truncateCalled = false
+    let truncateCalled = LockIsolated(false)
 
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
-      $0.coreDataClient.truncateFiles = { truncateCalled = true }
+      $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
     }
 
     await store.send(.truncateFilesButtonTapped)
     await store.receive(\.filesTruncated)
 
-    #expect(truncateCalled == true)
+    #expect(truncateCalled.value == true)
   }
 
   // MARK: - Error Handling Tests

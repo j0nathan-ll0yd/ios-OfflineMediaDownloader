@@ -398,7 +398,7 @@ struct FileListFeatureTests {
   @Test("Update file URL updates existing file state")
   func updateFileUrl() async throws {
     var state = FileListFeature.State()
-    var pendingFile = TestData.pendingFile
+    let pendingFile = TestData.pendingFile
     state.files = [FileCellFeature.State(file: pendingFile)]
 
     let newUrl = URL(string: "https://example.com/new-url.mp4")!
