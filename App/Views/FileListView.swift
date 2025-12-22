@@ -256,7 +256,7 @@ struct FileListView: View {
   private func videoPlayerContent(for file: File) -> some View {
     if let remoteURL = file.url {
       let localURL = fileClient.filePath(remoteURL)
-      VideoPlayerView(url: localURL) {
+      MediaPlayerView(url: localURL) {
         store.send(.dismissPlayer)
       }
     } else {
