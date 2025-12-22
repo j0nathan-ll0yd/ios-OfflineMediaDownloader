@@ -54,18 +54,24 @@ extension CoreDataClient: DependencyKey {
       }
     },
     cacheFiles: { files in
-      let context = PersistenceController.shared.container.viewContext
+      // Use background context for heavy write operations to avoid blocking main thread
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      
       try await context.perform {
         // Upsert each file (update existing or create new)
         for file in files {
           _ = file.toEntity(in: context)
         }
         try context.save()
-        print("📁 Cached \(files.count) files to CoreData")
+        print("📁 Cached \(files.count) files to CoreData (background context)")
       }
     },
     cacheFile: { file in
-      let context = PersistenceController.shared.container.viewContext
+      // Use background context for write operations
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      
       try await context.perform {
         _ = file.toEntity(in: context)
         try context.save()
@@ -73,7 +79,10 @@ extension CoreDataClient: DependencyKey {
       }
     },
     updateFileUrl: { fileId, url in
-      let context = PersistenceController.shared.container.viewContext
+      // Use background context for write operations
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      
       try await context.perform {
         let request = FileEntity.fetchRequest()
         request.predicate = NSPredicate(format: "fileId == %@", fileId)
@@ -117,8 +126,10 @@ extension CoreDataClient: DependencyKey {
         print("🗑️ Error deleting media files: \(error)")
       }
 
-      // Also clear all FileEntity records from CoreData
-      let context = PersistenceController.shared.container.viewContext
+      // Also clear all FileEntity records from CoreData (use background context)
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      
       do {
         try await context.perform {
           let request = NSFetchRequest<NSFetchRequestResult>(entityName: "FileEntity")
@@ -145,8 +156,10 @@ extension CoreDataClient: DependencyKey {
         try fileManager.removeItem(at: localURL)
       }
 
-      // Also delete from CoreData
-      let context = PersistenceController.shared.container.viewContext
+      // Also delete from CoreData (use background context)
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      
       try await context.perform {
         let request = FileEntity.fetchRequest()
         request.predicate = NSPredicate(format: "fileId == %@", file.fileId)
