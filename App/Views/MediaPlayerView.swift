@@ -8,6 +8,10 @@ struct MediaPlayerView: UIViewControllerRepresentable {
   let url: URL
   let onDismiss: () -> Void
   
+  /// Minimum file size threshold to consider a file valid (100 KB)
+  /// Files smaller than this are likely corrupted or incomplete downloads
+  private static let minimumValidFileSize: Int64 = 100_000
+  
   func makeUIViewController(context: Context) -> AVPlayerViewController {
     let controller = AVPlayerViewController()
     
@@ -29,7 +33,7 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     
     // Quick size check for corrupted files
     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-       let size = attrs[.size] as? Int64, size < 100_000 {
+       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize {
       print("🎬 MediaPlayerView: File corrupted (\(size) bytes)")
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
       return controller
