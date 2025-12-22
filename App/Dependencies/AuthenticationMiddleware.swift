@@ -6,16 +6,16 @@ import ComposableArchitecture
 /// Middleware that intercepts API requests and adds JWT authentication headers
 struct AuthenticationMiddleware: ClientMiddleware {
   let keychainClient: KeychainClient
-  
+
   func intercept(
     _ request: HTTPTypes.HTTPRequest,
-    body: HTTPTypes.HTTPBody?,
+    body: OpenAPIRuntime.HTTPBody?,
     baseURL: URL,
     operationID: String,
-    next: (HTTPTypes.HTTPRequest, HTTPTypes.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, HTTPTypes.HTTPBody?)
-  ) async throws -> (HTTPTypes.HTTPResponse, HTTPTypes.HTTPBody?) {
+    next: (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
+  ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
-    
+
     // Add JWT token if available
     if let token = try? await keychainClient.getJwtToken() {
       request.headerFields[.authorization] = "Bearer \(token)"
@@ -23,7 +23,7 @@ struct AuthenticationMiddleware: ClientMiddleware {
     } else {
       print("🔑 AuthenticationMiddleware: No token available")
     }
-    
+
     return try await next(request, body, baseURL)
   }
 }
