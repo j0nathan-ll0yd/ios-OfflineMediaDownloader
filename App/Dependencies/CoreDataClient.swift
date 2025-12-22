@@ -36,7 +36,7 @@ extension CoreDataClient: DependencyKey {
         let request = FileEntity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \FileEntity.publishDate, ascending: false)]
         let entities = try context.fetch(request)
-        let files = entities.map { File(entity: $0) }
+        let files = entities.map { FileMapper.fromEntity($0) }
         print("📁 Loaded \(files.count) files from CoreData")
         return files
       }
@@ -50,7 +50,7 @@ extension CoreDataClient: DependencyKey {
         guard let entity = try context.fetch(request).first else {
           return nil
         }
-        return File(entity: entity)
+        return FileMapper.fromEntity(entity)
       }
     },
     cacheFiles: { files in
@@ -61,7 +61,7 @@ extension CoreDataClient: DependencyKey {
       try await context.perform {
         // Upsert each file (update existing or create new)
         for file in files {
-          _ = file.toEntity(in: context)
+          _ = FileMapper.toEntity(file, in: context)
         }
         try context.save()
         print("📁 Cached \(files.count) files to CoreData (background context)")
@@ -73,7 +73,7 @@ extension CoreDataClient: DependencyKey {
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
       
       try await context.perform {
-        _ = file.toEntity(in: context)
+        _ = FileMapper.toEntity(file, in: context)
         try context.save()
         print("📁 Cached file to CoreData: \(file.fileId)")
       }
