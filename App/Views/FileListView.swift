@@ -256,7 +256,7 @@ struct FileListView: View {
   private func videoPlayerContent(for file: File) -> some View {
     if let remoteURL = file.url {
       let localURL = fileClient.filePath(remoteURL)
-      VideoPlayerView(url: localURL) {
+      MediaPlayerView(url: localURL) {
         store.send(.dismissPlayer)
       }
     } else {
@@ -264,138 +264,6 @@ struct FileListView: View {
         .foregroundColor(.white)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
-    }
-  }
-}
-
-// MARK: - Video Player View
-struct VideoPlayerView: View {
-  let url: URL
-  let onDismiss: () -> Void
-  @State private var player: AVPlayer?
-  @State private var errorMessage: String?
-  @State private var isLoading = true
-  @State private var dragOffset: CGFloat = 0
-  @State private var isDragging = false
-
-  private let dismissThreshold: CGFloat = 150
-
-  var body: some View {
-    GeometryReader { geometry in
-      ZStack {
-        // Background - fades as you drag down
-        Color.black
-          .opacity(1.0 - Double(abs(dragOffset)) / 400.0)
-          .edgesIgnoringSafeArea(.all)
-
-        // Content layer - moves with drag
-        Group {
-          if let errorMessage = errorMessage {
-            VStack(spacing: 16) {
-              Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.yellow)
-              Text("Playback Error")
-                .font(.headline)
-                .foregroundColor(.white)
-              Text(errorMessage)
-                .font(.caption)
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            }
-          } else if let player = player {
-            VideoPlayer(player: player)
-              .edgesIgnoringSafeArea(.all)
-          } else if isLoading {
-            ProgressView()
-              .scaleEffect(1.5)
-              .tint(.white)
-          }
-        }
-        .offset(y: dragOffset)
-        .scaleEffect(isDragging ? 0.95 : 1.0)
-        .animation(.interactiveSpring(), value: isDragging)
-      }
-      .gesture(
-        DragGesture()
-          .onChanged { value in
-            // Only allow downward drags (positive translation)
-            if value.translation.height > 0 {
-              isDragging = true
-              dragOffset = value.translation.height
-            }
-          }
-          .onEnded { value in
-            isDragging = false
-            if value.translation.height > dismissThreshold {
-              // Dismiss with animation
-              withAnimation(.easeOut(duration: 0.2)) {
-                dragOffset = geometry.size.height
-              }
-              DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                onDismiss()
-              }
-            } else {
-              // Snap back
-              withAnimation(.interactiveSpring()) {
-                dragOffset = 0
-              }
-            }
-          }
-      )
-    }
-    .onAppear {
-      setupAndPlay()
-    }
-    .onDisappear {
-      player?.pause()
-      player = nil
-    }
-  }
-
-  private func setupAndPlay() {
-    print("🎬 VideoPlayerView: Playing: \(url.lastPathComponent)")
-
-    // Move all file system and audio session setup to background thread
-    Task.detached {
-      // File existence check
-      guard FileManager.default.fileExists(atPath: url.path) else {
-        await MainActor.run {
-          errorMessage = "File not found"
-          isLoading = false
-        }
-        return
-      }
-
-      // Quick size check for corrupted files
-      if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-         let size = attrs[.size] as? Int64, size < 100_000 {
-        await MainActor.run {
-          errorMessage = "File corrupted (\(size) bytes).\nDelete and re-download."
-          isLoading = false
-        }
-        return
-      }
-
-      // Setup audio session (can block 100-300ms)
-      do {
-        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-        try AVAudioSession.sharedInstance().setActive(true)
-      } catch {
-        print("🎬 Audio session error: \(error)")
-      }
-
-      // Create player and start playback on main thread
-      await MainActor.run {
-        let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
-        let playerItem = AVPlayerItem(asset: asset)
-        let newPlayer = AVPlayer(playerItem: playerItem)
-        newPlayer.automaticallyWaitsToMinimizeStalling = true
-        self.player = newPlayer
-        self.isLoading = false
-        newPlayer.play()
-      }
     }
   }
 }

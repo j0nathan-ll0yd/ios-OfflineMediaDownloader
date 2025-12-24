@@ -149,6 +149,10 @@ extension AppError {
         return .unauthorized
       case .internalServerError(let message):
         return .serverError(message: message)
+      case .badRequest(let message):
+        return .serverError(message: message)
+      case .networkError(let message):
+        return .serverError(message: message)
       }
     }
 

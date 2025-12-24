@@ -92,4 +92,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     store.send(.receivedPushNotification(userInfo))
     completionHandler(.newData)
   }
+
+  func application(
+    _ application: UIApplication,
+    handleEventsForBackgroundURLSession identifier: String,
+    completionHandler: @escaping () -> Void
+  ) {
+    print("📥 AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
+    // Re-initialize DownloadManager if needed (it's a singleton, so accessing .shared ensures it's initialized)
+    // Pass the completion handler to DownloadManager
+    Task {
+      await DownloadManager.shared.setBackgroundCompletionHandler(completionHandler)
+    }
+  }
 }

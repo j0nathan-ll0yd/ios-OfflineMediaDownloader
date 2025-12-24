@@ -1,6 +1,4 @@
 import Foundation
-import CoreData
-import APITypes
 
 // Cached date formatter for YYYYMMDD format (API responses)
 private let fileDateFormatter: DateFormatter = {
@@ -91,81 +89,3 @@ struct File: Equatable, Identifiable, Codable, Sendable {
   }
 }
 
-// MARK: - CoreData Mapping
-extension File {
-  /// Initialize from CoreData FileEntity
-  init(entity: FileEntity) {
-    self.fileId = entity.fileId ?? ""
-    self.key = entity.key ?? ""
-    self.publishDate = entity.publishDate
-    self.size = entity.size == 0 ? nil : Int(entity.size)
-    self.url = entity.url.flatMap { URL(string: $0) }
-    self.authorName = entity.authorName
-    self.authorUser = entity.authorUser
-    self.contentType = entity.contentType
-    self.description = entity.fileDescription
-    self.status = entity.status.flatMap { FileStatus(rawValue: $0) }
-    self.title = entity.title
-  }
-
-  /// Update or create a FileEntity from this File
-  func toEntity(in context: NSManagedObjectContext) -> FileEntity {
-    // Try to find existing entity with same fileId
-    let request = FileEntity.fetchRequest()
-    request.predicate = NSPredicate(format: "fileId == %@", fileId)
-    request.fetchLimit = 1
-
-    let entity: FileEntity
-    if let existing = try? context.fetch(request).first {
-      entity = existing
-    } else {
-      entity = FileEntity(context: context)
-    }
-
-    entity.fileId = fileId
-    entity.key = key
-    entity.publishDate = publishDate
-    entity.size = Int64(size ?? 0)
-    entity.url = url?.absoluteString
-    entity.authorName = authorName
-    entity.authorUser = authorUser
-    entity.contentType = contentType
-    entity.fileDescription = description
-    entity.status = status?.rawValue
-    entity.title = title
-
-    return entity
-  }
-}
-
-// MARK: - Generated Type Conversion
-extension File {
-  /// Initialize from generated API type
-  init(from api: APIFile) {
-    self.fileId = api.fileId
-    self.key = api.key ?? ""
-    self.size = api.size.map { Int($0) }
-    self.url = api.url.flatMap { URL(string: $0) }
-    self.authorName = api.authorName
-    self.authorUser = api.authorUser
-    self.contentType = api.contentType
-    self.description = api.description
-    self.title = api.title
-
-    // Convert generated FileStatus enum to domain FileStatus
-    // The generator wraps allOf references in a payload struct with value1
-    if let apiStatus = api.status?.value1 {
-      self.status = FileStatus(from: apiStatus)
-    } else {
-      self.status = nil
-    }
-
-    // Parse publish date from string
-    if let dateString = api.publishDate {
-      self.publishDate = fileDateFormatter.date(from: dateString)
-                       ?? fileDateFormatterISO.date(from: dateString)
-    } else {
-      self.publishDate = nil
-    }
-  }
-}

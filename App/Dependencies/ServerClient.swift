@@ -1,36 +1,14 @@
-
 import Foundation
 import ComposableArchitecture
 import UIKit
 import APITypes
-
-private func generateRequest(pathPart: String, method: String = "POST") async throws -> URLRequest {
-  @Dependency(\.keychainClient) var keychainClient
-
-  var urlComponents = URLComponents(string: Environment.basePath+pathPart)!
-  urlComponents.queryItems = [
-    URLQueryItem(name: "ApiKey", value: Environment.apiKey)
-  ]
-
-  var request = URLRequest(url: urlComponents.url!)
-  request.httpMethod = method
-  request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-  if let token = try? await keychainClient.getJwtToken() {
-    let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-    print("🔑 Token found (\(token.count) chars): \(tokenPreview)")
-    request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-  } else {
-    print("🔑 No authorization token found in keychain")
-  }
-  return request
-}
+import OpenAPIURLSession
 
 @DependencyClient
 struct ServerClient {
   var registerDevice: @Sendable (_ token: String) async throws -> RegisterDeviceResponse
-  var registerUser: @Sendable (_ userData: User, _ idToken: String) async throws -> LoginResponse
-  var loginUser: @Sendable (_ idToken: String) async throws -> LoginResponse
+  var registerUser: @Sendable (_ userData: User, _ authorizationCode: String) async throws -> LoginResponse
+  var loginUser: @Sendable (_ authorizationCode: String) async throws -> LoginResponse
   var getFiles: @Sendable () async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
 }
@@ -45,193 +23,434 @@ extension DependencyValues {
 enum ServerClientError: Error, Equatable {
   case internalServerError(message: String)
   case unauthorized
+  case badRequest(message: String)
+  case networkError(message: String)
 }
 
 extension ServerClientError: LocalizedError {
-    public var errorDescription: String? {
-        switch self {
-        case .internalServerError(let message):
-            return NSLocalizedString(message, comment: "My error")
-        case .unauthorized:
-            return NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
-        }
-    }
-}
-
-/// Check HTTP response for 401/403 and throw unauthorized error
-private func checkUnauthorized(_ response: URLResponse) throws {
-  if let httpResponse = response as? HTTPURLResponse {
-    if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-      print("🔒 Unauthorized response: HTTP \(httpResponse.statusCode)")
-      throw ServerClientError.unauthorized
+  public var errorDescription: String? {
+    switch self {
+    case .internalServerError(let message):
+      return NSLocalizedString(message, comment: "Server error")
+    case .unauthorized:
+      return NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
+    case .badRequest(let message):
+      return NSLocalizedString(message, comment: "Bad request error")
+    case .networkError(let message):
+      return NSLocalizedString(message, comment: "Network error")
     }
   }
 }
+
+// MARK: - OpenAPI Client Factory
+
+/// Creates an authenticated API client with middleware for API key and JWT token injection
+private func makeAuthenticatedAPIClient() -> Client {
+  @Dependency(\.keychainClient) var keychainClient
+
+  return Client(
+    serverURL: URL(string: Environment.basePath)!,
+    transport: URLSessionTransport(),
+    middlewares: [
+      APIKeyMiddleware(apiKey: Environment.apiKey),
+      AuthenticationMiddleware(keychainClient: keychainClient)
+    ]
+  )
+}
+
+/// Creates an unauthenticated API client with only API key middleware (for login/register)
+private func makeUnauthenticatedAPIClient() -> Client {
+  Client(
+    serverURL: URL(string: Environment.basePath)!,
+    transport: URLSessionTransport(),
+    middlewares: [
+      APIKeyMiddleware(apiKey: Environment.apiKey)
+    ]
+  )
+}
+
+// MARK: - Live Implementation
 
 extension ServerClient: DependencyKey {
   static let liveValue = ServerClient(
     registerDevice: { token in
       print("📡 ServerClient.registerDevice called")
-      let parameters = await [
-          "token": token,
-          "deviceId": UIDevice.current.identifierForVendor!.uuidString,
-          "name": UIDevice.current.name,
-          "systemName": UIDevice.current.systemName,
-          "systemVersion": UIDevice.current.systemVersion
-      ] as [String : Any]
+      let client = makeAuthenticatedAPIClient()
+
+      let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
+      let name = await UIDevice.current.name
+      let systemName = await UIDevice.current.systemName
+      let systemVersion = await UIDevice.current.systemVersion
+
+      let requestBody = Components.Schemas.Models_period_DeviceRegistrationRequest(
+        deviceId: deviceId,
+        name: name,
+        systemName: systemName,
+        systemVersion: systemVersion,
+        token: token
+      )
+
       #if DEBUG
-      debugPrint(parameters)
+      print("📡 Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
       #endif
-      var request = try await generateRequest(pathPart: "registerDevice", method: "POST")
-      #if DEBUG
-      debugPrint(request)
-      #endif
-      let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
-      request.httpBody = jsonData
-      #if DEBUG
-      debugPrint(jsonData!.prettyPrintedJSONString!)
-      #endif
-      let (data, response) = try await URLSession.shared.data(for: request)
-      if let httpResponse = response as? HTTPURLResponse {
-        print("📡 ServerClient.registerDevice HTTP status: \(httpResponse.statusCode)")
-      }
-      try checkUnauthorized(response)
-      #if DEBUG
-      debugPrint(data.prettyPrintedJSONString!)
-      #endif
-      let registerDeviceResponse = try jsonDecoder.decode(RegisterDeviceResponse.self, from: data)
-      if let error = registerDeviceResponse.error {
-        if error.message.contains("not authorized") || error.message.contains("Unauthenticated") {
+
+      let response = try await client.Devices_registerDevice(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+        body: .json(requestBody)
+      )
+
+      switch response {
+      case .ok(let okResponse):
+        print("📡 ServerClient.registerDevice HTTP status: 200")
+        guard case .json(let data) = okResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+        return RegisterDeviceResponse(
+          body: EndpointResponse(endpointArn: data.endpointArn),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .created(let createdResponse):
+        print("📡 ServerClient.registerDevice HTTP status: 201")
+        guard case .json(let data) = createdResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+        return RegisterDeviceResponse(
+          body: EndpointResponse(endpointArn: data.endpointArn),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .badRequest(let errorResponse):
+        print("📡 ServerClient.registerDevice HTTP status: 400")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "Bad request")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .unauthorized(let errorResponse):
+        print("🔒 Unauthorized response: HTTP 401")
+        guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.unauthorized
         }
-        throw ServerClientError.internalServerError(message: error.message)
+        if error.error.message.contains("not authorized") || error.error.message.contains("Unauthenticated") {
+          throw ServerClientError.unauthorized
+        }
+        throw ServerClientError.unauthorized
+
+      case .forbidden:
+        print("🔒 Forbidden response: HTTP 403")
+        throw ServerClientError.unauthorized
+
+      case .internalServerError(let errorResponse):
+        print("📡 ServerClient.registerDevice HTTP status: 500")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.internalServerError(message: "Internal server error")
+        }
+        throw ServerClientError.internalServerError(message: error.error.message)
+
+      case .undocumented(let statusCode, _):
+        print("📡 ServerClient.registerDevice HTTP status: \(statusCode)")
+        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)")
       }
-      return registerDeviceResponse
     },
-    registerUser: { userData, idToken in
+
+    registerUser: { userData, authorizationCode in
       print("📡 ServerClient.registerUser called")
-      let parameters = [
-        "idToken": idToken,
-        "firstName": userData.firstName,
-        "lastName": userData.lastName
-      ] as [String : Any]
+      let client = makeUnauthenticatedAPIClient()
+
+      let requestBody = Components.Schemas.Models_period_UserRegistration(
+        authorizationCode: authorizationCode,
+        firstName: userData.firstName,
+        lastName: userData.lastName
+      )
+
       #if DEBUG
-      debugPrint(parameters)
+      print("📡 Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
       #endif
-      var request = try await generateRequest(pathPart: "registerUser", method: "POST")
-      #if DEBUG
-      debugPrint(request)
-      #endif
-      let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
-      request.httpBody = jsonData
-      #if DEBUG
-      debugPrint(jsonData!.prettyPrintedJSONString!)
-      #endif
-      let (data, _) = try await URLSession.shared.data(for: request)
-      #if DEBUG
-      debugPrint(data.prettyPrintedJSONString!)
-      #endif
-      let loginResponse = try jsonDecoder.decode(LoginResponse.self, from: data)
-      if loginResponse.error != nil {
-        throw ServerClientError.internalServerError(message: loginResponse.error!.message)
+
+      let response = try await client.Authentication_registerUser(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+        body: .json(requestBody)
+      )
+
+      switch response {
+      case .ok(let okResponse):
+        print("📡 ServerClient.registerUser HTTP status: 200")
+        guard case .json(let data) = okResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+        return LoginResponse(
+          body: TokenResponse(token: data.token, expiresAt: nil, sessionId: nil, userId: nil),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .badRequest(let errorResponse):
+        print("📡 ServerClient.registerUser HTTP status: 400")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "Bad request")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .forbidden:
+        print("🔒 Forbidden response: HTTP 403")
+        throw ServerClientError.unauthorized
+
+      case .internalServerError(let errorResponse):
+        print("📡 ServerClient.registerUser HTTP status: 500")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.internalServerError(message: "Internal server error")
+        }
+        throw ServerClientError.internalServerError(message: error.error.message)
+
+      case .undocumented(let statusCode, _):
+        print("📡 ServerClient.registerUser HTTP status: \(statusCode)")
+        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)")
       }
-      return loginResponse
     },
-    loginUser: { idToken in
+
+    loginUser: { authorizationCode in
       print("📡 ServerClient.loginUser called")
-      let parameters = ["idToken": idToken] as [String : Any]
+      let client = makeUnauthenticatedAPIClient()
+
+      let requestBody = Components.Schemas.Models_period_UserLogin(
+        authorizationCode: authorizationCode
+      )
+
       #if DEBUG
-      debugPrint(parameters)
+      print("📡 Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
       #endif
-      var request = try await generateRequest(pathPart: "login", method: "POST")
-      #if DEBUG
-      debugPrint(request)
-      #endif
-      let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
-      request.httpBody = jsonData
-      #if DEBUG
-      debugPrint(jsonData!.prettyPrintedJSONString!)
-      #endif
-      let (data, _) = try await URLSession.shared.data(for: request)
-      #if DEBUG
-      debugPrint(data.prettyPrintedJSONString!)
-      #endif
-      let loginResponse = try jsonDecoder.decode(LoginResponse.self, from: data)
-      if loginResponse.error != nil {
-        throw ServerClientError.internalServerError(message: loginResponse.error!.message)
+
+      let response = try await client.Authentication_loginUser(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+        body: .json(requestBody)
+      )
+
+      switch response {
+      case .ok(let okResponse):
+        print("📡 ServerClient.loginUser HTTP status: 200")
+        guard case .json(let data) = okResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+        return LoginResponse(
+          body: TokenResponse(token: data.token, expiresAt: nil, sessionId: nil, userId: nil),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .badRequest(let errorResponse):
+        print("📡 ServerClient.loginUser HTTP status: 400")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "Bad request")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .forbidden:
+        print("🔒 Forbidden response: HTTP 403")
+        throw ServerClientError.unauthorized
+
+      case .notFound(let errorResponse):
+        print("📡 ServerClient.loginUser HTTP status: 404")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "User not found")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .conflict(let errorResponse):
+        print("📡 ServerClient.loginUser HTTP status: 409")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "Conflict")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .internalServerError(let errorResponse):
+        print("📡 ServerClient.loginUser HTTP status: 500")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.internalServerError(message: "Internal server error")
+        }
+        throw ServerClientError.internalServerError(message: error.error.message)
+
+      case .undocumented(let statusCode, _):
+        print("📡 ServerClient.loginUser HTTP status: \(statusCode)")
+        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)")
       }
-      return loginResponse
     },
+
     getFiles: {
       print("📡 ServerClient.getFiles called")
-      var request = try await generateRequest(pathPart: "files", method: "GET")
-      #if DEBUG
-      debugPrint(request)
-      #endif
-      let (data, response) = try await URLSession.shared.data(for: request)
-      if let httpResponse = response as? HTTPURLResponse {
-        print("📡 ServerClient.getFiles HTTP status: \(httpResponse.statusCode)")
-      }
-      try checkUnauthorized(response)
-      #if DEBUG
-      debugPrint(data.prettyPrintedJSONString!)
-      #endif
-      let fileResponse = try jsonDecoder.decode(FileResponse.self, from: data)
-      if let error = fileResponse.error {
-        // Check if this is an auth-related error in the body
-        if error.message.contains("not authorized") || error.message.contains("Unauthenticated") {
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.Files_listFiles(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
+      )
+
+      switch response {
+      case .ok(let okResponse):
+        print("📡 ServerClient.getFiles HTTP status: 200")
+        guard case .json(let data) = okResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+
+        // Map API files to domain File objects
+        let files: [File] = data.contents.map { apiFile in
+          mapAPIFileToDomainFile(apiFile)
+        }
+
+        return FileResponse(
+          body: FileList(contents: files, keyCount: Int(data.keyCount)),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .unauthorized(let errorResponse):
+        print("🔒 Unauthorized response: HTTP 401")
+        guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.unauthorized
         }
-        throw ServerClientError.internalServerError(message: error.message)
+        if error.error.message.contains("not authorized") || error.error.message.contains("Unauthenticated") {
+          throw ServerClientError.unauthorized
+        }
+        throw ServerClientError.unauthorized
+
+      case .forbidden:
+        print("🔒 Forbidden response: HTTP 403")
+        throw ServerClientError.unauthorized
+
+      case .internalServerError(let errorResponse):
+        print("📡 ServerClient.getFiles HTTP status: 500")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.internalServerError(message: "Internal server error")
+        }
+        throw ServerClientError.internalServerError(message: error.error.message)
+
+      case .undocumented(let statusCode, _):
+        print("📡 ServerClient.getFiles HTTP status: \(statusCode)")
+        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)")
       }
-      return fileResponse
     },
+
     addFile: { url in
       print("📡 ServerClient.addFile called with URL: \(url)")
-      let parameters = ["articleURL": url.absoluteString] as [String: Any]
+      let client = makeAuthenticatedAPIClient()
+
+      let requestBody = Components.Schemas.Models_period_FeedlyWebhook(
+        articleTitle: "User Added", // Required field - placeholder
+        articleURL: url.absoluteString
+      )
+
       #if DEBUG
-      debugPrint(parameters)
+      print("📡 Request body: articleURL=\(url.absoluteString)")
       #endif
-      var request = try await generateRequest(pathPart: "feedly", method: "POST")
-      #if DEBUG
-      debugPrint(request)
-      #endif
-      let jsonData = try? JSONSerialization.data(withJSONObject: parameters)
-      request.httpBody = jsonData
-      let (data, response) = try await URLSession.shared.data(for: request)
-      if let httpResponse = response as? HTTPURLResponse {
-        print("📡 ServerClient.addFile HTTP status: \(httpResponse.statusCode)")
-      }
-      try checkUnauthorized(response)
-      #if DEBUG
-      debugPrint("📡 ServerClient.addFile response:")
-      debugPrint(data.prettyPrintedJSONString!)
-      #endif
-      let fileResponse = try jsonDecoder.decode(DownloadFileResponse.self, from: data)
-      if let error = fileResponse.error {
-        // Check if this is an auth-related error in the body
-        if error.message.contains("not authorized") || error.message.contains("Unauthenticated") {
-          throw ServerClientError.unauthorized
+
+      let response = try await client.Webhooks_processFeedlyWebhook(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+        body: .json(requestBody)
+      )
+
+      switch response {
+      case .ok(let okResponse):
+        print("📡 ServerClient.addFile HTTP status: 200")
+        guard case .json(let data) = okResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
         }
-        throw ServerClientError.internalServerError(message: error.message)
+        return DownloadFileResponse(
+          body: DownloadFileResponseDetail(status: data.status.rawValue),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .accepted(let acceptedResponse):
+        print("📡 ServerClient.addFile HTTP status: 202")
+        guard case .json(let data) = acceptedResponse.body else {
+          throw ServerClientError.networkError(message: "Invalid response format")
+        }
+        return DownloadFileResponse(
+          body: DownloadFileResponseDetail(status: data.status.rawValue),
+          error: nil,
+          requestId: "generated"
+        )
+
+      case .badRequest(let errorResponse):
+        print("📡 ServerClient.addFile HTTP status: 400")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.badRequest(message: "Bad request")
+        }
+        throw ServerClientError.badRequest(message: error.error.message)
+
+      case .forbidden:
+        print("🔒 Forbidden response: HTTP 403")
+        throw ServerClientError.unauthorized
+
+      case .internalServerError(let errorResponse):
+        print("📡 ServerClient.addFile HTTP status: 500")
+        guard case .json(let error) = errorResponse.body else {
+          throw ServerClientError.internalServerError(message: "Internal server error")
+        }
+        throw ServerClientError.internalServerError(message: error.error.message)
+
+      case .undocumented(let statusCode, _):
+        print("📡 ServerClient.addFile HTTP status: \(statusCode)")
+        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)")
       }
-      return fileResponse
     }
   )
 }
 
-private let jsonDecoder: JSONDecoder = {
-  let decoder = JSONDecoder()
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.dateFormat = "yyyy-MM-dd"
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  decoder.dateDecodingStrategy = .formatted(formatter)
-  return decoder
-}()
+// MARK: - File Mapping
+
+/// Maps OpenAPI file model to domain File model
+private func mapAPIFileToDomainFile(_ apiFile: Components.Schemas.Models_period_File) -> File {
+  // Parse date from string
+  var publishDate: Date?
+  if let dateString = apiFile.publishDate {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyyMMdd"
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    publishDate = formatter.date(from: dateString)
+
+    // Try ISO format if YYYYMMDD fails
+    if publishDate == nil {
+      formatter.dateFormat = "yyyy-MM-dd"
+      publishDate = formatter.date(from: dateString)
+    }
+  }
+
+  // Map status - access the nested value1 property
+  var fileStatus: FileStatus?
+  if let statusPayload = apiFile.status {
+    switch statusPayload.value1 {
+    case .Queued:
+      fileStatus = .queued
+    case .Downloading:
+      fileStatus = .downloading
+    case .Downloaded:
+      fileStatus = .downloaded
+    case .Failed:
+      fileStatus = .failed
+    }
+  }
+
+  var file = File(
+    fileId: apiFile.fileId,
+    key: apiFile.key ?? apiFile.fileId,
+    publishDate: publishDate,
+    size: apiFile.size.map { Int($0) },
+    url: apiFile.url.flatMap { URL(string: $0) }
+  )
+  file.authorName = apiFile.authorName
+  file.authorUser = apiFile.authorUser
+  file.contentType = apiFile.contentType
+  file.description = apiFile.description
+  file.status = fileStatus
+  file.title = apiFile.title
+
+  return file
+}
 
 // MARK: - Test/Preview implementation
+
 extension ServerClient {
   static let testValue = ServerClient(
     registerDevice: { _ in

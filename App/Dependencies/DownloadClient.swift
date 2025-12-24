@@ -29,6 +29,7 @@ actor DownloadManager: NSObject {
   private var activeTasks: [URL: URLSessionDownloadTask] = [:]
   private var progressContinuations: [URL: AsyncStream<DownloadProgress>.Continuation] = [:]
   private var progressObservations: [URL: NSKeyValueObservation] = [:]
+  private var backgroundCompletionHandler: (() -> Void)?
 
   private lazy var session: URLSession = {
     let config = URLSessionConfiguration.background(withIdentifier: "com.offlinemediadownloader.background")
@@ -108,6 +109,17 @@ actor DownloadManager: NSObject {
     progressContinuations[url]?.finish()
     progressContinuations[url] = nil
   }
+
+  // MARK: - Background Session Support
+
+  func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
+    self.backgroundCompletionHandler = handler
+  }
+
+  private func callCompletionHandler() {
+    backgroundCompletionHandler?()
+    backgroundCompletionHandler = nil
+  }
 }
 
 // MARK: - URLSession Delegate
@@ -158,6 +170,13 @@ extension DownloadManager: URLSessionDownloadDelegate {
 
     Task {
       await self.handleDownloadError(for: originalURL, error: error)
+    }
+  }
+
+  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+    print("📥 URLSession background events finished")
+    Task {
+      await self.callCompletionHandler()
     }
   }
 }

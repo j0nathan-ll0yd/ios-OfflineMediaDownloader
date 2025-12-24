@@ -81,11 +81,11 @@ struct LoginFeature: Reducer {
     let data = try handleLoginSuccess(authorization: result)
     if let userData = data.userData {
       await send(.registrationResponse(Result {
-        try await self.serverClient.registerUser(userData: userData, idToken: data.idToken)
+        try await self.serverClient.registerUser(userData, data.idToken)
       }))
     } else {
       await send(.loginResponse(Result {
-        try await self.serverClient.loginUser(idToken: data.idToken)
+        try await self.serverClient.loginUser(data.idToken)
       }))
     }
   }
