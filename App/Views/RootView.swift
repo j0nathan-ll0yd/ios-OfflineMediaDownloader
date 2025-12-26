@@ -2,6 +2,40 @@ import SwiftUI
 import ComposableArchitecture
 import UserNotifications
 
+// MARK: - Shake Gesture Detection
+
+#if DEBUG
+extension NSNotification.Name {
+  static let deviceDidShake = NSNotification.Name("DeviceDidShakeNotification")
+}
+
+extension UIWindow {
+  open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+    super.motionEnded(motion, with: event)
+    if motion == .motionShake {
+      NotificationCenter.default.post(name: .deviceDidShake, object: nil)
+    }
+  }
+}
+
+struct ShakeDetectorModifier: ViewModifier {
+  let onShake: () -> Void
+
+  func body(content: Content) -> some View {
+    content
+      .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+        onShake()
+      }
+  }
+}
+
+extension View {
+  func onShake(perform action: @escaping () -> Void) -> some View {
+    modifier(ShakeDetectorModifier(onShake: action))
+  }
+}
+#endif
+
 func setupNotifications() {
   let center = UNUserNotificationCenter.current()
   center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
@@ -27,6 +61,9 @@ struct RootFeature {
     var isAuthenticated: Bool = false
     var login: LoginFeature.State = LoginFeature.State()
     var main: MainFeature.State?
+    #if DEBUG
+    @Presents var diagnostic: DiagnosticFeature.State?
+    #endif
   }
 
   enum Action {
@@ -44,6 +81,10 @@ struct RootFeature {
     case backgroundDownloadFailed(fileId: String, error: String)
     case login(LoginFeature.Action)
     case main(MainFeature.Action)
+    #if DEBUG
+    case shakeDetected
+    case diagnostic(PresentationAction<DiagnosticFeature.Action>)
+    #endif
   }
 
   @Dependency(\.authenticationClient) var authenticationClient
@@ -211,11 +252,25 @@ struct RootFeature {
 
       case .main:
         return .none
+
+      #if DEBUG
+      case .shakeDetected:
+        state.diagnostic = DiagnosticFeature.State()
+        return .none
+
+      case .diagnostic:
+        return .none
+      #endif
       }
     }
     .ifLet(\.main, action: \.main) {
       MainFeature()
     }
+    #if DEBUG
+    .ifLet(\.$diagnostic, action: \.diagnostic) {
+      DiagnosticFeature()
+    }
+    #endif
   }
 }
 
@@ -236,6 +291,23 @@ struct RootView: View {
         LoginView(store: store.scope(state: \.login, action: \.login))
       }
     }
+    #if DEBUG
+    .onShake {
+      store.send(.shakeDetected)
+    }
+    .sheet(item: $store.scope(state: \.diagnostic, action: \.diagnostic)) { diagnosticStore in
+      NavigationStack {
+        DiagnosticView(store: diagnosticStore)
+          .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+              Button("Done") {
+                store.send(.diagnostic(.dismiss))
+              }
+            }
+          }
+      }
+    }
+    #endif
   }
 }
 
