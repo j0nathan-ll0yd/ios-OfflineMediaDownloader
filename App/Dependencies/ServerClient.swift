@@ -42,6 +42,31 @@ extension ServerClientError: LocalizedError {
   }
 }
 
+// MARK: - Error Message Extraction
+
+/// Extension to extract a string message from the API error message type
+/// which can be either a simple string or a validation errors dictionary
+extension Components.Schemas.ErrorResponse.errorPayload.messagePayload {
+  var stringValue: String {
+    switch self {
+    case .case1(let message):
+      return message
+    case .case2(let validationErrors):
+      // Format validation errors as readable string
+      let errors = validationErrors.additionalProperties
+        .flatMap { field, messages in
+          messages.map { "\(field): \($0)" }
+        }
+        .joined(separator: ", ")
+      return errors.isEmpty ? "Validation error" : errors
+    }
+  }
+
+  func contains(_ substring: String) -> Bool {
+    stringValue.contains(substring)
+  }
+}
+
 // MARK: - OpenAPI Client Factory
 
 /// Creates an authenticated API client with middleware for API key and JWT token injection
@@ -127,7 +152,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .unauthorized(let errorResponse):
         print("🔒 Unauthorized response: HTTP 401")
@@ -192,7 +217,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")
@@ -245,7 +270,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")
@@ -256,14 +281,14 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "User not found")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .conflict(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 409")
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Conflict")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .internalServerError(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 500")
@@ -377,7 +402,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")
