@@ -17,11 +17,16 @@ struct AuthenticationMiddleware: ClientMiddleware {
     var request = request
 
     // Add JWT token if available
-    if let token = try? await keychainClient.getJwtToken() {
-      request.headerFields[.authorization] = "Bearer \(token)"
-      print("🔑 AuthenticationMiddleware: Added Bearer token to request")
-    } else {
-      print("🔑 AuthenticationMiddleware: No token available")
+    do {
+      if let token = try await keychainClient.getJwtToken() {
+        request.headerFields[.authorization] = "Bearer \(token)"
+        let preview = String(token.prefix(20)) + "..."
+        print("🔑 AuthenticationMiddleware: Added Bearer token (\(preview)) to request")
+      } else {
+        print("🔑 AuthenticationMiddleware: No token in keychain")
+      }
+    } catch {
+      print("🔑 AuthenticationMiddleware: Error getting token: \(error)")
     }
 
     return try await next(request, body, baseURL)
