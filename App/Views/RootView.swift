@@ -60,7 +60,7 @@ struct RootFeature {
     var launchStatus: String = "Starting..."
     var isAuthenticated: Bool = false
     var login: LoginFeature.State = LoginFeature.State()
-    var main: MainFeature.State?
+    var main: MainFeature.State = MainFeature.State()
     #if DEBUG
     @Presents var diagnostic: DiagnosticFeature.State?
     #endif
@@ -117,15 +117,17 @@ struct RootFeature {
           "loginStatus": "\(authState.loginStatus)",
           "registrationStatus": "\(authState.registrationStatus)"
         ])
-        state.isLaunching = false  // Now safe to show appropriate screen
+        state.isLaunching = false  // Now safe to show main view
         state.login.registrationStatus = authState.registrationStatus
+        state.isAuthenticated = authState.isAuthenticated
+        // Propagate auth state to MainFeature
+        state.main.isAuthenticated = authState.isAuthenticated
+        state.main.fileList.isAuthenticated = authState.isAuthenticated
 
         if authState.isAuthenticated {
-          logger.info(.auth, "User is authenticated - showing main view")
-          state.isAuthenticated = true
-          state.main = MainFeature.State()
+          logger.info(.auth, "User is authenticated")
         } else {
-          logger.info(.auth, "User not authenticated - showing login view")
+          logger.info(.auth, "User not authenticated - browsing as guest")
         }
         return .none
 
@@ -146,38 +148,48 @@ struct RootFeature {
         }
 
       case let .deviceRegistrationResponse(.failure(error)):
-        // Check if this is an auth error - redirect to login
+        // Check if this is an auth error - user can continue browsing as guest
         if let serverError = error as? ServerClientError, serverError == .unauthorized {
           state.isAuthenticated = false
-          state.main = nil
-          state.login = LoginFeature.State()
+          state.main.isAuthenticated = false
+          state.main.fileList.isAuthenticated = false
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
           }
         }
         return .none
 
-      // Handle delegate actions from LoginFeature
+      // Handle delegate actions from LoginFeature (direct login, not from sheet)
       case .login(.delegate(.loginCompleted)),
            .login(.delegate(.registrationCompleted)):
         state.isAuthenticated = true
-        state.main = MainFeature.State()
+        state.main.isAuthenticated = true
+        state.main.fileList.isAuthenticated = true
+        return .none
+
+      // Handle delegate actions from MainFeature's login sheet
+      case .main(.delegate(.loginCompleted)),
+           .main(.delegate(.registrationCompleted)):
+        state.isAuthenticated = true
+        state.main.isAuthenticated = true
+        state.main.fileList.isAuthenticated = true
         return .none
 
       case .login:
         return .none
 
-      // Handle auth required from MainFeature - redirect to login
+      // Handle auth required from MainFeature - user can continue browsing as guest
       case .main(.delegate(.authenticationRequired)):
         state.isAuthenticated = false
-        state.main = nil
+        state.main.isAuthenticated = false
+        state.main.fileList.isAuthenticated = false
         // Keep registration status - user is still registered, just needs to re-authenticate
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         return .run { [logger, keychainClient] _ in
           // Clear the stored JWT token since it's invalid
           try? await keychainClient.deleteJwtToken()
-          logger.info(.auth, "Session expired - redirecting to login")
+          logger.info(.auth, "Session expired - user can continue browsing as guest")
         }
 
       // MARK: - Push Notification Handling
@@ -263,7 +275,7 @@ struct RootFeature {
       #endif
       }
     }
-    .ifLet(\.main, action: \.main) {
+    Scope(state: \.main, action: \.main) {
       MainFeature()
     }
     #if DEBUG
@@ -285,10 +297,9 @@ struct RootView: View {
     Group {
       if store.isLaunching {
         LaunchView(status: store.launchStatus)
-      } else if store.isAuthenticated, let mainStore = store.scope(state: \.main, action: \.main) {
-        MainView(store: mainStore)
       } else {
-        LoginView(store: store.scope(state: \.login, action: \.login))
+        // Always show MainView - auth state is handled within MainFeature
+        MainView(store: store.scope(state: \.main, action: \.main))
       }
     }
     #if DEBUG

@@ -12,11 +12,34 @@ struct MainView: View {
         }
         .tag(MainFeature.State.Tab.files)
 
-      DiagnosticView(store: store.scope(state: \.diagnostic, action: \.diagnostic))
+      accountTabContent
         .tabItem {
           Label("Account", systemImage: "person.crop.circle")
         }
         .tag(MainFeature.State.Tab.account)
+    }
+    .sheet(item: $store.scope(state: \.loginSheet, action: \.loginSheet)) { loginStore in
+      NavigationStack {
+        LoginView(store: loginStore)
+          .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+              Button("Cancel") {
+                store.send(.loginSheet(.dismiss))
+              }
+            }
+          }
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var accountTabContent: some View {
+    if store.isAuthenticated {
+      DiagnosticView(store: store.scope(state: \.diagnostic, action: \.diagnostic))
+    } else {
+      UnauthenticatedAccountView {
+        store.send(.presentLoginSheet)
+      }
     }
   }
 }

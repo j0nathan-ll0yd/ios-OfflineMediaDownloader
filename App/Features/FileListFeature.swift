@@ -9,6 +9,7 @@ struct FileListFeature {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
     var pendingFileIds: [String] = []
     var isLoading: Bool = false
+    var isAuthenticated: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
@@ -50,6 +51,7 @@ struct FileListFeature {
     @CasePathable
     enum Delegate: Equatable {
       case authenticationRequired
+      case loginRequired
     }
   }
 
@@ -123,7 +125,12 @@ struct FileListFeature {
         return .send(.showError(appError))
 
       case .addButtonTapped:
-        state.showAddConfirmation = true
+        // Adding files requires authentication
+        if state.isAuthenticated {
+          state.showAddConfirmation = true
+        } else {
+          return .send(.delegate(.loginRequired))
+        }
         return .none
 
       case .confirmationDismissed:

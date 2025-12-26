@@ -267,9 +267,12 @@ struct FileListFeatureTests {
   // MARK: - Add File Tests
 
   @MainActor
-  @Test("Add button shows confirmation dialog")
+  @Test("Add button shows confirmation dialog when authenticated")
   func addButtonShowsConfirmation() async throws {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isAuthenticated = true
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     }
 
