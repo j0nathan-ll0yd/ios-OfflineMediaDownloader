@@ -42,6 +42,31 @@ extension ServerClientError: LocalizedError {
   }
 }
 
+// MARK: - Error Message Extraction
+
+/// Extension to extract a string message from the API error message type
+/// which can be either a simple string or a validation errors dictionary
+extension Components.Schemas.ErrorResponse.errorPayload.messagePayload {
+  var stringValue: String {
+    switch self {
+    case .case1(let message):
+      return message
+    case .case2(let validationErrors):
+      // Format validation errors as readable string
+      let errors = validationErrors.additionalProperties
+        .flatMap { field, messages in
+          messages.map { "\(field): \($0)" }
+        }
+        .joined(separator: ", ")
+      return errors.isEmpty ? "Validation error" : errors
+    }
+  }
+
+  func contains(_ substring: String) -> Bool {
+    stringValue.contains(substring)
+  }
+}
+
 // MARK: - OpenAPI Client Factory
 
 /// Creates an authenticated API client with middleware for API key and JWT token injection
@@ -106,7 +131,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return RegisterDeviceResponse(
-          body: EndpointResponse(endpointArn: data.endpointArn),
+          body: EndpointResponse(endpointArn: data.body.value1.endpointArn),
           error: nil,
           requestId: "generated"
         )
@@ -117,7 +142,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return RegisterDeviceResponse(
-          body: EndpointResponse(endpointArn: data.endpointArn),
+          body: EndpointResponse(endpointArn: data.body.value1.endpointArn),
           error: nil,
           requestId: "generated"
         )
@@ -127,7 +152,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .unauthorized(let errorResponse):
         print("🔒 Unauthorized response: HTTP 401")
@@ -160,8 +185,8 @@ extension ServerClient: DependencyKey {
       print("📡 ServerClient.registerUser called")
       let client = makeUnauthenticatedAPIClient()
 
-      let requestBody = Components.Schemas.Models_period_UserRegistration(
-        authorizationCode: authorizationCode,
+      let requestBody = Components.Schemas.Models_period_UserRegistrationRequest(
+        idToken: authorizationCode,
         firstName: userData.firstName,
         lastName: userData.lastName
       )
@@ -182,7 +207,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return LoginResponse(
-          body: TokenResponse(token: data.token, expiresAt: nil, sessionId: nil, userId: nil),
+          body: TokenResponse(token: data.body.value1.token, expiresAt: nil, sessionId: nil, userId: nil),
           error: nil,
           requestId: "generated"
         )
@@ -192,7 +217,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")
@@ -215,8 +240,8 @@ extension ServerClient: DependencyKey {
       print("📡 ServerClient.loginUser called")
       let client = makeUnauthenticatedAPIClient()
 
-      let requestBody = Components.Schemas.Models_period_UserLogin(
-        authorizationCode: authorizationCode
+      let requestBody = Components.Schemas.Models_period_UserLoginRequest(
+        idToken: authorizationCode
       )
 
       #if DEBUG
@@ -235,7 +260,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return LoginResponse(
-          body: TokenResponse(token: data.token, expiresAt: nil, sessionId: nil, userId: nil),
+          body: TokenResponse(token: data.body.value1.token, expiresAt: nil, sessionId: nil, userId: nil),
           error: nil,
           requestId: "generated"
         )
@@ -245,7 +270,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")
@@ -256,14 +281,14 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "User not found")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .conflict(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 409")
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Conflict")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .internalServerError(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 500")
@@ -294,12 +319,12 @@ extension ServerClient: DependencyKey {
         }
 
         // Map API files to domain File objects
-        let files: [File] = data.contents.map { apiFile in
+        let files: [File] = data.body.value1.contents.map { apiFile in
           mapAPIFileToDomainFile(apiFile)
         }
 
         return FileResponse(
-          body: FileList(contents: files, keyCount: Int(data.keyCount)),
+          body: FileList(contents: files, keyCount: Int(data.body.value1.keyCount)),
           error: nil,
           requestId: "generated"
         )
@@ -335,7 +360,7 @@ extension ServerClient: DependencyKey {
       print("📡 ServerClient.addFile called with URL: \(url)")
       let client = makeAuthenticatedAPIClient()
 
-      let requestBody = Components.Schemas.Models_period_FeedlyWebhook(
+      let requestBody = Components.Schemas.Models_period_FeedlyWebhookRequest(
         articleTitle: "User Added", // Required field - placeholder
         articleURL: url.absoluteString
       )
@@ -356,7 +381,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return DownloadFileResponse(
-          body: DownloadFileResponseDetail(status: data.status.rawValue),
+          body: DownloadFileResponseDetail(status: data.body.value1.status.rawValue),
           error: nil,
           requestId: "generated"
         )
@@ -367,7 +392,7 @@ extension ServerClient: DependencyKey {
           throw ServerClientError.networkError(message: "Invalid response format")
         }
         return DownloadFileResponse(
-          body: DownloadFileResponseDetail(status: data.status.rawValue),
+          body: DownloadFileResponseDetail(status: data.body.value1.status.rawValue),
           error: nil,
           requestId: "generated"
         )
@@ -377,7 +402,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request")
         }
-        throw ServerClientError.badRequest(message: error.error.message)
+        throw ServerClientError.badRequest(message: error.error.message.stringValue)
 
       case .forbidden:
         print("🔒 Forbidden response: HTTP 403")

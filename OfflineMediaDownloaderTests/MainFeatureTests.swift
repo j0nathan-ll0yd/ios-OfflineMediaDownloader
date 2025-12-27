@@ -53,11 +53,15 @@ struct MainFeatureTests {
   @MainActor
   @Test("FileList actions pass through without state change")
   func fileListActionsPassThrough() async throws {
-    let store = TestStore(initialState: MainFeature.State()) {
+    var state = MainFeature.State()
+    state.isAuthenticated = true
+    state.fileList.isAuthenticated = true
+
+    let store = TestStore(initialState: state) {
       MainFeature()
     }
 
-    // Non-delegate actions should pass through
+    // Non-delegate actions should pass through (when authenticated)
     await store.send(.fileList(.addButtonTapped)) {
       $0.fileList.showAddConfirmation = true
     }

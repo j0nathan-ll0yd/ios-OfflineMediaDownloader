@@ -119,7 +119,7 @@ struct FileCellView: View {
       Spacer()
     }
     .padding(.vertical, 6)
-    .onAppear {
+    .task {
       store.send(.onAppear)
     }
     .alert($store.scope(state: \.alert, action: \.alert))
@@ -169,8 +169,9 @@ struct FileListView: View {
           FileDetailView(store: detailStore)
         }
     }
-    .onAppear {
+    .task {
       store.send(.onAppear)
+      // Pre-warm pasteboard access (triggers permission dialog if needed)
       Task.detached(priority: .background) {
         _ = UIPasteboard.general.hasStrings
       }
@@ -256,7 +257,7 @@ struct FileListView: View {
   private func videoPlayerContent(for file: File) -> some View {
     if let remoteURL = file.url {
       let localURL = fileClient.filePath(remoteURL)
-      MediaPlayerView(url: localURL) {
+      VideoPlayerSheet(url: localURL) {
         store.send(.dismissPlayer)
       }
     } else {

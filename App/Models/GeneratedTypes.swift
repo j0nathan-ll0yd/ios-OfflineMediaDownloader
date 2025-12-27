@@ -16,13 +16,13 @@ public typealias APIDeviceRegistrationRequest = Components.Schemas.Models_period
 public typealias APIDeviceRegistrationResponse = Components.Schemas.Models_period_DeviceRegistrationResponse
 
 // MARK: - User/Auth Types
-public typealias APIUserLogin = Components.Schemas.Models_period_UserLogin
+public typealias APIUserLoginRequest = Components.Schemas.Models_period_UserLoginRequest
 public typealias APIUserLoginResponse = Components.Schemas.Models_period_UserLoginResponse
-public typealias APIUserRegistration = Components.Schemas.Models_period_UserRegistration
+public typealias APIUserRegistrationRequest = Components.Schemas.Models_period_UserRegistrationRequest
 public typealias APIUserRegistrationResponse = Components.Schemas.Models_period_UserRegistrationResponse
 
 // MARK: - Webhook Types
-public typealias APIFeedlyWebhook = Components.Schemas.Models_period_FeedlyWebhook
+public typealias APIFeedlyWebhookRequest = Components.Schemas.Models_period_FeedlyWebhookRequest
 public typealias APIWebhookResponse = Components.Schemas.Models_period_WebhookResponse
 
 // MARK: - Error Types

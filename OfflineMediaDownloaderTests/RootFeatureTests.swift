@@ -51,7 +51,8 @@ struct RootFeatureTests {
       $0.isLaunching = false
       $0.isAuthenticated = true
       $0.login.registrationStatus = .registered
-      $0.main = MainFeature.State()
+      $0.main.isAuthenticated = true
+      $0.main.fileList.isAuthenticated = true
     }
   }
 
@@ -89,7 +90,8 @@ struct RootFeatureTests {
 
     await store.send(.login(.delegate(.loginCompleted))) {
       $0.isAuthenticated = true
-      $0.main = MainFeature.State()
+      $0.main.isAuthenticated = true
+      $0.main.fileList.isAuthenticated = true
     }
   }
 
@@ -102,7 +104,8 @@ struct RootFeatureTests {
 
     await store.send(.login(.delegate(.registrationCompleted))) {
       $0.isAuthenticated = true
-      $0.main = MainFeature.State()
+      $0.main.isAuthenticated = true
+      $0.main.fileList.isAuthenticated = true
     }
   }
 
@@ -140,8 +143,8 @@ struct RootFeatureTests {
 
     await store.receive(\.deviceRegistrationResponse.failure) {
       $0.isAuthenticated = false
-      $0.main = nil
-      $0.login = LoginFeature.State()
+      $0.main.isAuthenticated = false
+      $0.main.fileList.isAuthenticated = false
     }
   }
 
@@ -194,7 +197,8 @@ struct RootFeatureTests {
 
     await store.send(.main(.delegate(.authenticationRequired))) {
       $0.isAuthenticated = false
-      $0.main = nil
+      $0.main.isAuthenticated = false
+      $0.main.fileList.isAuthenticated = false
       $0.login.loginStatus = .unauthenticated
       $0.login.alert = nil
     }
@@ -229,7 +233,7 @@ struct RootFeatureTests {
     await store.receive(\.fileMetadataSaved)
 
     await store.receive(\.main.fileList.fileAddedFromPush) {
-      $0.main?.fileList.files.append(FileCellFeature.State(file: testFile))
+      $0.main.fileList.files.append(FileCellFeature.State(file: testFile))
     }
   }
 
@@ -243,7 +247,7 @@ struct RootFeatureTests {
     var state = RootFeature.State()
     state.isAuthenticated = true
     state.main = MainFeature.State()
-    state.main?.fileList.files = [FileCellFeature.State(file: TestData.sampleFile)]
+    state.main.fileList.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
     let store = TestStore(initialState: state) {
       RootFeature()
@@ -258,7 +262,7 @@ struct RootFeatureTests {
     await store.receive(\.main.fileList.refreshFileState)
     await store.receive(\.main.fileList.files)
     await store.receive(\.main.fileList.files) {
-      $0.main?.fileList.files[id: TestData.sampleFile.fileId]?.isDownloaded = true
+      $0.main.fileList.files[id: TestData.sampleFile.fileId]?.isDownloaded = true
     }
   }
 
