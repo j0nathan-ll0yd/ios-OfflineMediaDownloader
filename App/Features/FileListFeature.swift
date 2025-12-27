@@ -39,6 +39,7 @@ struct FileListFeature {
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case refreshFileState(String)  // fileId
+    case clearAllFiles  // Clears state and CoreData (used on registration)
     case delegate(Delegate)
 
     @CasePathable
@@ -62,11 +63,16 @@ struct FileListFeature {
     Reduce { state, action in
       switch action {
       case .onAppear:
-        // Load cached files immediately - no server call, no loading state
-        // User must explicitly refresh to fetch from server
+        // Load cached files immediately for instant display
+        // For unauthenticated users, also fetch from server automatically
+        // so they see default files on first launch
+        let shouldAutoRefresh = !state.isAuthenticated
         return .run { send in
           let files = try await coreDataClient.getFiles()
           await send(.localFilesLoaded(files))
+          if shouldAutoRefresh {
+            await send(.refreshButtonTapped)
+          }
         }
 
       case let .localFilesLoaded(files):
@@ -83,6 +89,14 @@ struct FileListFeature {
         })
         state.isLoading = false
         return .none
+
+      case .clearAllFiles:
+        // Clear in-memory state and CoreData/downloaded files
+        state.files = []
+        state.pendingFileIds = []
+        return .run { _ in
+          try await coreDataClient.truncateFiles()
+        }
 
       case .refreshButtonTapped:
         state.isLoading = true

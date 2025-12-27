@@ -11,7 +11,10 @@ struct FileListFeatureTests {
   @MainActor
   @Test("onAppear loads files from CoreData without loading indicator")
   func onAppearLoadsFiles() async throws {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isAuthenticated = true  // Prevent auto-refresh for unauthenticated users
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
@@ -31,6 +34,7 @@ struct FileListFeatureTests {
   @Test("Local files preserve download state on reload")
   func preserveDownloadStateOnReload() async throws {
     var state = FileListFeature.State()
+    state.isAuthenticated = true  // Prevent auto-refresh for unauthenticated users
     var existingCellState = FileCellFeature.State(file: TestData.sampleFile)
     existingCellState.isDownloaded = true
     existingCellState.downloadProgress = 1.0
@@ -144,7 +148,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.unauthorized }
+      $0.serverClient.getFiles = { throw ServerClientError.unauthorized(requestId: "test-request-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -164,7 +168,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.internalServerError(message: "Database unavailable") }
+      $0.serverClient.getFiles = { throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -183,7 +187,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Database unavailable")
+        TextState("Database unavailable\n\nRequest ID: test-request-id")
       }
     }
   }
@@ -314,7 +318,7 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized)))
+    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id"))))
     await store.receive(\.delegate.authenticationRequired)
   }
 
@@ -325,7 +329,7 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL", requestId: "test-request-id"))))
 
     await store.receive(\.showError) {
       $0.alert = AlertState {
@@ -335,7 +339,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Invalid URL")
+        TextState("Invalid URL\n\nRequest ID: test-request-id")
       }
     }
   }
