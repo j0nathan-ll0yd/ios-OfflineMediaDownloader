@@ -135,7 +135,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
-      $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized }
+      $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id") }
       $0.keychainClient.deleteJwtToken = { }
     }
 

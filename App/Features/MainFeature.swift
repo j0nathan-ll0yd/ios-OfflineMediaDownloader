@@ -59,7 +59,13 @@ struct MainFeature {
 
       case .loginSheet(.presented(.delegate(.registrationCompleted))):
         state.loginSheet = nil
-        return .send(.delegate(.registrationCompleted))
+        // Clear default files (including CoreData) and switch to Files tab, then refresh
+        state.selectedTab = .files
+        return .concatenate(
+          .send(.delegate(.registrationCompleted)),
+          .send(.fileList(.clearAllFiles)),
+          .send(.fileList(.refreshButtonTapped))
+        )
 
       case .loginSheet:
         return .none

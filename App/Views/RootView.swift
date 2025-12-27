@@ -149,7 +149,8 @@ struct RootFeature {
 
       case let .deviceRegistrationResponse(.failure(error)):
         // Check if this is an auth error - user can continue browsing as guest
-        if let serverError = error as? ServerClientError, serverError == .unauthorized {
+        if let serverError = error as? ServerClientError,
+           case .unauthorized = serverError {
           state.isAuthenticated = false
           state.main.isAuthenticated = false
           state.main.fileList.isAuthenticated = false

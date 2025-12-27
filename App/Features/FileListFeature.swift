@@ -39,6 +39,7 @@ struct FileListFeature {
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case refreshFileState(String)  // fileId
+    case clearAllFiles  // Clears state and CoreData (used on registration)
     case delegate(Delegate)
 
     @CasePathable
@@ -88,6 +89,14 @@ struct FileListFeature {
         })
         state.isLoading = false
         return .none
+
+      case .clearAllFiles:
+        // Clear in-memory state and CoreData/downloaded files
+        state.files = []
+        state.pendingFileIds = []
+        return .run { _ in
+          try await coreDataClient.truncateFiles()
+        }
 
       case .refreshButtonTapped:
         state.isLoading = true
