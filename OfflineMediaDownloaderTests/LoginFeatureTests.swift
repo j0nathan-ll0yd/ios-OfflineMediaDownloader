@@ -215,6 +215,7 @@ struct LoginFeatureTests {
 
     await store.send(.loginButtonTapped) {
       $0.alert = nil
+      $0.isSigningIn = true
     }
   }
 
