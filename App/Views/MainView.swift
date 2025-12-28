@@ -4,11 +4,13 @@ import ComposableArchitecture
 struct MainView: View {
   @Bindable var store: StoreOf<MainFeature>
 
+  private let theme = DarkProfessionalTheme()
+
   var body: some View {
     TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
       FileListView(store: store.scope(state: \.fileList, action: \.fileList))
         .tabItem {
-          Label("Files", systemImage: "list.bullet")
+          Label("Files", systemImage: "film.stack")
         }
         .tag(MainFeature.State.Tab.files)
 
@@ -18,6 +20,8 @@ struct MainView: View {
         }
         .tag(MainFeature.State.Tab.account)
     }
+    .tint(theme.primaryColor)
+    .preferredColorScheme(.dark)
     .sheet(item: $store.scope(state: \.loginSheet, action: \.loginSheet)) { loginStore in
       NavigationStack {
         LoginView(store: loginStore)
@@ -26,6 +30,7 @@ struct MainView: View {
               Button("Cancel") {
                 store.send(.loginSheet(.dismiss))
               }
+              .foregroundStyle(.white)
             }
           }
       }

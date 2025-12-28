@@ -8,6 +8,8 @@ import UIKit
 struct FileCellView: View {
   @Bindable var store: StoreOf<FileCellFeature>
 
+  private let theme = DarkProfessionalTheme()
+
   /// Thumbnail action based on current state
   private var thumbnailAction: (() -> Void)? {
     // Pending files have no action
@@ -18,111 +20,144 @@ struct FileCellView: View {
   }
 
   var body: some View {
-    HStack(spacing: 12) {
-      // Thumbnail - tappable action based on state
+    HStack(spacing: 14) {
+      // Thumbnail
       ZStack {
-        // Gradient background - different color for pending state
-        LinearGradient(
-          colors: store.state.isPending
-            ? [.orange.opacity(0.7), .yellow.opacity(0.7)]
-            : [.blue.opacity(0.8), .purple.opacity(0.8)],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-        .frame(width: 100, height: 70)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        RoundedRectangle(cornerRadius: 10)
+          .fill(DarkProfessionalTheme.cardBackground)
+          .frame(width: 70, height: 50)
 
-        // State overlay icon
-        if store.state.isPending {
-          // Pending - clock icon
-          VStack(spacing: 2) {
-            Image(systemName: "clock")
-              .font(.title3)
-              .foregroundColor(.white)
-            Text("Processing")
-              .font(.system(size: 8, weight: .medium))
-              .foregroundColor(.white.opacity(0.9))
-          }
-        } else if store.isDownloading {
-          // Progress ring with cancel X
-          ZStack {
-            Circle()
-              .stroke(Color.white.opacity(0.3), lineWidth: 3)
-            Circle()
-              .trim(from: 0, to: store.downloadProgress)
-              .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-              .rotationEffect(.degrees(-90))
-            Image(systemName: "xmark")
-              .font(.caption)
-              .fontWeight(.bold)
-              .foregroundColor(.white)
-          }
-          .frame(width: 36, height: 36)
-        } else if store.isDownloaded {
-          // Play icon
-          Image(systemName: "play.fill")
-            .font(.title2)
-            .foregroundColor(.white)
-        } else {
-          // Download icon
-          Image(systemName: "arrow.down.to.line")
-            .font(.title2)
-            .foregroundColor(.white)
-        }
+        stateOverlay
       }
       .contentShape(Rectangle())
       .onTapGesture {
         thumbnailAction?()
       }
 
-      // Content
-      VStack(alignment: .leading, spacing: 4) {
+      // File info
+      VStack(alignment: .leading, spacing: 3) {
         Text(store.file.title ?? store.file.key)
           .font(.subheadline)
           .fontWeight(.medium)
-          .lineLimit(2)
+          .foregroundStyle(.white)
+          .lineLimit(1)
 
-        if let author = store.file.authorName {
-          Text(author)
-            .font(.caption)
-            .foregroundColor(.secondary)
-        }
-
-        HStack(spacing: 4) {
-          if let date = store.file.publishDate {
-            Text(date, style: .relative)
+        HStack(spacing: 6) {
+          if let author = store.file.authorName {
+            Text(author)
           }
-
-          if store.file.publishDate != nil && store.file.size != nil {
+          if store.file.size != nil {
             Text("•")
-          }
-
-          if let size = store.file.size, size > 0 {
-            Text(formatFileSize(size))
+            Text(formatFileSize(store.file.size))
           }
         }
-        .font(.caption2)
-        .foregroundColor(.secondary)
+        .font(.caption)
+        .foregroundStyle(theme.textSecondary)
 
-        // Status text based on state
-        if store.state.isPending {
-          Text("Processing on server...")
-            .font(.caption2)
-            .foregroundColor(.orange)
-        } else if store.isDownloading {
-          Text("Downloading \(Int(store.downloadProgress * 100))% — Tap to cancel")
-            .font(.caption2)
-            .foregroundColor(.blue)
-        }
+        statusText
       }
 
       Spacer()
+
+      // Progress ring for downloading
+      if store.isDownloading {
+        glowingProgressRing
+      }
     }
-    .padding(.vertical, 6)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 12)
+    .background(theme.surfaceColor)
+    .overlay(
+      Rectangle()
+        .fill(DarkProfessionalTheme.divider)
+        .frame(height: 0.5),
+      alignment: .bottom
+    )
     .task {
       store.send(.onAppear)
     }
     .alert($store.scope(state: \.alert, action: \.alert))
+  }
+
+  @ViewBuilder
+  private var stateOverlay: some View {
+    if store.state.isPending {
+      Image(systemName: "clock")
+        .font(.system(size: 18))
+        .foregroundStyle(theme.warningColor)
+    } else if store.isDownloading {
+      ZStack {
+        Circle()
+          .stroke(theme.primaryColor.opacity(0.3), lineWidth: 2)
+          .frame(width: 24, height: 24)
+
+        Circle()
+          .trim(from: 0, to: store.downloadProgress)
+          .stroke(theme.primaryColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+          .frame(width: 24, height: 24)
+          .rotationEffect(.degrees(-90))
+      }
+    } else if store.isDownloaded {
+      Image(systemName: "play.fill")
+        .font(.system(size: 18))
+        .foregroundStyle(theme.primaryColor)
+    } else {
+      Image(systemName: "arrow.down.to.line")
+        .font(.system(size: 16))
+        .foregroundStyle(theme.textSecondary)
+    }
+  }
+
+  @ViewBuilder
+  private var statusText: some View {
+    if store.state.isPending {
+      Text("Processing...")
+        .font(.caption2)
+        .foregroundStyle(theme.warningColor)
+    } else if store.isDownloading {
+      Text("Downloading \(Int(store.downloadProgress * 100))%")
+        .font(.caption2)
+        .foregroundStyle(theme.primaryColor)
+        .monospacedDigit()
+    } else if store.isDownloaded {
+      Text("Downloaded")
+        .font(.caption2)
+        .foregroundStyle(theme.successColor)
+    }
+  }
+
+  private var glowingProgressRing: some View {
+    ZStack {
+      // Glow
+      Circle()
+        .fill(theme.primaryColor.opacity(0.2))
+        .frame(width: 44, height: 44)
+        .blur(radius: 8)
+
+      // Track
+      Circle()
+        .stroke(theme.primaryColor.opacity(0.2), lineWidth: 3)
+        .frame(width: 36, height: 36)
+
+      // Progress
+      Circle()
+        .trim(from: 0, to: store.downloadProgress)
+        .stroke(
+          LinearGradient(
+            colors: [theme.primaryColor, theme.accentColor],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          ),
+          style: StrokeStyle(lineWidth: 3, lineCap: .round)
+        )
+        .frame(width: 36, height: 36)
+        .rotationEffect(.degrees(-90))
+
+      Text("\(Int(store.downloadProgress * 100))")
+        .font(.system(size: 10, weight: .bold))
+        .foregroundStyle(.white)
+        .monospacedDigit()
+    }
   }
 }
 
@@ -142,33 +177,48 @@ struct FileListView: View {
   @Bindable var store: StoreOf<FileListFeature>
   @Dependency(\.fileClient) var fileClient  // For fullScreenCover local URL conversion
 
+  private let theme = DarkProfessionalTheme()
+
+  // Store for DefaultFilesView (for unauthenticated users)
+  @State private var defaultFilesStore = Store(initialState: DefaultFilesFeature.State()) {
+    DefaultFilesFeature()
+  }
+
   var body: some View {
     NavigationStack {
-      fileListContent
-        .navigationTitle("Files")
-        .toolbar { toolbarContent }
-        .confirmationDialog(
-          "Add Video",
-          isPresented: Binding(
-            get: { store.showAddConfirmation },
-            set: { _ in store.send(.confirmationDismissed) }
-          ),
-          titleVisibility: .visible
-        ) {
-          Button("From Clipboard") {
-            store.send(.addFromClipboard)
-          }
-          Button("Cancel", role: .cancel) {
-            store.send(.confirmationDismissed)
-          }
+      ZStack {
+        theme.backgroundColor
+          .ignoresSafeArea()
+
+        fileListContent
+      }
+      .navigationTitle("Files")
+      .navigationBarTitleDisplayMode(.large)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+      .toolbar { toolbarContent }
+      .confirmationDialog(
+        "Add Video",
+        isPresented: Binding(
+          get: { store.showAddConfirmation },
+          set: { _ in store.send(.confirmationDismissed) }
+        ),
+        titleVisibility: .visible
+      ) {
+        Button("From Clipboard") {
+          store.send(.addFromClipboard)
         }
-        .alert($store.scope(state: \.alert, action: \.alert))
-        .navigationDestination(
-          item: $store.scope(state: \.selectedFile, action: \.detail)
-        ) { detailStore in
-          FileDetailView(store: detailStore)
+        Button("Cancel", role: .cancel) {
+          store.send(.confirmationDismissed)
         }
+      }
+      .alert($store.scope(state: \.alert, action: \.alert))
+      .navigationDestination(
+        item: $store.scope(state: \.selectedFile, action: \.detail)
+      ) { detailStore in
+        FileDetailView(store: detailStore)
+      }
     }
+    .preferredColorScheme(.dark)
     .task {
       store.send(.onAppear)
       // Pre-warm pasteboard access (triggers permission dialog if needed)
@@ -191,34 +241,97 @@ struct FileListView: View {
   @ViewBuilder
   private var fileListContent: some View {
     if store.isLoading && store.files.isEmpty {
-      ProgressView("Loading files...")
+      loadingView
     } else if store.files.isEmpty {
-      VStack(spacing: 16) {
-        Image(systemName: "film.stack")
-          .font(.system(size: 60))
-          .foregroundColor(.secondary)
-        Text("No files yet")
-          .font(.headline)
-        Text("Tap + to add a video from your clipboard")
-          .font(.subheadline)
-          .foregroundColor(.secondary)
+      // Show DefaultFilesView for unauthenticated users
+      if !store.isAuthenticated {
+        DefaultFilesView(store: defaultFilesStore) {
+          store.send(.delegate(.loginRequired))
+        }
+      } else {
+        emptyView
       }
     } else {
-      List {
+      fileList
+    }
+  }
+
+  private var loadingView: some View {
+    VStack(spacing: 16) {
+      ProgressView()
+        .scaleEffect(1.2)
+        .tint(theme.primaryColor)
+      Text("Loading files...")
+        .font(.subheadline)
+        .foregroundStyle(theme.textSecondary)
+    }
+  }
+
+  private var emptyView: some View {
+    VStack(spacing: 20) {
+      ZStack {
+        Circle()
+          .fill(theme.primaryColor.opacity(0.15))
+          .frame(width: 100, height: 100)
+
+        Image(systemName: "film.stack")
+          .font(.system(size: 40))
+          .foregroundStyle(theme.primaryColor)
+      }
+
+      VStack(spacing: 8) {
+        Text("No files yet")
+          .font(.title3)
+          .fontWeight(.semibold)
+          .foregroundStyle(.white)
+
+        Text("Tap + to add your first video")
+          .font(.subheadline)
+          .foregroundStyle(theme.textSecondary)
+      }
+
+      Button {
+        store.send(.addButtonTapped)
+      } label: {
+        HStack {
+          Image(systemName: "plus")
+          Text("Add Video")
+        }
+        .font(.headline)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(theme.primaryColor)
+        .clipShape(Capsule())
+      }
+    }
+    .padding(32)
+  }
+
+  private var fileList: some View {
+    ScrollView {
+      LazyVStack(spacing: 0) {
         ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
           FileCellView(store: cellStore)
             .contentShape(Rectangle())
             .onTapGesture {
               store.send(.fileTapped(cellStore.state))
             }
-        }
-        .onDelete { indexSet in
-          store.send(.deleteFiles(indexSet))
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+              Button(role: .destructive) {
+                if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
+                  store.send(.deleteFiles(IndexSet(integer: index)))
+                }
+              } label: {
+                Label("Delete", systemImage: "trash")
+              }
+            }
         }
       }
-      .refreshable {
-        store.send(.refreshButtonTapped)
-      }
+      .padding(.vertical, 12)
+    }
+    .refreshable {
+      store.send(.refreshButtonTapped)
     }
   }
 
@@ -227,11 +340,11 @@ struct FileListView: View {
   @ToolbarContentBuilder
   private var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
-      HStack {
+      HStack(spacing: 16) {
         if !store.pendingFileIds.isEmpty {
           NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
             Image(systemName: "clock.arrow.circlepath")
-              .foregroundColor(.orange)
+              .foregroundStyle(theme.warningColor)
           }
         }
 
@@ -239,13 +352,16 @@ struct FileListView: View {
           store.send(.refreshButtonTapped)
         } label: {
           Image(systemName: "arrow.clockwise")
+            .foregroundStyle(theme.primaryColor)
         }
         .disabled(store.isLoading)
 
         Button {
           store.send(.addButtonTapped)
         } label: {
-          Image(systemName: "plus")
+          Image(systemName: "plus.circle.fill")
+            .font(.title3)
+            .foregroundStyle(theme.primaryColor)
         }
       }
     }
@@ -272,27 +388,63 @@ struct FileListView: View {
 struct PendingFilesView: View {
   let fileIds: [String]
 
-  var body: some View {
-    List {
-      Section(header: Text("Pending Downloads")) {
-        ForEach(fileIds, id: \.self) { id in
-          HStack {
-            Image(systemName: "clock")
-              .foregroundColor(.orange)
-            Text(id)
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-        }
-      }
+  private let theme = DarkProfessionalTheme()
 
-      Section {
-        Text("These videos are being processed by the server. They will appear in your Files list when ready.")
-          .font(.caption)
-          .foregroundColor(.secondary)
+  var body: some View {
+    ZStack {
+      theme.backgroundColor
+        .ignoresSafeArea()
+
+      ScrollView {
+        VStack(spacing: 16) {
+          // Header section
+          VStack(spacing: 8) {
+            Text("PENDING DOWNLOADS")
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.textSecondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+
+            ForEach(fileIds, id: \.self) { id in
+              HStack(spacing: 12) {
+                Image(systemName: "clock")
+                  .font(.system(size: 18))
+                  .foregroundStyle(theme.warningColor)
+
+                Text(id)
+                  .font(.subheadline)
+                  .foregroundStyle(.white)
+                  .lineLimit(1)
+
+                Spacer()
+              }
+              .padding(.horizontal, 16)
+              .padding(.vertical, 14)
+              .background(theme.surfaceColor)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+          }
+
+          // Info section
+          HStack(spacing: 12) {
+            Image(systemName: "info.circle.fill")
+              .foregroundStyle(theme.primaryColor)
+
+            Text("These videos are being processed by the server. They will appear in your Files list when ready.")
+              .font(.caption)
+              .foregroundStyle(theme.textSecondary)
+          }
+          .padding(16)
+          .background(theme.surfaceColor)
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(16)
       }
     }
     .navigationTitle("Pending")
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbarColorScheme(.dark, for: .navigationBar)
+    .preferredColorScheme(.dark)
   }
 }
 
