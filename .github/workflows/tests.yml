@@ -265,3 +265,4 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
+
