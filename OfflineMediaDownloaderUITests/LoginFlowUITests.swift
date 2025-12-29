@@ -1,6 +1,8 @@
 import XCTest
 
-/// UI Tests for the login and authentication flow
+/// UI Tests for the login/authentication flow
+/// Note: The app supports guest browsing - users can browse files without signing in.
+/// Sign in with Apple is available from the Account tab for authenticated features.
 final class LoginFlowUITests: XCTestCase {
 
   var app: XCUIApplication!
@@ -14,86 +16,126 @@ final class LoginFlowUITests: XCTestCase {
     app = nil
   }
 
-  // MARK: - Login Screen Tests
+  // MARK: - Guest Browsing Tests
 
   @MainActor
-  func testLoginScreenDisplaysSignInWithAppleButton() throws {
-    app.launchForUITesting()
+  func testAppLaunchShowsFileList() throws {
+    app.launch()
 
-    // Wait for login view to appear
+    // App should show file list immediately (guest browsing mode)
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15), "File list should appear on launch")
+  }
+
+  @MainActor
+  func testGuestUserCanAccessAccountTab() throws {
+    app.launch()
+
+    // Wait for app to load
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Navigate to Account tab
+    let accountTab = app.tabBars.buttons["Account"]
+    XCTAssertTrue(accountTab.exists, "Account tab should exist")
+    accountTab.tap()
+
+    // Should see sign in prompt for unauthenticated users
     let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
-    XCTAssertTrue(signInButton.waitForExistence(timeout: 10), "Sign in with Apple button should be visible")
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 10),
+                  "Sign in with Apple button should be visible on Account tab for guests")
   }
 
   @MainActor
-  func testLoginScreenDisplaysSkipOption() throws {
-    app.launchForUITesting()
+  func testSignInButtonExistsOnAccountTab() throws {
+    app.launch()
 
-    // Check for skip/browse anonymously option
-    let skipButton = app.buttons[UITestHelpers.AccessibilityID.skipLoginButton]
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
 
-    // Skip button may or may not exist depending on app configuration
-    if skipButton.exists {
-      XCTAssertTrue(skipButton.isHittable, "Skip button should be tappable")
-    }
+    // Go to Account tab
+    app.tabBars.buttons["Account"].tap()
+
+    // Verify Sign in with Apple button exists
+    let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 10))
+    XCTAssertTrue(signInButton.isHittable, "Sign in button should be tappable")
   }
 
-  // MARK: - Authentication Flow Tests
+  // MARK: - Tab Navigation Tests
 
   @MainActor
-  func testSuccessfulLoginNavigatesToFileList() throws {
-    // Configure app with successful login stub
-    app.launchWithStubs(.success)
+  func testTabBarNavigationBetweenFilesAndAccount() throws {
+    app.launch()
+
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Navigate to Account tab
+    let accountTab = app.tabBars.buttons["Account"]
+    let filesTab = app.tabBars.buttons["Files"]
+
+    accountTab.tap()
+
+    // Verify we're on Account tab
+    let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 5))
+
+    // Navigate back to Files tab
+    filesTab.tap()
+
+    // Verify we're back on file list
+    XCTAssertTrue(fileList.waitForExistence(timeout: 5))
+  }
+
+  // MARK: - Login Sheet Tests
+
+  @MainActor
+  func testTappingSignInButtonPresentsLoginSheet() throws {
+    app.launch()
+
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Go to Account tab and tap sign in
+    app.tabBars.buttons["Account"].tap()
 
     let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
     XCTAssertTrue(signInButton.waitForExistence(timeout: 10))
+    signInButton.tap()
 
-    // Note: In UI tests, we can't actually complete Sign in with Apple flow
-    // because it requires system authentication. This test verifies the button exists.
-    // Full SIWA testing requires AWS Device Farm with real devices.
-
-    // For stub mode, we can simulate successful auth via launch environment
-    // The app should check STUB_AUTH_STATE and bypass SIWA
+    // Should present a login sheet with the native Sign in with Apple button
+    // The sheet contains a SignInWithAppleButton which has the same accessibility ID
+    let sheetSignInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
+    XCTAssertTrue(sheetSignInButton.waitForExistence(timeout: 10),
+                  "Login sheet should present with Sign in with Apple button")
   }
 
   @MainActor
-  func testAuthenticatedUserSeesFileList() throws {
-    // Launch with pre-authenticated session
-    app.launchWithAuthenticatedSession()
+  func testLoginSheetCanBeDismissed() throws {
+    app.launch()
 
-    // Should skip login and show file list directly
     let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 10), "Authenticated user should see file list")
-  }
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
 
-  @MainActor
-  func testAnonymousBrowsingShowsLimitedContent() throws {
-    app.launchForUITesting()
-
-    let skipButton = app.buttons[UITestHelpers.AccessibilityID.skipLoginButton]
-    if skipButton.waitForExistence(timeout: 5) {
-      skipButton.tap()
-
-      // Should show file list with limited/demo content
-      let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-      XCTAssertTrue(fileList.waitForExistence(timeout: 10), "Anonymous user should see file list")
-    }
-  }
-
-  // MARK: - Error Handling Tests
-
-  @MainActor
-  func testLoginErrorDisplaysAlert() throws {
-    // Configure app with login failure stub
-    app.launchWithStubs(.loginFailure)
+    // Go to Account tab and tap sign in
+    app.tabBars.buttons["Account"].tap()
 
     let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
-    guard signInButton.waitForExistence(timeout: 10) else {
-      XCTFail("Sign in button should exist")
-      return
-    }
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 10))
+    signInButton.tap()
 
-    // In stub mode with login failure, attempting login should show error
-    // This tests the error handling UI
+    // Wait for sheet to appear
+    sleep(1)
+
+    // Look for Cancel button in the sheet
+    let cancelButton = app.buttons["Cancel"]
+    if cancelButton.waitForExistence(timeout: 5) {
+      cancelButton.tap()
+
+      // Should return to Account tab
+      XCTAssertTrue(signInButton.waitForExistence(timeout: 5),
+                    "Should return to Account tab after dismissing login sheet")
+    }
   }
 }

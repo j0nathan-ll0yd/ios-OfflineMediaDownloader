@@ -52,6 +52,7 @@ struct FileCellView: View {
               .trim(from: 0, to: store.downloadProgress)
               .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
               .rotationEffect(.degrees(-90))
+              .accessibilityIdentifier("downloadProgress")
             Image(systemName: "xmark")
               .font(.caption)
               .fontWeight(.bold)
@@ -63,11 +64,13 @@ struct FileCellView: View {
           Image(systemName: "play.fill")
             .font(.title2)
             .foregroundColor(.white)
+            .accessibilityIdentifier("playButton")
         } else {
           // Download icon
           Image(systemName: "arrow.down.to.line")
             .font(.title2)
             .foregroundColor(.white)
+            .accessibilityIdentifier("downloadButton")
         }
       }
       .contentShape(Rectangle())
@@ -145,6 +148,7 @@ struct FileListView: View {
   var body: some View {
     NavigationStack {
       fileListContent
+        .accessibilityIdentifier("fileListView")
         .navigationTitle("Files")
         .toolbar { toolbarContent }
         .confirmationDialog(
@@ -207,6 +211,7 @@ struct FileListView: View {
       List {
         ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
           FileCellView(store: cellStore)
+            .accessibilityIdentifier("fileCell")
             .contentShape(Rectangle())
             .onTapGesture {
               store.send(.fileTapped(cellStore.state))
@@ -240,6 +245,7 @@ struct FileListView: View {
         } label: {
           Image(systemName: "arrow.clockwise")
         }
+        .accessibilityIdentifier("refreshButton")
         .disabled(store.isLoading)
 
         Button {
@@ -247,6 +253,7 @@ struct FileListView: View {
         } label: {
           Image(systemName: "plus")
         }
+        .accessibilityIdentifier("addFileButton")
       }
     }
   }

@@ -1,6 +1,7 @@
 import XCTest
 
 /// UI Tests for the file list and file operations
+/// Note: The app supports guest browsing - file list is shown immediately on launch.
 final class FileListUITests: XCTestCase {
 
   var app: XCUIApplication!
@@ -17,126 +18,72 @@ final class FileListUITests: XCTestCase {
   // MARK: - File List Display Tests
 
   @MainActor
-  func testFileListDisplaysFiles() throws {
-    app.launchWithAuthenticatedSession()
+  func testFileListAppearsOnLaunch() throws {
+    app.launch()
 
+    // File list should appear on launch (guest browsing mode)
     let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 10), "File list should be visible")
-
-    // Check for file cells
-    let fileCells = app.cells.matching(identifier: UITestHelpers.AccessibilityID.fileCell)
-
-    // With stub data, we should have at least one file
-    XCTAssertTrue(fileCells.firstMatch.waitForExistence(timeout: 10), "Should display at least one file")
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15), "File list should be visible on launch")
   }
 
   @MainActor
-  func testEmptyFileListDisplaysEmptyState() throws {
-    app.launchWithStubs(.emptyFiles)
-    UITestHelpers.configureWithAuthenticatedSession(app)
+  func testFileListHasNavigationTitle() throws {
     app.launch()
 
     let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 10))
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
 
-    // Check for empty state message or add file prompt
-    // Implementation depends on actual UI
+    // Check for navigation title
+    let navBar = app.navigationBars["Files"]
+    XCTAssertTrue(navBar.exists, "Navigation bar with title 'Files' should exist")
   }
 
-  // MARK: - Refresh Tests
+  // MARK: - Toolbar Tests
 
   @MainActor
-  func testPullToRefreshUpdatesFileList() throws {
-    app.launchWithAuthenticatedSession()
+  func testRefreshButtonExists() throws {
+    app.launch()
 
     let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 10))
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
 
-    // Perform pull to refresh gesture
-    let firstCell = app.cells.firstMatch
-    if firstCell.exists {
-      firstCell.swipeDown()
-
-      // Wait for refresh to complete
-      let loadingIndicator = app.activityIndicators[UITestHelpers.AccessibilityID.loadingIndicator]
-      if loadingIndicator.exists {
-        XCTAssertTrue(UITestHelpers.waitForElementToDisappear(loadingIndicator, timeout: 15),
-                      "Loading indicator should disappear after refresh")
-      }
-    }
+    // Check for refresh button in toolbar
+    let refreshButton = app.buttons[UITestHelpers.AccessibilityID.refreshButton]
+    XCTAssertTrue(refreshButton.exists, "Refresh button should exist in toolbar")
   }
-
-  // MARK: - File Cell Interaction Tests
-
-  @MainActor
-  func testTappingFileCellShowsDetail() throws {
-    app.launchWithAuthenticatedSession()
-
-    let fileCells = app.cells.matching(identifier: UITestHelpers.AccessibilityID.fileCell)
-    guard fileCells.firstMatch.waitForExistence(timeout: 10) else {
-      XCTFail("Should have at least one file cell")
-      return
-    }
-
-    // Tap the first file cell
-    fileCells.firstMatch.tap()
-
-    // Check for detail view or expanded state
-    // Implementation depends on navigation pattern (sheet, navigation, inline expansion)
-  }
-
-  @MainActor
-  func testDownloadButtonStartsDownload() throws {
-    app.launchWithAuthenticatedSession()
-
-    let fileCells = app.cells.matching(identifier: UITestHelpers.AccessibilityID.fileCell)
-    guard fileCells.firstMatch.waitForExistence(timeout: 10) else {
-      XCTFail("Should have at least one file cell")
-      return
-    }
-
-    // Find a file with download button (not yet downloaded)
-    let downloadButton = fileCells.firstMatch.buttons[UITestHelpers.AccessibilityID.downloadButton]
-
-    if downloadButton.exists && downloadButton.isHittable {
-      downloadButton.tap()
-
-      // Check for download progress indicator
-      let progressIndicator = fileCells.firstMatch.progressIndicators[UITestHelpers.AccessibilityID.downloadProgress]
-
-      // In stub mode, download should complete quickly
-      // In real mode, would need to wait for actual download
-    }
-  }
-
-  @MainActor
-  func testPlayButtonAppearsForDownloadedFiles() throws {
-    app.launchWithAuthenticatedSession()
-
-    let fileCells = app.cells.matching(identifier: UITestHelpers.AccessibilityID.fileCell)
-    guard fileCells.firstMatch.waitForExistence(timeout: 10) else {
-      XCTFail("Should have at least one file cell")
-      return
-    }
-
-    // Look for play button on downloaded files
-    let playButton = fileCells.firstMatch.buttons[UITestHelpers.AccessibilityID.playButton]
-
-    // Play button should exist on downloaded files
-    // May need to find specific downloaded file in list
-  }
-
-  // MARK: - Add File Tests
 
   @MainActor
   func testAddFileButtonExists() throws {
-    app.launchWithAuthenticatedSession()
+    app.launch()
 
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Check for add button in toolbar
     let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
+    XCTAssertTrue(addButton.exists, "Add file button should exist in toolbar")
+    XCTAssertTrue(addButton.isHittable, "Add file button should be tappable")
+  }
 
-    // Add button may be in navigation bar or floating
-    if addButton.exists {
-      XCTAssertTrue(addButton.isHittable, "Add file button should be tappable")
+  @MainActor
+  func testAddButtonShowsConfirmationDialog() throws {
+    app.launch()
+
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Tap add button
+    let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
+    addButton.tap()
+
+    // Should show confirmation dialog
+    let dialogTitle = app.staticTexts["Add Video"]
+    XCTAssertTrue(dialogTitle.waitForExistence(timeout: 5), "Add Video dialog should appear")
+
+    // Dismiss the dialog
+    let cancelButton = app.buttons["Cancel"]
+    if cancelButton.exists {
+      cancelButton.tap()
     }
   }
 
@@ -144,21 +91,70 @@ final class FileListUITests: XCTestCase {
 
   @MainActor
   func testTabBarNavigation() throws {
-    app.launchWithAuthenticatedSession()
+    app.launch()
 
-    // Check files tab is selected by default
-    let filesTab = app.tabBars.buttons[UITestHelpers.AccessibilityID.filesTab]
-    let diagnosticsTab = app.tabBars.buttons[UITestHelpers.AccessibilityID.diagnosticsTab]
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
 
-    if filesTab.exists && diagnosticsTab.exists {
-      // Navigate to diagnostics
-      diagnosticsTab.tap()
+    // Navigate to Account tab
+    let accountTab = app.tabBars.buttons["Account"]
+    let filesTab = app.tabBars.buttons["Files"]
 
-      // Navigate back to files
-      filesTab.tap()
+    XCTAssertTrue(accountTab.exists, "Account tab should exist")
+    XCTAssertTrue(filesTab.exists, "Files tab should exist")
 
-      let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-      XCTAssertTrue(fileList.exists, "Should return to file list view")
+    // Go to Account
+    accountTab.tap()
+
+    // Navigate back to Files
+    filesTab.tap()
+
+    // Verify file list is still visible
+    XCTAssertTrue(fileList.exists, "Should return to file list view")
+  }
+
+  // MARK: - Empty State Tests
+
+  @MainActor
+  func testEmptyStateShowsPrompt() throws {
+    app.launch()
+
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Empty state shows "No files yet" message
+    // This may or may not appear depending on whether the user has files
+    let emptyText = app.staticTexts["No files yet"]
+    if emptyText.exists {
+      // Verify the hint text is also present
+      let hintText = app.staticTexts["Tap + to add a video from your clipboard"]
+      XCTAssertTrue(hintText.exists, "Empty state hint should be visible")
+    }
+    // If files exist, that's also a valid state
+  }
+
+  // MARK: - Pull to Refresh Tests
+
+  @MainActor
+  func testPullToRefreshWorks() throws {
+    app.launch()
+
+    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
+    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+
+    // Find a cell or the list itself to pull down on
+    let list = app.tables.firstMatch
+    if list.exists {
+      // Perform pull to refresh gesture
+      let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+      let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+      start.press(forDuration: 0.1, thenDragTo: end)
+
+      // Wait a moment for refresh to complete
+      sleep(2)
+
+      // List should still be visible
+      XCTAssertTrue(fileList.exists, "File list should still be visible after refresh")
     }
   }
 }

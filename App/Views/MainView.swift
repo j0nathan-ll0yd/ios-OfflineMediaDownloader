@@ -11,12 +11,14 @@ struct MainView: View {
           Label("Files", systemImage: "list.bullet")
         }
         .tag(MainFeature.State.Tab.files)
+        .accessibilityIdentifier("filesTab")
 
       accountTabContent
         .tabItem {
           Label("Account", systemImage: "person.crop.circle")
         }
         .tag(MainFeature.State.Tab.account)
+        .accessibilityIdentifier("diagnosticsTab")
     }
     .sheet(item: $store.scope(state: \.loginSheet, action: \.loginSheet)) { loginStore in
       NavigationStack {
