@@ -1,21 +1,5 @@
 import Foundation
 
-// Cached date formatter for YYYYMMDD format (API responses)
-private let fileDateFormatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.dateFormat = "yyyyMMdd"
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  return formatter
-}()
-
-// Cached date formatter for ISO date format (push notifications)
-private let fileDateFormatterISO: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.dateFormat = "yyyy-MM-dd"
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  return formatter
-}()
-
 struct File: Equatable, Identifiable, Codable, Sendable {
   var fileId: String
   var key: String
@@ -58,8 +42,7 @@ struct File: Equatable, Identifiable, Codable, Sendable {
 
     // Parse date - try YYYYMMDD first (API), then ISO date (push notifications)
     if let dateString = try values.decodeIfPresent(String.self, forKey: .publishDate) {
-      publishDate = fileDateFormatter.date(from: dateString)
-                 ?? fileDateFormatterISO.date(from: dateString)
+      publishDate = DateFormatters.parse(dateString)
     }
 
     // Decode additional optional fields
@@ -78,7 +61,7 @@ struct File: Equatable, Identifiable, Codable, Sendable {
     try container.encodeIfPresent(size, forKey: .size)
     try container.encodeIfPresent(url?.absoluteString, forKey: .url)
     if let date = publishDate {
-      try container.encode(fileDateFormatter.string(from: date), forKey: .publishDate)
+      try container.encode(DateFormatters.format(date), forKey: .publishDate)
     }
     try container.encodeIfPresent(authorName, forKey: .authorName)
     try container.encodeIfPresent(authorUser, forKey: .authorUser)

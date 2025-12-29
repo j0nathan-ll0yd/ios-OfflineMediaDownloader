@@ -80,13 +80,24 @@ extension Components.Schemas.ErrorResponse.errorPayload.messagePayload {
 
 // MARK: - OpenAPI Client Factory
 
+/// Shared pinned URLSession for all API requests
+/// Certificate pinning is enforced in production, disabled for debugging if needed
+private let pinnedURLSession: URLSession = {
+  #if DEBUG
+  // In debug mode, pinning is enabled but can be toggled for development
+  return makePinnedURLSession(enforcesPinning: true)
+  #else
+  return makePinnedURLSession(enforcesPinning: true)
+  #endif
+}()
+
 /// Creates an authenticated API client with middleware for API key and JWT token injection
 private func makeAuthenticatedAPIClient() -> Client {
   @Dependency(\.keychainClient) var keychainClient
 
   return Client(
     serverURL: URL(string: Environment.basePath)!,
-    transport: URLSessionTransport(),
+    transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       APIKeyMiddleware(apiKey: Environment.apiKey),
       AuthenticationMiddleware(keychainClient: keychainClient)
@@ -98,7 +109,7 @@ private func makeAuthenticatedAPIClient() -> Client {
 private func makeUnauthenticatedAPIClient() -> Client {
   Client(
     serverURL: URL(string: Environment.basePath)!,
-    transport: URLSessionTransport(),
+    transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       APIKeyMiddleware(apiKey: Environment.apiKey)
     ]
@@ -452,20 +463,8 @@ extension ServerClient: DependencyKey {
 
 /// Maps OpenAPI file model to domain File model
 private func mapAPIFileToDomainFile(_ apiFile: Components.Schemas.Models_period_File) -> File {
-  // Parse date from string
-  var publishDate: Date?
-  if let dateString = apiFile.publishDate {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyyMMdd"
-    formatter.timeZone = TimeZone(secondsFromGMT: 0)
-    publishDate = formatter.date(from: dateString)
-
-    // Try ISO format if YYYYMMDD fails
-    if publishDate == nil {
-      formatter.dateFormat = "yyyy-MM-dd"
-      publishDate = formatter.date(from: dateString)
-    }
-  }
+  // Parse date from string using shared DateFormatters
+  let publishDate = apiFile.publishDate.flatMap { DateFormatters.parse($0) }
 
   // Map status - access the nested value1 property
   var fileStatus: FileStatus?
