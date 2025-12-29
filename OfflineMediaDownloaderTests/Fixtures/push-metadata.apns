@@ -1,0 +1,13 @@
+{
+  "Simulator Target Bundle": "com.example.OfflineMediaDownloader",
+  "aps": {
+    "content-available": 1
+  },
+  "type": "metadata",
+  "file": {
+    "fileId": "push-file-001",
+    "key": "New Video from Push.mp4",
+    "publishDate": "2024-12-28",
+    "size": 2048000
+  }
+}

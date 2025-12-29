@@ -1,0 +1,27 @@
+{
+  "description": "Push notification payloads matching backend SNS format",
+  "notifications": {
+    "fileMetadata": {
+      "aps": {
+        "content-available": 1
+      },
+      "type": "metadata",
+      "file": {
+        "fileId": "file-003",
+        "key": "New Video.mp4",
+        "publishDate": "2024-12-28",
+        "size": 2048000
+      }
+    },
+    "downloadReady": {
+      "aps": {
+        "content-available": 1
+      },
+      "type": "download-ready",
+      "fileId": "file-003",
+      "key": "new-video.mp4",
+      "url": "https://s3.localhost.localstack.cloud:4566/media-bucket/file-003.mp4",
+      "size": 2048000
+    }
+  }
+}

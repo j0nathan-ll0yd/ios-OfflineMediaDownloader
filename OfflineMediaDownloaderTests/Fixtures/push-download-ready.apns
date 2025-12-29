@@ -1,0 +1,11 @@
+{
+  "Simulator Target Bundle": "com.example.OfflineMediaDownloader",
+  "aps": {
+    "content-available": 1
+  },
+  "type": "download-ready",
+  "fileId": "push-file-001",
+  "key": "new-video-from-push.mp4",
+  "url": "https://example.com/downloads/push-file-001.mp4",
+  "size": 2048000
+}

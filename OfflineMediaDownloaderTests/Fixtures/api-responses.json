@@ -1,0 +1,49 @@
+{
+  "description": "Expected API response formats for LocalStack testing",
+  "responses": {
+    "loginSuccess": {
+      "body": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMDAxIiwiaWF0IjoxNzM1MzExOTk5LCJleHAiOjE3MzU0MDEyMDB9.test-signature",
+        "expiresAt": "2025-01-01T00:00:00Z",
+        "sessionId": "session-001",
+        "userId": "test-user-001"
+      }
+    },
+    "registerDeviceSuccess": {
+      "body": {
+        "endpointArn": "arn:aws:sns:us-east-1:000000000000:endpoint/APNS_SANDBOX/MyApp/test-endpoint-001"
+      }
+    },
+    "fileListSuccess": {
+      "body": {
+        "contents": [
+          {
+            "fileId": "file-001",
+            "key": "Test Video.mp4",
+            "publishDate": "20241215",
+            "size": 1024000,
+            "url": "https://s3.localhost.localstack.cloud:4566/media-bucket/file-001.mp4",
+            "status": "Downloaded",
+            "title": "Test Video",
+            "authorName": "Test Author"
+          },
+          {
+            "fileId": "file-002",
+            "key": "Pending Video.mp4",
+            "publishDate": "20241220",
+            "size": null,
+            "url": null,
+            "status": "Queued",
+            "title": "Pending Video"
+          }
+        ],
+        "keyCount": 2
+      }
+    },
+    "addFileSuccess": {
+      "body": {
+        "status": "queued"
+      }
+    }
+  }
+}
