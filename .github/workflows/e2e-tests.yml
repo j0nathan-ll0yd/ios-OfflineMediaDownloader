@@ -25,139 +25,18 @@ jobs:
   # ============================================
   # LocalStack Integration Tests
   # ============================================
-  localstack-integration:
-    name: LocalStack Integration Tests
-    runs-on: macos-14
-    timeout-minutes: 30
-
-    services:
-      localstack:
-        image: localstack/localstack:latest
-        ports:
-          - 4566:4566
-        env:
-          SERVICES: apigateway,lambda,dynamodb,s3,sns,sqs
-          DEBUG: 1
-
-    steps:
-      - name: Checkout iOS App
-        uses: actions/checkout@v4
-
-      - name: Checkout Backend (for fixtures)
-        uses: actions/checkout@v4
-        with:
-          repository: j0nathan-ll0yd/aws-cloudformation-media-downloader
-          path: backend
-          ref: master
-        continue-on-error: true
-
-      - name: Create Development Configuration
-        run: |
-          cat > Development.xcconfig << 'EOF'
-          // LocalStack Configuration
-          MEDIA_DOWNLOADER_API_KEY = test-api-key-localstack
-          MEDIA_DOWNLOADER_BASE_PATH = http:/$()/localhost:4566/restapis/test-api/local/_user_request_
-          EOF
-
-      - name: Sync Backend Fixtures
-        run: |
-          chmod +x ./Scripts/sync-backend-fixtures.sh
-          ./Scripts/sync-backend-fixtures.sh
-
-      - name: Select Xcode
-        run: |
-          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_PATH" ]; then
-            sudo xcode-select -s "$XCODE_PATH"
-          fi
-          xcodebuild -version
-
-      - name: Cache Swift Package Manager
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
-      - name: Wait for LocalStack
-        run: |
-          echo "Waiting for LocalStack to be ready..."
-          for i in {1..30}; do
-            if curl -s http://localhost:4566/_localstack/health | grep -q "running"; then
-              echo "LocalStack is ready!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-
-      - name: Deploy Backend to LocalStack
-        if: hashFiles('backend/package.json') != ''
-        working-directory: backend
-        run: |
-          npm ci
-          npm run deploy:local || echo "Backend deployment skipped"
-        continue-on-error: true
-
-      - name: Find Simulator
-        id: simulator
-        run: |
-          DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | contains("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-            head -1)
-
-          if [ -n "$DEVICE_INFO" ]; then
-            DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
-            DEVICE_ID=$(echo "$DEVICE_INFO" | cut -d'|' -f2)
-            echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
-            echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
-          else
-            echo "device=iPhone 16" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build for Testing
-        run: |
-          set -o pipefail
-          xcodebuild build-for-testing \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | xcpretty --color
-
-      - name: Run Integration Tests
-        env:
-          LOCALSTACK_ENABLED: 'true'
-          LOCALSTACK_API_ENDPOINT: 'http://localhost:4566/restapis/test-api/local/_user_request_'
-        run: |
-          set -o pipefail
-          xcodebuild test-without-building \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            -resultBundlePath IntegrationTestResults.xcresult \
-            -only-testing:OfflineMediaDownloaderTests/IntegrationTests \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | xcpretty --color --report junit --output integration-test-results.xml || true
-
-      - name: Upload Integration Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: integration-test-results
-          path: |
-            IntegrationTestResults.xcresult
-            integration-test-results.xml
-          retention-days: 7
+  # NOTE: This job is currently disabled because GitHub's macOS runners
+  # don't have Docker installed. LocalStack integration tests should be
+  # run locally with: LOCALSTACK_ENABLED=true xcodebuild test ...
+  #
+  # To enable this job:
+  # 1. Use a self-hosted macOS runner with Docker installed, OR
+  # 2. Run integration tests on a Linux runner that triggers a macOS job
+  #
+  # localstack-integration:
+  #   name: LocalStack Integration Tests
+  #   runs-on: macos-14
+  #   ...
 
   # ============================================
   # UI Tests with Stub Network
@@ -282,12 +161,14 @@ jobs:
           fi
 
   # ============================================
-  # AWS Device Farm E2E Tests
+  # AWS Device Farm E2E Tests (Placeholder)
   # ============================================
+  # This job is a placeholder that documents the Device Farm setup.
+  # Full implementation is in device-farm-e2e.yml workflow.
   device-farm-e2e:
     name: AWS Device Farm E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
     needs: [ui-tests]
     # Only run on main branch merges or manual trigger
     if: |
