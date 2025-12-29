@@ -3,41 +3,83 @@ import SwiftUI
 struct UnauthenticatedAccountView: View {
   let onSignInTapped: () -> Void
 
+  private let theme = DarkProfessionalTheme()
+
   var body: some View {
     NavigationStack {
-      VStack(spacing: 24) {
-        Spacer()
+      ZStack {
+        theme.backgroundColor
+          .ignoresSafeArea()
 
-        Image(systemName: "person.crop.circle.badge.questionmark")
-          .font(.system(size: 80))
-          .foregroundStyle(.secondary)
+        VStack(spacing: 24) {
+          Spacer()
 
-        Text("Sign In Required")
-          .font(.title2)
-          .fontWeight(.semibold)
+          // Icon with gradient background
+          ZStack {
+            Circle()
+              .fill(
+                LinearGradient(
+                  colors: [theme.primaryColor.opacity(0.3), theme.accentColor.opacity(0.2)],
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+              .frame(width: 120, height: 120)
 
-        Text("Sign in with your Apple ID to access your account settings and add new videos to your library.")
-          .font(.body)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-          .padding(.horizontal, 32)
+            Image(systemName: "person.crop.circle")
+              .font(.system(size: 60))
+              .foregroundStyle(
+                LinearGradient(
+                  colors: [theme.primaryColor, theme.accentColor],
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+          }
 
-        Button(action: onSignInTapped) {
-          Label("Sign in with Apple", systemImage: "apple.logo")
+          VStack(spacing: 12) {
+            Text("Sign In Required")
+              .font(.title2)
+              .fontWeight(.bold)
+              .foregroundStyle(.white)
+
+            Text("Sign in with your Apple ID to access your account settings and add new videos to your library.")
+              .font(.body)
+              .foregroundStyle(theme.textSecondary)
+              .multilineTextAlignment(.center)
+              .padding(.horizontal, 32)
+          }
+
+          // Gradient sign in button
+          Button(action: onSignInTapped) {
+            HStack(spacing: 8) {
+              Image(systemName: "apple.logo")
+              Text("Sign in with Apple")
+            }
             .font(.headline)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.black)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-        }
-        .padding(.horizontal, 40)
+            .padding(.vertical, 16)
+            .background(
+              LinearGradient(
+                colors: [theme.primaryColor, theme.accentColor],
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+            )
+            .clipShape(Capsule())
+          }
+          .padding(.horizontal, 40)
 
-        Spacer()
-        Spacer()
+          Spacer()
+          Spacer()
+        }
       }
       .navigationTitle("Account")
+      .navigationBarTitleDisplayMode(.large)
+      .toolbarColorScheme(.dark, for: .navigationBar)
     }
+    .preferredColorScheme(.dark)
   }
 }
 

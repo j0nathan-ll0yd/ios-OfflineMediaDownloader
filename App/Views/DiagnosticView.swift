@@ -3,92 +3,457 @@ import ComposableArchitecture
 
 struct DiagnosticView: View {
   @Bindable var store: StoreOf<DiagnosticFeature>
+  @State private var showDebugSection = false
+
+  private let theme = DarkProfessionalTheme()
+
+  /// Extract user profile from keychain items
+  private var userProfile: (name: String, email: String) {
+    // Try to find user data in keychain items
+    if let userData = store.keychainItems.first(where: { $0.itemType == .userData }) {
+      // Parse user data JSON - simplified extraction
+      let value = userData.displayValue
+      let name = extractJSONValue(from: value, key: "firstName") ?? "User"
+      let lastName = extractJSONValue(from: value, key: "lastName") ?? ""
+      let fullName = [name, lastName].filter { !$0.isEmpty }.joined(separator: " ")
+      let email = extractJSONValue(from: value, key: "email") ?? "No email"
+      return (fullName.isEmpty ? "User" : fullName, email)
+    }
+    return ("User", "No email stored")
+  }
+
+  private func extractJSONValue(from json: String, key: String) -> String? {
+    // Simple extraction - looks for "key":"value" pattern
+    let pattern = "\"\(key)\":\"([^\"]*)\""
+    guard let regex = try? NSRegularExpression(pattern: pattern),
+          let match = regex.firstMatch(in: json, range: NSRange(json.startIndex..., in: json)),
+          let range = Range(match.range(at: 1), in: json) else {
+      return nil
+    }
+    return String(json[range])
+  }
+
+  private var initials: String {
+    let names = userProfile.name.split(separator: " ")
+    let firstInitial = names.first?.prefix(1) ?? "U"
+    let lastInitial = names.count > 1 ? names.last?.prefix(1) ?? "" : ""
+    return "\(firstInitial)\(lastInitial)".uppercased()
+  }
 
   var body: some View {
     NavigationStack {
-      List {
-        Section(header: Text("Keychain Storage")) {
-          if store.isLoading {
-            ProgressView()
-          } else if store.keychainItems.isEmpty {
-            Text("No keychain items stored")
-              .foregroundColor(.secondary)
-          } else {
-            ForEach(store.keychainItems) { item in
-              NavigationLink(destination: KeychainDetailView(item: item)) {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text(item.name)
-                    .font(.headline)
-                  Text(item.displayValue)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                }
-              }
-            }
-            .onDelete { indexSet in
-              store.send(.deleteKeychainItem(indexSet))
-            }
-          }
-        }
+      ScrollView {
+        VStack(spacing: 24) {
+          // Profile header
+          profileHeader
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .padding(.horizontal, 16)
 
-        if store.showDebugActions {
-          Section(header: Text("Debug Actions")) {
-            Button(role: .destructive) {
-              store.send(.truncateFilesButtonTapped)
-            } label: {
-              Label("Truncate All Files", systemImage: "trash")
-            }
+          // Stats cards (placeholder values)
+          statsSection
+            .padding(.horizontal, 16)
+
+          // Settings sections
+          VStack(spacing: 16) {
+            settingsSection(title: "Account", items: [
+              SettingsItem(icon: "person.crop.circle", title: "Edit Profile", color: theme.primaryColor),
+              SettingsItem(icon: "bell", title: "Notifications", color: theme.warningColor),
+            ])
+
+            settingsSection(title: "Preferences", items: [
+              SettingsItem(icon: "arrow.down.circle", title: "Download Quality", color: theme.primaryColor),
+              SettingsItem(icon: "wifi", title: "Cellular Downloads", color: theme.successColor),
+            ])
+
+            settingsSection(title: "Support", items: [
+              SettingsItem(icon: "questionmark.circle", title: "Help Center", color: theme.textSecondary),
+              SettingsItem(icon: "star", title: "Rate App", color: theme.warningColor),
+            ])
+
+            #if DEBUG
+            // Debug section
+            debugSection
+            #endif
           }
+          .padding(.horizontal, 16)
+
+          // Sign out button (placeholder action)
+          Button(action: { }) {
+            Text("Sign Out")
+              .font(.headline)
+              .foregroundStyle(theme.errorColor)
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, 14)
+              .background(theme.errorColor.opacity(0.15))
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+          .padding(.horizontal, 16)
+          .padding(.top, 8)
+
+          // Version info
+          Text("Version 1.0.0 (Build 1)")
+            .font(.caption)
+            .foregroundStyle(theme.textSecondary)
+            .padding(.bottom, 24)
         }
       }
+      .background(theme.backgroundColor)
       .navigationTitle("Account")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            store.send(.toggleDebugMode)
-          } label: {
-            Image(systemName: store.showDebugActions ? "wrench.fill" : "wrench")
-          }
-        }
-      }
+      .navigationBarTitleDisplayMode(.large)
+      .toolbarColorScheme(.dark, for: .navigationBar)
       .onAppear {
         store.send(.onAppear)
       }
       .alert($store.scope(state: \.alert, action: \.alert))
     }
+    .preferredColorScheme(.dark)
+  }
+
+  // MARK: - Profile Header
+
+  private var profileHeader: some View {
+    VStack(spacing: 16) {
+      // Avatar with gradient border
+      ZStack {
+        Circle()
+          .stroke(
+            LinearGradient(
+              colors: [theme.primaryColor, theme.accentColor],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            ),
+            lineWidth: 4
+          )
+          .frame(width: 104, height: 104)
+
+        Circle()
+          .fill(DarkProfessionalTheme.cardBackground)
+          .frame(width: 96, height: 96)
+
+        Text(initials)
+          .font(.system(size: 36, weight: .semibold, design: .rounded))
+          .foregroundStyle(theme.primaryColor)
+      }
+
+      VStack(spacing: 4) {
+        Text(userProfile.name)
+          .font(.title2)
+          .fontWeight(.bold)
+          .foregroundStyle(.white)
+
+        Text(userProfile.email)
+          .font(.subheadline)
+          .foregroundStyle(theme.textSecondary)
+      }
+    }
+    .padding(.vertical, 24)
+    .frame(maxWidth: .infinity)
+    .background(
+      LinearGradient(
+        colors: [theme.primaryColor.opacity(0.8), theme.accentColor.opacity(0.6)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+    )
+  }
+
+  // MARK: - Stats Section
+
+  private var statsSection: some View {
+    HStack(spacing: 12) {
+      StatCard(
+        title: "Downloads",
+        value: "0",
+        icon: "arrow.down.circle.fill",
+        gradient: [theme.primaryColor, theme.accentColor]
+      )
+
+      StatCard(
+        title: "Storage",
+        value: "0 MB",
+        icon: "internaldrive.fill",
+        gradient: [theme.accentColor, Color(hex: "5AC8FA")]
+      )
+
+      StatCard(
+        title: "Watched",
+        value: "0",
+        icon: "play.circle.fill",
+        gradient: [Color(hex: "5AC8FA"), theme.successColor]
+      )
+    }
+  }
+
+  // MARK: - Settings Section
+
+  private func settingsSection(title: String, items: [SettingsItem]) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(title)
+        .font(.caption)
+        .fontWeight(.semibold)
+        .foregroundStyle(theme.textSecondary)
+        .textCase(.uppercase)
+        .padding(.leading, 4)
+
+      VStack(spacing: 0) {
+        ForEach(items.indices, id: \.self) { index in
+          settingsRow(item: items[index])
+
+          if index < items.count - 1 {
+            Divider()
+              .background(DarkProfessionalTheme.divider)
+              .padding(.leading, 52)
+          }
+        }
+      }
+      .background(DarkProfessionalTheme.cardBackground)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+  }
+
+  private func settingsRow(item: SettingsItem) -> some View {
+    HStack(spacing: 12) {
+      ZStack {
+        RoundedRectangle(cornerRadius: 8)
+          .fill(item.color.opacity(0.15))
+          .frame(width: 36, height: 36)
+
+        Image(systemName: item.icon)
+          .font(.system(size: 16))
+          .foregroundStyle(item.color)
+      }
+
+      Text(item.title)
+        .font(.body)
+        .foregroundStyle(.white)
+
+      Spacer()
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 14, weight: .medium))
+        .foregroundStyle(theme.textSecondary.opacity(0.5))
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+    .contentShape(Rectangle())
+  }
+
+  // MARK: - Debug Section
+
+  #if DEBUG
+  private var debugSection: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Button(action: { withAnimation { showDebugSection.toggle() } }) {
+        HStack {
+          Text("Developer")
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.textSecondary)
+            .textCase(.uppercase)
+
+          Spacer()
+
+          Image(systemName: showDebugSection ? "chevron.up" : "chevron.down")
+            .font(.caption)
+            .foregroundStyle(theme.textSecondary)
+        }
+        .padding(.leading, 4)
+      }
+
+      if showDebugSection {
+        VStack(spacing: 0) {
+          // Loading indicator
+          if store.isLoading {
+            HStack {
+              ProgressView()
+                .tint(theme.primaryColor)
+              Text("Loading...")
+                .font(.subheadline)
+                .foregroundStyle(theme.textSecondary)
+            }
+            .padding(16)
+          }
+
+          // Keychain items
+          ForEach(store.keychainItems) { item in
+            NavigationLink(destination: KeychainDetailView(item: item)) {
+              keychainRow(item: item)
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+              .background(DarkProfessionalTheme.divider)
+              .padding(.leading, 52)
+          }
+
+          // Truncate files button
+          Button(action: { store.send(.truncateFilesButtonTapped) }) {
+            HStack(spacing: 12) {
+              ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                  .fill(theme.errorColor.opacity(0.15))
+                  .frame(width: 36, height: 36)
+
+                Image(systemName: "trash")
+                  .font(.system(size: 16))
+                  .foregroundStyle(theme.errorColor)
+              }
+
+              Text("Truncate All Files")
+                .font(.body)
+                .foregroundStyle(theme.errorColor)
+
+              Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+          }
+        }
+        .background(DarkProfessionalTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+      }
+    }
+  }
+
+  private func keychainRow(item: KeychainItem) -> some View {
+    HStack(spacing: 12) {
+      ZStack {
+        RoundedRectangle(cornerRadius: 8)
+          .fill(theme.primaryColor.opacity(0.15))
+          .frame(width: 36, height: 36)
+
+        Image(systemName: "key")
+          .font(.system(size: 16))
+          .foregroundStyle(theme.primaryColor)
+      }
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(item.name)
+          .font(.body)
+          .foregroundStyle(.white)
+
+        Text(item.displayValue.count > 30 ? String(item.displayValue.prefix(30)) + "..." : item.displayValue)
+          .font(.caption)
+          .foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
+      }
+
+      Spacer()
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 14, weight: .medium))
+        .foregroundStyle(theme.textSecondary.opacity(0.5))
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+    .contentShape(Rectangle())
+  }
+  #endif
+}
+
+// MARK: - Supporting Types
+
+private struct SettingsItem {
+  let icon: String
+  let title: String
+  let color: Color
+}
+
+private struct StatCard: View {
+  let title: String
+  let value: String
+  let icon: String
+  let gradient: [Color]
+
+  var body: some View {
+    VStack(spacing: 8) {
+      Image(systemName: icon)
+        .font(.system(size: 24))
+        .foregroundStyle(.white)
+
+      Text(value)
+        .font(.title3)
+        .fontWeight(.bold)
+        .foregroundStyle(.white)
+
+      Text(title)
+        .font(.caption2)
+        .foregroundStyle(.white.opacity(0.8))
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 16)
+    .background(
+      LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+    )
+    .clipShape(RoundedRectangle(cornerRadius: 16))
   }
 }
 
 struct KeychainDetailView: View {
   let item: KeychainItem
 
+  private let theme = DarkProfessionalTheme()
+
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        Text(item.name)
-          .font(.title)
-          .fontWeight(.bold)
+    ZStack {
+      theme.backgroundColor
+        .ignoresSafeArea()
 
-        Text("Type: \(itemTypeName)")
-          .font(.subheadline)
-          .foregroundColor(.secondary)
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          // Header card
+          VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+              ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                  .fill(theme.primaryColor.opacity(0.15))
+                  .frame(width: 44, height: 44)
 
-        Divider()
+                Image(systemName: "key.fill")
+                  .font(.system(size: 20))
+                  .foregroundStyle(theme.primaryColor)
+              }
 
-        Text("Value:")
-          .font(.headline)
+              VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                  .font(.headline)
+                  .foregroundStyle(.white)
 
-        Text(item.displayValue)
-          .font(.body)
-          .textSelection(.enabled)
+                Text(itemTypeName)
+                  .font(.subheadline)
+                  .foregroundStyle(theme.textSecondary)
+              }
+            }
+          }
+          .padding(16)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(DarkProfessionalTheme.cardBackground)
+          .clipShape(RoundedRectangle(cornerRadius: 12))
 
-        Spacer()
+          // Value section
+          VStack(alignment: .leading, spacing: 8) {
+            Text("VALUE")
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.textSecondary)
+
+            Text(item.displayValue)
+              .font(.system(.body, design: .monospaced))
+              .foregroundStyle(.white)
+              .textSelection(.enabled)
+              .padding(16)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .background(DarkProfessionalTheme.cardBackground)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+        }
+        .padding(16)
       }
-      .padding()
     }
     .navigationTitle(item.name)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbarColorScheme(.dark, for: .navigationBar)
+    .preferredColorScheme(.dark)
   }
 
   private var itemTypeName: String {
