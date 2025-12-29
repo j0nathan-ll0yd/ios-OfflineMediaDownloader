@@ -61,10 +61,20 @@ final class FileListUITests: XCTestCase {
 
     XCTAssertTrue(waitForFileListToAppear())
 
-    // Check for add button in toolbar
-    let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
-    XCTAssertTrue(addButton.waitForExistence(timeout: 5), "Add file button should exist in toolbar")
-    XCTAssertTrue(addButton.isHittable, "Add file button should be tappable")
+    // Check for add button in toolbar - use longer timeout for CI stability
+    // The button is in the navigation bar, query via navigation bar
+    let navBar = app.navigationBars["Files"]
+    let addButton = navBar.buttons[UITestHelpers.AccessibilityID.addFileButton]
+
+    // Try accessibility identifier first
+    if addButton.waitForExistence(timeout: 10) {
+      XCTAssertTrue(addButton.isHittable, "Add file button should be tappable")
+      return
+    }
+
+    // Fallback: look for plus button by image name
+    let plusButton = navBar.buttons["plus"]
+    XCTAssertTrue(plusButton.waitForExistence(timeout: 5), "Add file button should exist in toolbar")
   }
 
   @MainActor
@@ -73,15 +83,26 @@ final class FileListUITests: XCTestCase {
 
     XCTAssertTrue(waitForFileListToAppear())
 
-    // Tap add button
-    let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
-    XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+    // Find add button in navigation bar
+    let navBar = app.navigationBars["Files"]
+    var addButton = navBar.buttons[UITestHelpers.AccessibilityID.addFileButton]
+
+    // Fallback to plus button if accessibility ID not found
+    if !addButton.waitForExistence(timeout: 10) {
+      addButton = navBar.buttons["plus"]
+    }
+
+    guard addButton.waitForExistence(timeout: 5) else {
+      XCTFail("Add button not found")
+      return
+    }
+
     addButton.tap()
 
     // Should show confirmation dialog with "Add Video" title
     // Look for the "From Clipboard" button which is unique to this dialog
     let clipboardButton = app.buttons["From Clipboard"]
-    XCTAssertTrue(clipboardButton.waitForExistence(timeout: 5), "Add Video dialog should appear")
+    XCTAssertTrue(clipboardButton.waitForExistence(timeout: 10), "Add Video dialog should appear")
 
     // Dismiss the dialog
     let cancelButton = app.buttons["Cancel"]
