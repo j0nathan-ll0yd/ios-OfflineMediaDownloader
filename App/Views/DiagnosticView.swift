@@ -275,16 +275,50 @@ struct DiagnosticView: View {
           }
 
           // Keychain items
-          ForEach(store.keychainItems) { item in
+          ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
             NavigationLink(destination: KeychainDetailView(item: item)) {
               keychainRow(item: item)
             }
             .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+              Button(role: .destructive) {
+                store.send(.deleteKeychainItem(IndexSet(integer: index)))
+              } label: {
+                Label("Delete", systemImage: "trash")
+              }
+            }
 
             Divider()
               .background(DarkProfessionalTheme.divider)
               .padding(.leading, 52)
           }
+
+          // Delete Developer Data button
+          Button(action: { store.send(.deleteAllDeveloperDataButtonTapped) }) {
+            HStack(spacing: 12) {
+              ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                  .fill(theme.errorColor.opacity(0.15))
+                  .frame(width: 36, height: 36)
+
+                Image(systemName: "key.slash")
+                  .font(.system(size: 16))
+                  .foregroundStyle(theme.errorColor)
+              }
+
+              Text("Delete Developer Data")
+                .font(.body)
+                .foregroundStyle(theme.errorColor)
+
+              Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+          }
+
+          Divider()
+            .background(DarkProfessionalTheme.divider)
+            .padding(.leading, 52)
 
           // Truncate files button
           Button(action: { store.send(.truncateFilesButtonTapped) }) {

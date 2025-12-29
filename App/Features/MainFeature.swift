@@ -82,6 +82,14 @@ struct MainFeature {
       case .fileList:
         return .none
 
+      case .diagnostic(.delegate(.authenticationInvalidated)):
+        state.isAuthenticated = false
+        state.fileList.isAuthenticated = false
+        return .concatenate(
+          .send(.fileList(.clearAllFiles)),
+          .send(.delegate(.authenticationRequired))
+        )
+
       case .diagnostic:
         return .none
 
