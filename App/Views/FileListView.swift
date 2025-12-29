@@ -234,6 +234,16 @@ struct FileListView: View {
     ) { file in
       videoPlayerContent(for: file)
     }
+    .sheet(
+      isPresented: Binding(
+        get: { store.sharingFileURL != nil },
+        set: { if !$0 { store.send(.dismissShareSheet) } }
+      )
+    ) {
+      if let url = store.sharingFileURL {
+        ShareSheet(items: [url])
+      }
+    }
   }
 
   // MARK: - File List Content

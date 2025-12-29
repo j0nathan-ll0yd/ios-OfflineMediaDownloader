@@ -133,9 +133,10 @@ jobs:
       - name: Run Tests
         run: |
           set -o pipefail
-          # Note: Unit tests (OfflineMediaDownloaderTests) are temporarily disabled due to
-          # host app crash during bootstrap. Only running UI tests until the issue is resolved.
-          # See: Test crashed with signal segv before starting test execution
+          # Run UI tests only for now
+          # Unit tests are disabled due to host app crash during bootstrap (SEGV)
+          # The app crashes before tests can start, even with test detection in AppDelegate
+          # TODO: Investigate using a separate test host or mock app target
           xcodebuild test-without-building \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
