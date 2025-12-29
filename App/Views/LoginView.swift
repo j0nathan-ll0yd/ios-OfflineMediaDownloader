@@ -205,6 +205,7 @@ struct LoginView: View {
               }
             }
           )
+          .accessibilityIdentifier("signInWithAppleButton")
         }
         .signInWithAppleButtonStyle(.black)
         .frame(width: 250, height: 50)

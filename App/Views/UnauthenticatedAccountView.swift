@@ -31,6 +31,7 @@ struct UnauthenticatedAccountView: View {
             .foregroundColor(.white)
             .cornerRadius(10)
         }
+        .accessibilityIdentifier("signInWithAppleButton")
         .padding(.horizontal, 40)
 
         Spacer()

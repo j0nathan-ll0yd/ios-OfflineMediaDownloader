@@ -1,0 +1,10 @@
+{
+  "description": "LocalStack configuration for iOS integration tests",
+  "endpoints": {
+    "apiGateway": "http://localhost:4566/restapis/test-api/local/_user_request_",
+    "s3": "http://s3.localhost.localstack.cloud:4566",
+    "sns": "http://localhost:4566"
+  },
+  "apiKey": "test-api-key-localstack",
+  "region": "us-east-1"
+}

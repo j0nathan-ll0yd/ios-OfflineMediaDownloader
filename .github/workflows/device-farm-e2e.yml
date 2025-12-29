@@ -1,0 +1,416 @@
+name: Device Farm E2E
+
+# This workflow runs full E2E tests on AWS Device Farm
+# It requires:
+# - AWS Device Farm project configured
+# - Code signing certificates stored in GitHub Secrets
+# - Test Apple ID for Sign in with Apple testing
+#
+# Secrets required:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+# - DEVICE_FARM_PROJECT_ARN
+# - DEVICE_FARM_DEVICE_POOL_ARN
+# - APPLE_CERTIFICATE_BASE64
+# - APPLE_CERTIFICATE_PASSWORD
+# - PROVISIONING_PROFILE_BASE64
+# - KEYCHAIN_PASSWORD
+
+on:
+  # Run on merge to main
+  push:
+    branches: [master, main]
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Test filter (e.g., FullJourneyE2ETests)'
+        required: false
+        default: ''
+      device_pool:
+        description: 'Device pool to use'
+        required: false
+        default: 'default'
+        type: choice
+        options:
+          - default
+          - iphone-latest
+          - iphone-all
+
+concurrency:
+  group: device-farm-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: OfflineMediaDownloader
+  PROJECT: OfflineMediaDownloader.xcodeproj
+  DEVICE_FARM_REGION: us-west-2
+
+jobs:
+  # ============================================
+  # Build IPA for Device Farm
+  # ============================================
+  build-for-device-farm:
+    name: Build for Device Farm
+    runs-on: macos-14
+    timeout-minutes: 45
+    outputs:
+      ipa_path: ${{ steps.archive.outputs.ipa_path }}
+      test_bundle_path: ${{ steps.archive.outputs.test_bundle_path }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Development Configuration
+        run: |
+          # Use staging backend for Device Farm tests
+          cat > Development.xcconfig << 'EOF'
+          MEDIA_DOWNLOADER_API_KEY = ${{ secrets.STAGING_API_KEY }}
+          MEDIA_DOWNLOADER_BASE_PATH = ${{ secrets.STAGING_BASE_PATH }}
+          EOF
+
+      - name: Sync Backend Fixtures
+        run: |
+          chmod +x ./Scripts/sync-backend-fixtures.sh
+          ./Scripts/sync-backend-fixtures.sh
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH"
+          fi
+          xcodebuild -version
+
+      - name: Install Code Signing Certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          echo -n "$CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Install Provisioning Profile
+        env:
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Resolve Dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
+
+      - name: Archive App
+        id: archive
+        run: |
+          set -o pipefail
+
+          ARCHIVE_PATH=$RUNNER_TEMP/OfflineMediaDownloader.xcarchive
+          IPA_PATH=$RUNNER_TEMP/OfflineMediaDownloader.ipa
+
+          # Build archive
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -archivePath "$ARCHIVE_PATH" \
+            -destination "generic/platform=iOS" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            2>&1 | xcpretty --color
+
+          # Export IPA
+          cat > ExportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ExportOptions.plist
+
+          mv "$RUNNER_TEMP/export/OfflineMediaDownloader.ipa" "$IPA_PATH"
+
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Build UI Test Bundle
+        id: test-bundle
+        run: |
+          set -o pipefail
+
+          TEST_BUNDLE_PATH=$RUNNER_TEMP/UITests
+
+          xcodebuild build-for-testing \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "generic/platform=iOS" \
+            -clonedSourcePackagesDirPath SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            -derivedDataPath "$TEST_BUNDLE_PATH" \
+            2>&1 | xcpretty --color
+
+          # Find the xctestrun file
+          XCTESTRUN=$(find "$TEST_BUNDLE_PATH" -name "*.xctestrun" | head -1)
+          echo "test_bundle_path=$XCTESTRUN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-farm-build
+          path: |
+            ${{ steps.archive.outputs.ipa_path }}
+            ${{ steps.test-bundle.outputs.test_bundle_path }}
+          retention-days: 1
+
+      - name: Cleanup Keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+
+  # ============================================
+  # Run Tests on Device Farm
+  # ============================================
+  run-device-farm-tests:
+    name: Run Device Farm Tests
+    runs-on: ubuntu-latest
+    needs: build-for-device-farm
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: device-farm-build
+          path: build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.DEVICE_FARM_REGION }}
+
+      - name: Select Device Pool
+        id: device-pool
+        run: |
+          POOL_INPUT="${{ github.event.inputs.device_pool }}"
+          POOL_ARN=""
+
+          case "$POOL_INPUT" in
+            "iphone-latest")
+              POOL_ARN="${{ secrets.DEVICE_FARM_POOL_IPHONE_LATEST }}"
+              ;;
+            "iphone-all")
+              POOL_ARN="${{ secrets.DEVICE_FARM_POOL_IPHONE_ALL }}"
+              ;;
+            *)
+              POOL_ARN="${{ secrets.DEVICE_FARM_DEVICE_POOL_ARN }}"
+              ;;
+          esac
+
+          echo "pool_arn=$POOL_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload App to Device Farm
+        id: upload-app
+        run: |
+          # Create upload
+          UPLOAD_RESPONSE=$(aws devicefarm create-upload \
+            --project-arn "${{ secrets.DEVICE_FARM_PROJECT_ARN }}" \
+            --name "OfflineMediaDownloader.ipa" \
+            --type IOS_APP)
+
+          UPLOAD_ARN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload.arn')
+          UPLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload.url')
+
+          # Upload the IPA
+          IPA_FILE=$(find build -name "*.ipa" | head -1)
+          curl -T "$IPA_FILE" "$UPLOAD_URL"
+
+          # Wait for upload to complete
+          for i in {1..30}; do
+            STATUS=$(aws devicefarm get-upload --arn "$UPLOAD_ARN" | jq -r '.upload.status')
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              echo "Upload succeeded"
+              break
+            elif [ "$STATUS" = "FAILED" ]; then
+              echo "Upload failed"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          echo "app_arn=$UPLOAD_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Test Bundle to Device Farm
+        id: upload-tests
+        run: |
+          # Create upload for test bundle
+          UPLOAD_RESPONSE=$(aws devicefarm create-upload \
+            --project-arn "${{ secrets.DEVICE_FARM_PROJECT_ARN }}" \
+            --name "UITests.zip" \
+            --type XCTEST_UI_TEST_PACKAGE)
+
+          UPLOAD_ARN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload.arn')
+          UPLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload.url')
+
+          # Package and upload test bundle
+          TEST_BUNDLE=$(find build -name "*.xctestrun" | head -1)
+          TEST_DIR=$(dirname "$TEST_BUNDLE")
+          cd "$TEST_DIR" && zip -r $RUNNER_TEMP/UITests.zip .
+          curl -T "$RUNNER_TEMP/UITests.zip" "$UPLOAD_URL"
+
+          # Wait for upload
+          for i in {1..30}; do
+            STATUS=$(aws devicefarm get-upload --arn "$UPLOAD_ARN" | jq -r '.upload.status')
+            if [ "$STATUS" = "SUCCEEDED" ]; then
+              echo "Test upload succeeded"
+              break
+            elif [ "$STATUS" = "FAILED" ]; then
+              echo "Test upload failed"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          echo "test_arn=$UPLOAD_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Schedule Device Farm Run
+        id: schedule-run
+        run: |
+          # Build test filter if provided
+          TEST_FILTER=""
+          if [ -n "${{ github.event.inputs.test_filter }}" ]; then
+            TEST_FILTER=',"filter":"${{ github.event.inputs.test_filter }}"'
+          fi
+
+          # Schedule the test run
+          RUN_RESPONSE=$(aws devicefarm schedule-run \
+            --project-arn "${{ secrets.DEVICE_FARM_PROJECT_ARN }}" \
+            --app-arn "${{ steps.upload-app.outputs.app_arn }}" \
+            --device-pool-arn "${{ steps.device-pool.outputs.pool_arn }}" \
+            --name "E2E-${{ github.run_number }}" \
+            --test "{\"type\":\"XCTEST_UI\",\"testPackageArn\":\"${{ steps.upload-tests.outputs.test_arn }}\"$TEST_FILTER}")
+
+          RUN_ARN=$(echo "$RUN_RESPONSE" | jq -r '.run.arn')
+          echo "run_arn=$RUN_ARN" >> "$GITHUB_OUTPUT"
+
+          echo "Device Farm run scheduled: $RUN_ARN"
+
+      - name: Wait for Test Results
+        id: wait-results
+        run: |
+          RUN_ARN="${{ steps.schedule-run.outputs.run_arn }}"
+
+          echo "Waiting for Device Farm run to complete..."
+
+          for i in {1..120}; do
+            RUN_STATUS=$(aws devicefarm get-run --arn "$RUN_ARN")
+            STATUS=$(echo "$RUN_STATUS" | jq -r '.run.status')
+            RESULT=$(echo "$RUN_STATUS" | jq -r '.run.result')
+
+            echo "Status: $STATUS, Result: $RESULT"
+
+            if [ "$STATUS" = "COMPLETED" ]; then
+              echo "Run completed with result: $RESULT"
+              echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+
+              # Get detailed results
+              COUNTERS=$(echo "$RUN_STATUS" | jq '.run.counters')
+              echo "counters<<EOF" >> "$GITHUB_OUTPUT"
+              echo "$COUNTERS" >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+
+              if [ "$RESULT" = "PASSED" ]; then
+                exit 0
+              else
+                exit 1
+              fi
+            fi
+
+            sleep 30
+          done
+
+          echo "Timeout waiting for Device Farm run"
+          exit 1
+
+      - name: Download Artifacts
+        if: always()
+        run: |
+          RUN_ARN="${{ steps.schedule-run.outputs.run_arn }}"
+
+          # List artifacts
+          ARTIFACTS=$(aws devicefarm list-artifacts \
+            --arn "$RUN_ARN" \
+            --type FILE)
+
+          mkdir -p device-farm-results
+
+          # Download each artifact
+          echo "$ARTIFACTS" | jq -r '.artifacts[].url' | while read URL; do
+            FILENAME=$(echo "$ARTIFACTS" | jq -r ".artifacts[] | select(.url==\"$URL\") | .name")
+            curl -o "device-farm-results/$FILENAME" "$URL" || true
+          done
+
+      - name: Upload Device Farm Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: device-farm-results
+          path: device-farm-results/
+          retention-days: 7
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "### AWS Device Farm E2E Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ARN:** ${{ steps.schedule-run.outputs.run_arn }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Result:** ${{ steps.wait-results.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Counters:**" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.wait-results.outputs.counters }}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

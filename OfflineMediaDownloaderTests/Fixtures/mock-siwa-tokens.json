@@ -1,0 +1,17 @@
+{
+  "description": "Mock Sign in with Apple tokens for LocalStack testing",
+  "tokens": {
+    "validUser": {
+      "identityToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoiY29tLmV4YW1wbGUuYXBwIiwiZXhwIjoxNzM1Mzk4NDAwLCJpYXQiOjE3MzUzMTE5OTksInN1YiI6InRlc3QtdXNlci0wMDEiLCJlbWFpbCI6InRlc3RAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzX3ByaXZhdGVfZW1haWwiOnRydWUsImF1dGhfdGltZSI6MTczNTMxMTk5OSwibm9uY2Vfc3VwcG9ydGVkIjp0cnVlfQ.mock-signature",
+      "userId": "test-user-001",
+      "email": "test@privaterelay.appleid.com"
+    },
+    "newUser": {
+      "identityToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoiY29tLmV4YW1wbGUuYXBwIiwiZXhwIjoxNzM1Mzk4NDAwLCJpYXQiOjE3MzUzMTE5OTksInN1YiI6Im5ldy11c2VyLTAwMiIsImVtYWlsIjoibmV3QHByaXZhdGVyZWxheS5hcHBsZWlkLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc19wcml2YXRlX2VtYWlsIjp0cnVlLCJhdXRoX3RpbWUiOjE3MzUzMTE5OTksIm5vbmNlX3N1cHBvcnRlZCI6dHJ1ZX0.mock-signature",
+      "userId": "new-user-002",
+      "email": "new@privaterelay.appleid.com",
+      "firstName": "Test",
+      "lastName": "User"
+    }
+  }
+}
