@@ -16,6 +16,14 @@ final class LoginFlowUITests: XCTestCase {
     app = nil
   }
 
+  // MARK: - Helper to verify file list is displayed
+
+  private func waitForFileListToAppear(timeout: TimeInterval = 15) -> Bool {
+    // File list is identified by the "Files" navigation bar
+    let navBar = app.navigationBars["Files"]
+    return navBar.waitForExistence(timeout: timeout)
+  }
+
   // MARK: - Guest Browsing Tests
 
   @MainActor
@@ -23,8 +31,8 @@ final class LoginFlowUITests: XCTestCase {
     app.launch()
 
     // App should show file list immediately (guest browsing mode)
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15), "File list should appear on launch")
+    // Verify by checking for the "Files" navigation bar
+    XCTAssertTrue(waitForFileListToAppear(), "File list should appear on launch")
   }
 
   @MainActor
@@ -32,8 +40,7 @@ final class LoginFlowUITests: XCTestCase {
     app.launch()
 
     // Wait for app to load
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Navigate to Account tab
     let accountTab = app.tabBars.buttons["Account"]
@@ -50,8 +57,7 @@ final class LoginFlowUITests: XCTestCase {
   func testSignInButtonExistsOnAccountTab() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Go to Account tab
     app.tabBars.buttons["Account"].tap()
@@ -68,8 +74,7 @@ final class LoginFlowUITests: XCTestCase {
   func testTabBarNavigationBetweenFilesAndAccount() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Navigate to Account tab
     let accountTab = app.tabBars.buttons["Account"]
@@ -85,7 +90,7 @@ final class LoginFlowUITests: XCTestCase {
     filesTab.tap()
 
     // Verify we're back on file list
-    XCTAssertTrue(fileList.waitForExistence(timeout: 5))
+    XCTAssertTrue(waitForFileListToAppear(timeout: 5))
   }
 
   // MARK: - Login Sheet Tests
@@ -94,8 +99,7 @@ final class LoginFlowUITests: XCTestCase {
   func testTappingSignInButtonPresentsLoginSheet() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Go to Account tab and tap sign in
     app.tabBars.buttons["Account"].tap()
@@ -105,18 +109,17 @@ final class LoginFlowUITests: XCTestCase {
     signInButton.tap()
 
     // Should present a login sheet with the native Sign in with Apple button
-    // The sheet contains a SignInWithAppleButton which has the same accessibility ID
-    let sheetSignInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
-    XCTAssertTrue(sheetSignInButton.waitForExistence(timeout: 10),
-                  "Login sheet should present with Sign in with Apple button")
+    // Look for the Cancel button that appears in the sheet
+    let cancelButton = app.buttons["Cancel"]
+    XCTAssertTrue(cancelButton.waitForExistence(timeout: 10),
+                  "Login sheet should present with Cancel button")
   }
 
   @MainActor
   func testLoginSheetCanBeDismissed() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Go to Account tab and tap sign in
     app.tabBars.buttons["Account"].tap()
@@ -125,17 +128,14 @@ final class LoginFlowUITests: XCTestCase {
     XCTAssertTrue(signInButton.waitForExistence(timeout: 10))
     signInButton.tap()
 
-    // Wait for sheet to appear
-    sleep(1)
-
-    // Look for Cancel button in the sheet
+    // Wait for sheet to appear - look for Cancel button
     let cancelButton = app.buttons["Cancel"]
-    if cancelButton.waitForExistence(timeout: 5) {
-      cancelButton.tap()
+    XCTAssertTrue(cancelButton.waitForExistence(timeout: 5))
 
-      // Should return to Account tab
-      XCTAssertTrue(signInButton.waitForExistence(timeout: 5),
-                    "Should return to Account tab after dismissing login sheet")
-    }
+    cancelButton.tap()
+
+    // Should return to Account tab
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 5),
+                  "Should return to Account tab after dismissing login sheet")
   }
 }

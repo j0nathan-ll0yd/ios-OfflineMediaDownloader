@@ -15,6 +15,14 @@ final class FileListUITests: XCTestCase {
     app = nil
   }
 
+  // MARK: - Helper to verify file list is displayed
+
+  private func waitForFileListToAppear(timeout: TimeInterval = 15) -> Bool {
+    // File list is identified by the "Files" navigation bar
+    let navBar = app.navigationBars["Files"]
+    return navBar.waitForExistence(timeout: timeout)
+  }
+
   // MARK: - File List Display Tests
 
   @MainActor
@@ -22,20 +30,16 @@ final class FileListUITests: XCTestCase {
     app.launch()
 
     // File list should appear on launch (guest browsing mode)
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15), "File list should be visible on launch")
+    XCTAssertTrue(waitForFileListToAppear(), "File list should be visible on launch")
   }
 
   @MainActor
   func testFileListHasNavigationTitle() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
-
     // Check for navigation title
     let navBar = app.navigationBars["Files"]
-    XCTAssertTrue(navBar.exists, "Navigation bar with title 'Files' should exist")
+    XCTAssertTrue(navBar.waitForExistence(timeout: 15), "Navigation bar with title 'Files' should exist")
   }
 
   // MARK: - Toolbar Tests
@@ -44,24 +48,22 @@ final class FileListUITests: XCTestCase {
   func testRefreshButtonExists() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Check for refresh button in toolbar
     let refreshButton = app.buttons[UITestHelpers.AccessibilityID.refreshButton]
-    XCTAssertTrue(refreshButton.exists, "Refresh button should exist in toolbar")
+    XCTAssertTrue(refreshButton.waitForExistence(timeout: 5), "Refresh button should exist in toolbar")
   }
 
   @MainActor
   func testAddFileButtonExists() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Check for add button in toolbar
     let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
-    XCTAssertTrue(addButton.exists, "Add file button should exist in toolbar")
+    XCTAssertTrue(addButton.waitForExistence(timeout: 5), "Add file button should exist in toolbar")
     XCTAssertTrue(addButton.isHittable, "Add file button should be tappable")
   }
 
@@ -69,16 +71,17 @@ final class FileListUITests: XCTestCase {
   func testAddButtonShowsConfirmationDialog() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Tap add button
     let addButton = app.buttons[UITestHelpers.AccessibilityID.addFileButton]
+    XCTAssertTrue(addButton.waitForExistence(timeout: 5))
     addButton.tap()
 
-    // Should show confirmation dialog
-    let dialogTitle = app.staticTexts["Add Video"]
-    XCTAssertTrue(dialogTitle.waitForExistence(timeout: 5), "Add Video dialog should appear")
+    // Should show confirmation dialog with "Add Video" title
+    // Look for the "From Clipboard" button which is unique to this dialog
+    let clipboardButton = app.buttons["From Clipboard"]
+    XCTAssertTrue(clipboardButton.waitForExistence(timeout: 5), "Add Video dialog should appear")
 
     // Dismiss the dialog
     let cancelButton = app.buttons["Cancel"]
@@ -93,8 +96,7 @@ final class FileListUITests: XCTestCase {
   func testTabBarNavigation() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Navigate to Account tab
     let accountTab = app.tabBars.buttons["Account"]
@@ -106,11 +108,15 @@ final class FileListUITests: XCTestCase {
     // Go to Account
     accountTab.tap()
 
+    // Wait for Account tab content
+    let signInButton = app.buttons[UITestHelpers.AccessibilityID.signInWithAppleButton]
+    XCTAssertTrue(signInButton.waitForExistence(timeout: 5))
+
     // Navigate back to Files
     filesTab.tap()
 
     // Verify file list is still visible
-    XCTAssertTrue(fileList.exists, "Should return to file list view")
+    XCTAssertTrue(waitForFileListToAppear(timeout: 5), "Should return to file list view")
   }
 
   // MARK: - Empty State Tests
@@ -119,18 +125,17 @@ final class FileListUITests: XCTestCase {
   func testEmptyStateShowsPrompt() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
     // Empty state shows "No files yet" message
     // This may or may not appear depending on whether the user has files
     let emptyText = app.staticTexts["No files yet"]
-    if emptyText.exists {
+    if emptyText.waitForExistence(timeout: 3) {
       // Verify the hint text is also present
       let hintText = app.staticTexts["Tap + to add a video from your clipboard"]
       XCTAssertTrue(hintText.exists, "Empty state hint should be visible")
     }
-    // If files exist, that's also a valid state
+    // If files exist, that's also a valid state - test passes
   }
 
   // MARK: - Pull to Refresh Tests
@@ -139,22 +144,22 @@ final class FileListUITests: XCTestCase {
   func testPullToRefreshWorks() throws {
     app.launch()
 
-    let fileList = app.otherElements[UITestHelpers.AccessibilityID.fileListView]
-    XCTAssertTrue(fileList.waitForExistence(timeout: 15))
+    XCTAssertTrue(waitForFileListToAppear())
 
-    // Find a cell or the list itself to pull down on
-    let list = app.tables.firstMatch
-    if list.exists {
-      // Perform pull to refresh gesture
-      let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
-      let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
-      start.press(forDuration: 0.1, thenDragTo: end)
+    // Find the navigation bar area to pull down from
+    let navBar = app.navigationBars["Files"]
 
-      // Wait a moment for refresh to complete
-      sleep(2)
+    // Get coordinates for pull gesture
+    let start = navBar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 3.0))
+    let end = navBar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 6.0))
 
-      // List should still be visible
-      XCTAssertTrue(fileList.exists, "File list should still be visible after refresh")
-    }
+    // Perform pull to refresh gesture
+    start.press(forDuration: 0.1, thenDragTo: end)
+
+    // Wait a moment for refresh to complete
+    sleep(2)
+
+    // List should still be visible
+    XCTAssertTrue(waitForFileListToAppear(timeout: 5), "File list should still be visible after refresh")
   }
 }
