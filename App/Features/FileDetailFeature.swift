@@ -37,6 +37,7 @@ struct FileDetailFeature {
     enum Delegate: Equatable {
       case playFile(File)
       case fileDeleted(File)
+      case shareFile(URL)
     }
   }
 
@@ -141,9 +142,12 @@ struct FileDetailFeature {
         return .none
 
       case .shareButtonTapped:
-        // Share functionality would be implemented here
-        // For now, this is a placeholder
-        return .none
+        // Get the local file path and trigger share delegate
+        guard let remoteURL = state.file.url else { return .none }
+        return .run { [fileClient] send in
+          let localURL = fileClient.filePath(remoteURL)
+          await send(.delegate(.shareFile(localURL)))
+        }
 
       case .alert(.presented(.retryDownload)):
         return .send(.downloadButtonTapped)

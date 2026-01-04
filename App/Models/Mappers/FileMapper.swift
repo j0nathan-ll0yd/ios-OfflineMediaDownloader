@@ -59,13 +59,7 @@ enum FileMapper {
   
   /// Convert generated API type to domain File model
   static func fromAPI(_ api: APIFile) -> File {
-    let publishDate: Date?
-    if let dateString = api.publishDate {
-      publishDate = fileDateFormatter.date(from: dateString)
-                 ?? fileDateFormatterISO.date(from: dateString)
-    } else {
-      publishDate = nil
-    }
+    let publishDate: Date? = api.publishDate.flatMap { DateFormatters.parse($0) }
     
     let status: FileStatus?
     // The generator wraps allOf references in a payload struct with value1
@@ -115,18 +109,3 @@ extension File {
   }
 }
 
-// MARK: - Date Formatters (shared with File.swift for now)
-
-private let fileDateFormatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.dateFormat = "yyyyMMdd"
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  return formatter
-}()
-
-private let fileDateFormatterISO: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.dateFormat = "yyyy-MM-dd"
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  return formatter
-}()

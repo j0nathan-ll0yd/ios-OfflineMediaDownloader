@@ -16,6 +16,8 @@ struct FileListFeature {
     var playingFile: File?
     /// Stores the pending URL for retry actions
     var pendingAddUrl: URL?
+    /// URL to share via activity sheet
+    var sharingFileURL: URL?
   }
 
   enum Action {
@@ -32,6 +34,7 @@ struct FileListFeature {
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
     case dismissPlayer
+    case dismissShareSheet
     case alert(PresentationAction<Alert>)
     case detail(PresentationAction<FileDetailFeature.Action>)
     case fileTapped(FileCellFeature.State)
@@ -257,6 +260,10 @@ struct FileListFeature {
         state.playingFile = nil
         return .none
 
+      case .dismissShareSheet:
+        state.sharingFileURL = nil
+        return .none
+
       // MARK: - Push Notification Actions
       case let .fileAddedFromPush(file):
         // Add or update file in the list
@@ -304,6 +311,10 @@ struct FileListFeature {
 
       case let .detail(.presented(.delegate(.playFile(file)))):
         state.playingFile = file
+        return .none
+
+      case let .detail(.presented(.delegate(.shareFile(url)))):
+        state.sharingFileURL = url
         return .none
 
       case .detail:
