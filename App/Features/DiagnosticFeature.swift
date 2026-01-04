@@ -30,15 +30,23 @@ struct DiagnosticFeature {
     case toggleDebugMode
     case keychainItemsLoaded([KeychainItem])
     case deleteKeychainItem(IndexSet)
-    case keychainItemDeleted
+    case keychainItemDeleted(KeychainItem.KeychainItemType)
     case truncateFilesButtonTapped
     case filesTruncated
+    case deleteAllDeveloperDataButtonTapped
+    case allDeveloperDataDeleted
     case showError(AppError)
     case alert(PresentationAction<Alert>)
+    case delegate(Delegate)
 
     @CasePathable
     enum Alert: Equatable {
       case dismiss
+    }
+
+    @CasePathable
+    enum Delegate: Equatable {
+      case authenticationInvalidated
     }
   }
 
@@ -107,13 +115,17 @@ struct DiagnosticFeature {
             case .deviceData:
               try await keychainClient.deleteDeviceData()
             }
-            await send(.keychainItemDeleted)
+            await send(.keychainItemDeleted(item.itemType))
           } catch {
             await send(.showError(.keychainError(operation: "delete \(item.name)")))
           }
         }
 
-      case .keychainItemDeleted:
+      case let .keychainItemDeleted(itemType):
+        // Deleting token or user data invalidates authentication
+        if itemType == .token || itemType == .userData {
+          return .send(.delegate(.authenticationInvalidated))
+        }
         return .none
 
       case .truncateFilesButtonTapped:
@@ -129,6 +141,22 @@ struct DiagnosticFeature {
       case .filesTruncated:
         return .none
 
+      case .deleteAllDeveloperDataButtonTapped:
+        return .run { send in
+          do {
+            try await keychainClient.deleteJwtToken()
+            try await keychainClient.deleteUserData()
+            try await keychainClient.deleteDeviceData()
+            await send(.allDeveloperDataDeleted)
+          } catch {
+            await send(.showError(.keychainError(operation: "delete all developer data")))
+          }
+        }
+
+      case .allDeveloperDataDeleted:
+        state.keychainItems = []
+        return .send(.delegate(.authenticationInvalidated))
+
       case let .showError(appError):
         state.alert = AlertState {
           TextState(appError.title)
@@ -142,6 +170,9 @@ struct DiagnosticFeature {
         return .none
 
       case .alert:
+        return .none
+
+      case .delegate:
         return .none
       }
     }

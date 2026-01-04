@@ -271,6 +271,14 @@ struct RootFeature {
         state.diagnostic = DiagnosticFeature.State()
         return .none
 
+      case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
+        state.isAuthenticated = false
+        state.main.isAuthenticated = false
+        state.main.fileList.isAuthenticated = false
+        state.login.loginStatus = .unauthenticated
+        state.diagnostic = nil  // Dismiss the diagnostic sheet
+        return .send(.main(.fileList(.clearAllFiles)))
+
       case .diagnostic:
         return .none
       #endif

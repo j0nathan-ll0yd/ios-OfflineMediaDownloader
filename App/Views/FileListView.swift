@@ -240,17 +240,15 @@ struct FileListView: View {
 
   @ViewBuilder
   private var fileListContent: some View {
-    if store.isLoading && store.files.isEmpty {
+    // Unauthenticated users always see DefaultFilesView
+    if !store.isAuthenticated {
+      DefaultFilesView(store: defaultFilesStore) {
+        store.send(.delegate(.loginRequired))
+      }
+    } else if store.isLoading && store.files.isEmpty {
       loadingView
     } else if store.files.isEmpty {
-      // Show DefaultFilesView for unauthenticated users
-      if !store.isAuthenticated {
-        DefaultFilesView(store: defaultFilesStore) {
-          store.send(.delegate(.loginRequired))
-        }
-      } else {
-        emptyView
-      }
+      emptyView
     } else {
       fileList
     }

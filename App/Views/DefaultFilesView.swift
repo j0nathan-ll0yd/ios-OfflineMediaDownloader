@@ -2,21 +2,14 @@ import SwiftUI
 import ComposableArchitecture
 import AVKit
 
-// MARK: - Sample File Data
-
-struct SampleFile {
-  static let url = URL(string: "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4")!
-  static let title = "Big Buck Bunny (Sample)"
-  static let description = "A public domain animated short film - perfect for testing downloads."
-  static let size: Int64 = 1_048_576  // ~1 MB
-}
-
 // MARK: - DefaultFilesFeature
 
 @Reducer
 struct DefaultFilesFeature {
   @ObservableState
   struct State: Equatable {
+    var isLoadingFile: Bool = true
+    var file: File?
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
     var isDownloaded: Bool = false
@@ -26,6 +19,9 @@ struct DefaultFilesFeature {
   }
 
   enum Action {
+    case onAppear
+    case fileLoaded(File?)
+    case fileFetchFailed(String)
     case downloadButtonTapped
     case playButtonTapped
     case downloadProgress(Int)
@@ -44,23 +40,65 @@ struct DefaultFilesFeature {
 
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
+  @Dependency(\.serverClient) var serverClient
 
   private enum CancelID { case download }
 
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
-      case .downloadButtonTapped:
+      case .onAppear:
+        guard state.file == nil else { return .none }
+        state.isLoadingFile = true
+        return .run { send in
+          do {
+            let response = try await serverClient.getFiles()
+            if let firstFile = response.body?.contents.first {
+              await send(.fileLoaded(firstFile))
+            } else {
+              await send(.fileLoaded(nil))
+            }
+          } catch {
+            await send(.fileFetchFailed(error.localizedDescription))
+          }
+        }
+
+      case let .fileLoaded(file):
+        state.isLoadingFile = false
+        state.file = file
         // Check if already downloaded
-        if fileClient.fileExists(SampleFile.url) {
+        if let url = file?.url, fileClient.fileExists(url) {
+          state.isDownloaded = true
+        }
+        return .none
+
+      case let .fileFetchFailed(message):
+        state.isLoadingFile = false
+        state.alert = AlertState {
+          TextState("Failed to Load")
+        } actions: {
+          ButtonState(action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState(message)
+        }
+        return .none
+
+      case .downloadButtonTapped:
+        guard let file = state.file, let url = file.url else { return .none }
+
+        // Check if already downloaded
+        if fileClient.fileExists(url) {
           state.isDownloaded = true
           return .none
         }
 
         state.isDownloading = true
         state.downloadProgress = 0
+        let fileSize = Int64(file.size ?? 0)
         return .run { send in
-          let stream = downloadClient.downloadFile(SampleFile.url, SampleFile.size)
+          let stream = downloadClient.downloadFile(url, fileSize)
           for await progress in stream {
             switch progress {
             case let .progress(percent):
@@ -150,10 +188,7 @@ struct DefaultFilesView: View {
       videoPlayerContent
     }
     .task {
-      // Check if already downloaded on appear
-      if fileClient.fileExists(SampleFile.url) {
-        store.send(.downloadCompleted(fileClient.filePath(SampleFile.url)))
-      }
+      store.send(.onAppear)
     }
   }
 
@@ -192,7 +227,7 @@ struct DefaultFilesView: View {
     Button {
       if store.isDownloaded {
         store.send(.playButtonTapped)
-      } else if !store.isDownloading {
+      } else if !store.isDownloading && !store.isLoadingFile {
         store.send(.downloadButtonTapped)
       }
     } label: {
@@ -209,7 +244,10 @@ struct DefaultFilesView: View {
             )
             .frame(width: 60, height: 60)
 
-          if store.isDownloading {
+          if store.isLoadingFile {
+            ProgressView()
+              .tint(.white)
+          } else if store.isDownloading {
             circularProgressView
           } else if store.isDownloaded {
             Image(systemName: "play.fill")
@@ -222,22 +260,42 @@ struct DefaultFilesView: View {
 
         // File info
         VStack(alignment: .leading, spacing: 4) {
-          Text(SampleFile.title)
-            .font(.body)
-            .fontWeight(.medium)
-            .foregroundStyle(.white)
+          if store.isLoadingFile {
+            Text("Loading...")
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundStyle(.white)
 
-          if store.isDownloading {
-            Text("Downloading \(Int(store.downloadProgress * 100))%")
+            Text("Fetching file info")
               .font(.caption)
-              .foregroundStyle(theme.primaryColor)
-              .monospacedDigit()
-          } else if store.isDownloaded {
-            Text("Ready to play")
-              .font(.caption)
-              .foregroundStyle(theme.successColor)
+              .foregroundStyle(theme.textSecondary)
+          } else if let file = store.file {
+            Text(file.title ?? file.key)
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundStyle(.white)
+
+            if store.isDownloading {
+              Text("Downloading \(Int(store.downloadProgress * 100))%")
+                .font(.caption)
+                .foregroundStyle(theme.primaryColor)
+                .monospacedDigit()
+            } else if store.isDownloaded {
+              Text("Ready to play")
+                .font(.caption)
+                .foregroundStyle(theme.successColor)
+            } else {
+              Text(formatSize(Int64(file.size ?? 0)))
+                .font(.caption)
+                .foregroundStyle(theme.textSecondary)
+            }
           } else {
-            Text(formatSize(SampleFile.size))
+            Text("No files available")
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundStyle(.white)
+
+            Text("Check back later")
               .font(.caption)
               .foregroundStyle(theme.textSecondary)
           }
@@ -255,7 +313,7 @@ struct DefaultFilesView: View {
       .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     .buttonStyle(.plain)
-    .disabled(store.isDownloading)
+    .disabled(store.isDownloading || store.isLoadingFile || store.file == nil)
   }
 
   private var circularProgressView: some View {
@@ -378,9 +436,11 @@ struct DefaultFilesView: View {
 
   @ViewBuilder
   private var videoPlayerContent: some View {
-    let localURL = fileClient.filePath(SampleFile.url)
-    VideoPlayerSheet(url: localURL) {
-      store.send(.setPlaying(false))
+    if let file = store.file, let url = file.url {
+      let localURL = fileClient.filePath(url)
+      VideoPlayerSheet(url: localURL) {
+        store.send(.setPlaying(false))
+      }
     }
   }
 

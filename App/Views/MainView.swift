@@ -42,9 +42,7 @@ struct MainView: View {
     if store.isAuthenticated {
       DiagnosticView(store: store.scope(state: \.diagnostic, action: \.diagnostic))
     } else {
-      UnauthenticatedAccountView {
-        store.send(.presentLoginSheet)
-      }
+      LoginView(store: store.scope(state: \.accountLogin, action: \.accountLogin))
     }
   }
 }
