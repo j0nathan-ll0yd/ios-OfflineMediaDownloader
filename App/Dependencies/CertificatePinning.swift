@@ -9,24 +9,14 @@ enum CertificatePinning {
   /// These are the public key hashes for Amazon Root CA certificates
   /// Used by AWS API Gateway and other AWS services
   ///
-  /// To update these hashes, run:
-  /// ```
-  /// openssl s_client -connect api.example.com:443 -showcerts 2>/dev/null | \
-  ///   openssl x509 -pubkey -noout | \
-  ///   openssl pkey -pubin -outform DER | \
-  ///   openssl dgst -sha256 -binary | base64
-  /// ```
+  /// NOTE: iOS SecKeyCopyExternalRepresentation returns raw key data WITHOUT the ASN.1/SPKI header,
+  /// so openssl-computed hashes won't match. To get correct hashes, enable debug logging in
+  /// the validate() function and run the app to see the actual iOS-computed hashes.
   static let pinnedPublicKeyHashes: Set<String> = [
-    // Amazon Root CA 1 - RSA 2048
-    "++MBgDH5WGvL9Bcn5Be30cRcL0f5O+NyoXuWtQdX1aI=",
-    // Amazon Root CA 2 - RSA 4096
-    "f0KW/FtqTjs108NpYj42SrGvOB2PpxIVM8nWxjPqJGE=",
-    // Amazon Root CA 3 - EC P256
-    "NqvDJlas/GRcYbcWE8S/IceH9cq77kg0jVhZeAPXq8k=",
-    // Amazon Root CA 4 - EC P384
-    "9+ze1cZgR9KO1kZrVDxA4HQ6voHRCSVNz4RdTCx4U8U=",
-    // Starfield Services Root CA (legacy, used by some AWS regions)
-    "KwccWaCgrnaw6tsrrSO61FgLacNgG2MMLq8GE6+oP5I="
+    // Amazon Root CA 1 - computed by iOS SecKeyCopyExternalRepresentation (raw key, no ASN.1 header)
+    "UAJ/9yOqq6nk4CX2QtZgDmyT6JHYlkBfihOzezH/8cs=",
+    // Amazon RSA 2048 M01 - Intermediate CA (issued by Amazon Root CA 1)
+    "/LWYS0bnqApLztW89p14Ilm/6JdJpH9mSOpWaxSNCL0="
   ]
 
   /// Validates whether a certificate chain contains a pinned public key
