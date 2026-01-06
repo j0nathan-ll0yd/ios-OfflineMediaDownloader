@@ -235,6 +235,10 @@ struct RootFeatureTests {
     await store.receive(\.main.fileList.fileAddedFromPush) {
       $0.main.fileList.files.append(FileCellFeature.State(file: testFile))
     }
+
+    // New files trigger onAppear to check download status
+    // (file has no URL so the effect returns immediately)
+    await store.receive(\.main.fileList.files[id: "push-file-123"].onAppear)
   }
 
   // Note: downloadReady notification tests removed due to complex async chains
