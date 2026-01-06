@@ -14,6 +14,8 @@ struct FileListFeature {
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
     var playingFile: File?
+    /// Shows loading overlay immediately when play is tapped (before player sheet appears)
+    var isPreparingToPlay: Bool = false
     /// Stores the pending URL for retry actions
     var pendingAddUrl: URL?
     /// URL to share via activity sheet
@@ -34,6 +36,7 @@ struct FileListFeature {
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
     case dismissPlayer
+    case startPlayer(File)
     case dismissShareSheet
     case alert(PresentationAction<Alert>)
     case detail(PresentationAction<FileDetailFeature.Action>)
@@ -253,11 +256,20 @@ struct FileListFeature {
         return .none
 
       case let .files(.element(id: _, action: .delegate(.playFile(file)))):
+        state.isPreparingToPlay = true
+        // Delay showing fullScreenCover slightly so loading overlay renders first
+        return .run { send in
+          try? await Task.sleep(for: .milliseconds(50))
+          await send(.startPlayer(file))
+        }
+
+      case let .startPlayer(file):
         state.playingFile = file
         return .none
 
       case .dismissPlayer:
         state.playingFile = nil
+        state.isPreparingToPlay = false
         return .none
 
       case .dismissShareSheet:
@@ -324,8 +336,12 @@ struct FileListFeature {
         return .none
 
       case let .detail(.presented(.delegate(.playFile(file)))):
-        state.playingFile = file
-        return .none
+        state.isPreparingToPlay = true
+        // Delay showing fullScreenCover slightly so loading overlay renders first
+        return .run { send in
+          try? await Task.sleep(for: .milliseconds(50))
+          await send(.startPlayer(file))
+        }
 
       case let .detail(.presented(.delegate(.shareFile(url)))):
         state.sharingFileURL = url
