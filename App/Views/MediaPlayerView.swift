@@ -8,11 +8,23 @@ struct VideoPlayerSheet: View {
   let onDismiss: () -> Void
 
   @State private var dragOffset: CGFloat = 0
+  @State private var isLoading = true
 
   var body: some View {
     ZStack(alignment: .topTrailing) {
-      MediaPlayerView(url: url)
+      MediaPlayerView(url: url, isLoading: $isLoading)
         .ignoresSafeArea()
+
+      // Loading overlay
+      if isLoading {
+        ZStack {
+          Color.black
+          ProgressView()
+            .scaleEffect(1.5)
+            .tint(.white)
+        }
+        .ignoresSafeArea()
+      }
 
       // Close button
       Button {
@@ -53,6 +65,7 @@ struct VideoPlayerSheet: View {
 /// Provides full-featured playback with native controls, PiP support, and better performance
 struct MediaPlayerView: UIViewControllerRepresentable {
   let url: URL
+  @Binding var isLoading: Bool
 
   /// Minimum file size threshold to consider a file valid (100 KB)
   /// Files smaller than this are likely corrupted or incomplete downloads
@@ -72,8 +85,8 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     // File validation
     guard FileManager.default.fileExists(atPath: url.path) else {
       print("🎬 MediaPlayerView: File not found: \(url.path)")
-      // Show error in the player
       context.coordinator.showError("File not found", in: controller)
+      DispatchQueue.main.async { self.isLoading = false }
       return controller
     }
 
@@ -82,10 +95,11 @@ struct MediaPlayerView: UIViewControllerRepresentable {
        let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize {
       print("🎬 MediaPlayerView: File corrupted (\(size) bytes)")
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
+      DispatchQueue.main.async { self.isLoading = false }
       return controller
     }
 
-    // Create player
+    // Create player - DON'T play yet, wait for ready state
     let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
     let playerItem = AVPlayerItem(asset: asset)
     let player = AVPlayer(playerItem: playerItem)
@@ -99,10 +113,12 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     controller.canStartPictureInPictureAutomaticallyFromInline = true
     controller.delegate = context.coordinator
 
-    // Start playback
-    player.play()
+    // Wait for player item to be ready, then play and hide loader
+    context.coordinator.waitForReadyThenPlay(playerItem: playerItem, player: player) {
+      DispatchQueue.main.async { self.isLoading = false }
+    }
 
-    print("🎬 MediaPlayerView: Playing: \(url.lastPathComponent)")
+    print("🎬 MediaPlayerView: Loading: \(url.lastPathComponent)")
 
     return controller
   }
@@ -116,6 +132,9 @@ struct MediaPlayerView: UIViewControllerRepresentable {
   }
 
   class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+    private var statusObservation: NSKeyValueObservation?
+    private var bufferObservation: NSKeyValueObservation?
+
     func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
       print("🎬 MediaPlayerView: Starting Picture in Picture")
     }
@@ -124,8 +143,54 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       print("🎬 MediaPlayerView: Stopped Picture in Picture")
     }
 
+    func waitForReadyThenPlay(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping () -> Void) {
+      statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+        guard let self = self else { return }
+
+        switch item.status {
+        case .readyToPlay:
+          // Check if we have enough buffer to play smoothly
+          if item.isPlaybackLikelyToKeepUp {
+            self.startPlayback(player: player, onReady: onReady)
+          } else {
+            // Wait for buffer
+            self.waitForBuffer(playerItem: item, player: player, onReady: onReady)
+          }
+        case .failed:
+          print("🎬 MediaPlayerView: Failed to load: \(item.error?.localizedDescription ?? "unknown")")
+          onReady() // Hide loader to show error
+        case .unknown:
+          break
+        @unknown default:
+          break
+        }
+      }
+    }
+
+    private func waitForBuffer(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping () -> Void) {
+      bufferObservation = playerItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+        if item.isPlaybackLikelyToKeepUp {
+          self?.startPlayback(player: player, onReady: onReady)
+        }
+      }
+    }
+
+    private func startPlayback(player: AVPlayer, onReady: @escaping () -> Void) {
+      // Clean up observers
+      statusObservation?.invalidate()
+      statusObservation = nil
+      bufferObservation?.invalidate()
+      bufferObservation = nil
+
+      // Start playback and notify
+      DispatchQueue.main.async {
+        player.play()
+        print("🎬 MediaPlayerView: Playback started")
+        onReady()
+      }
+    }
+
     func showError(_ message: String, in controller: AVPlayerViewController) {
-      // Create a simple error view
       let errorLabel = UILabel()
       errorLabel.text = message
       errorLabel.textColor = .white
@@ -140,6 +205,11 @@ struct MediaPlayerView: UIViewControllerRepresentable {
         errorLabel.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor, constant: 20),
         errorLabel.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor, constant: -20)
       ])
+    }
+
+    deinit {
+      statusObservation?.invalidate()
+      bufferObservation?.invalidate()
     }
   }
 }
