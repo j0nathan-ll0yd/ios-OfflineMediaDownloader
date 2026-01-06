@@ -11,11 +11,11 @@ enum AppError: Error, Equatable {
   /// No internet connection available
   case networkUnavailable
 
-  /// Server returned an error with a message and optional request ID for debugging
-  case serverError(message: String, requestId: String?)
+  /// Server returned an error with a message and optional IDs for debugging
+  case serverError(message: String, requestId: String?, correlationId: String?)
 
-  /// Authentication token is invalid or expired (with optional request ID)
-  case unauthorized(requestId: String?)
+  /// Authentication token is invalid or expired (with optional IDs)
+  case unauthorized(requestId: String?, correlationId: String?)
 
   /// Request timed out
   case timeout
@@ -88,8 +88,18 @@ enum AppError: Error, Equatable {
   /// The request ID for server errors, useful for debugging
   var requestId: String? {
     switch self {
-    case .serverError(_, let requestId), .unauthorized(let requestId):
+    case .serverError(_, let requestId, _), .unauthorized(let requestId, _):
       return requestId
+    default:
+      return nil
+    }
+  }
+
+  /// The correlation ID for request tracing
+  var correlationId: String? {
+    switch self {
+    case .serverError(_, _, let correlationId), .unauthorized(_, let correlationId):
+      return correlationId
     default:
       return nil
     }
@@ -100,17 +110,30 @@ enum AppError: Error, Equatable {
     switch self {
     case .networkUnavailable:
       return "Please check your internet connection and try again."
-    case .serverError(let message, let requestId):
-      if let requestId = requestId {
-        return "\(message)\n\nRequest ID: \(requestId)"
+    case .serverError(let message, let requestId, let correlationId):
+      var result = message
+      if correlationId != nil || requestId != nil {
+        result += "\n"
       }
-      return message
-    case .unauthorized(let requestId):
-      let baseMessage = "Your session has expired. Please sign in again."
-      if let requestId = requestId {
-        return "\(baseMessage)\n\nRequest ID: \(requestId)"
+      if let correlationId = correlationId {
+        result += "\nCorrelation ID: \(correlationId)"
       }
-      return baseMessage
+      if let requestId = requestId {
+        result += "\nRequest ID: \(requestId)"
+      }
+      return result
+    case .unauthorized(let requestId, let correlationId):
+      var result = "Your session has expired. Please sign in again."
+      if correlationId != nil || requestId != nil {
+        result += "\n"
+      }
+      if let correlationId = correlationId {
+        result += "\nCorrelation ID: \(correlationId)"
+      }
+      if let requestId = requestId {
+        result += "\nRequest ID: \(requestId)"
+      }
+      return result
     case .sessionExpired:
       return "Your session has expired. Please sign in again."
     case .timeout:
@@ -166,22 +189,23 @@ extension AppError {
     // Check for ServerClientError
     if let serverError = error as? ServerClientError {
       switch serverError {
-      case .unauthorized(let requestId):
-        return .unauthorized(requestId: requestId)
-      case .internalServerError(let message, let requestId):
-        return .serverError(message: message, requestId: requestId)
-      case .badRequest(let message, let requestId):
-        return .serverError(message: message, requestId: requestId)
-      case .networkError(let message, let requestId):
-        return .serverError(message: message, requestId: requestId)
+      case .unauthorized(let requestId, let correlationId):
+        return .unauthorized(requestId: requestId, correlationId: correlationId)
+      case .internalServerError(let message, let requestId, let correlationId):
+        return .serverError(message: message, requestId: requestId, correlationId: correlationId)
+      case .badRequest(let message, let requestId, let correlationId):
+        return .serverError(message: message, requestId: requestId, correlationId: correlationId)
+      case .networkError(let message, let requestId, let correlationId):
+        return .serverError(message: message, requestId: requestId, correlationId: correlationId)
       }
     }
 
     // Check for OpenAPI ClientError - extract requestId from response headers
+    // Note: correlationId is tracked by the middleware, not available here
     if let clientError = error as? ClientError {
       let requestId = clientError.response?.headerFields[.init("x-amzn-requestid")!]
       let message = "Server error: \(clientError.causeDescription)"
-      return .serverError(message: message, requestId: requestId)
+      return .serverError(message: message, requestId: requestId, correlationId: nil)
     }
 
     // Check for network-related NSErrors
@@ -235,7 +259,7 @@ extension AppError {
     }
 
     // Default: use the localized description
-    return .serverError(message: error.localizedDescription, requestId: nil)
+    return .serverError(message: error.localizedDescription, requestId: nil, correlationId: nil)
   }
 }
 
