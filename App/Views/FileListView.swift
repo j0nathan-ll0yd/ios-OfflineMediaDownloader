@@ -40,7 +40,7 @@ struct FileCellView: View {
           .font(.subheadline)
           .fontWeight(.medium)
           .foregroundStyle(.white)
-          .lineLimit(1)
+          .lineLimit(2)
 
         HStack(spacing: 6) {
           if let author = store.file.authorName {
