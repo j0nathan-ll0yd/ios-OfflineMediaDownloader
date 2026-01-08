@@ -2,7 +2,7 @@ import SwiftUI
 import AVKit
 import AVFoundation
 
-/// Wrapper view that adds swipe-to-dismiss and close button to the video player
+/// Wrapper view that adds swipe-to-dismiss and loading state to the video player
 struct VideoPlayerSheet: View {
   let url: URL
   let onDismiss: () -> Void
@@ -11,7 +11,7 @@ struct VideoPlayerSheet: View {
   @State private var isLoading = true
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
+    ZStack {
       MediaPlayerView(url: url, isLoading: $isLoading)
         .ignoresSafeArea()
 
@@ -25,18 +25,6 @@ struct VideoPlayerSheet: View {
         }
         .ignoresSafeArea()
       }
-
-      // Close button
-      Button {
-        onDismiss()
-      } label: {
-        Image(systemName: "xmark.circle.fill")
-          .font(.title)
-          .symbolRenderingMode(.palette)
-          .foregroundStyle(.white, .black.opacity(0.5))
-      }
-      .padding(.trailing, 16)
-      .padding(.top, 16)
     }
     .background(Color.black)
     .offset(y: dragOffset)

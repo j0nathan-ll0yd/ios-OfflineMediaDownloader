@@ -218,6 +218,10 @@ extension ServerClient: DependencyKey {
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.registerDevice HTTP status: \(statusCode)")
         let requestId = payload.headerFields[.init("x-amzn-requestid")!]
+        if statusCode == 401 || statusCode == 403 {
+          print("🔒 Unauthorized response: HTTP \(statusCode)")
+          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
+        }
         throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
       }
     },
@@ -277,6 +281,10 @@ extension ServerClient: DependencyKey {
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.registerUser HTTP status: \(statusCode)")
         let requestId = payload.headerFields[.init("x-amzn-requestid")!]
+        if statusCode == 401 || statusCode == 403 {
+          print("🔒 Unauthorized response: HTTP \(statusCode)")
+          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
+        }
         throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
       }
     },
@@ -348,6 +356,10 @@ extension ServerClient: DependencyKey {
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.loginUser HTTP status: \(statusCode)")
         let requestId = payload.headerFields[.init("x-amzn-requestid")!]
+        if statusCode == 401 || statusCode == 403 {
+          print("🔒 Unauthorized response: HTTP \(statusCode)")
+          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
+        }
         throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
       }
     },
@@ -402,6 +414,10 @@ extension ServerClient: DependencyKey {
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.getFiles HTTP status: \(statusCode)")
         let requestId = payload.headerFields[.init("x-amzn-requestid")!]
+        if statusCode == 401 || statusCode == 403 {
+          print("🔒 Unauthorized response: HTTP \(statusCode)")
+          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
+        }
         throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
       }
     },
@@ -471,6 +487,11 @@ extension ServerClient: DependencyKey {
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.addFile HTTP status: \(statusCode)")
         let requestId = payload.headerFields[.init("x-amzn-requestid")!]
+        // Handle 401/403 as unauthorized even if not in OpenAPI spec
+        if statusCode == 401 || statusCode == 403 {
+          print("🔒 Unauthorized response: HTTP \(statusCode)")
+          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
+        }
         throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
       }
     }
