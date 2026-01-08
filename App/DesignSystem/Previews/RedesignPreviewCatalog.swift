@@ -27,10 +27,13 @@ struct RedesignPreviewCatalog: View {
             VStack(spacing: 0) {
                 Picker("Screen", selection: $selectedScreen) {
                     ForEach(ScreenType.allCases) { screen in
-                        Text(screen.rawValue).tag(screen)
+                        Text(screen.rawValue)
+                            .tag(screen)
+                            .accessibilityIdentifier(screen.rawValue)
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier("ScreenPicker")
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.ultraThinMaterial)
