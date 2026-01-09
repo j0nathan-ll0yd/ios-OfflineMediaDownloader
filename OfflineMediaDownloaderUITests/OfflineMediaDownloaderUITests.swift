@@ -17,20 +17,23 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-showPreviewCatalog"]
         app.launch()
-        
+
+        // Wait for the app to launch and the picker to appear
+        let picker = app.segmentedControls.firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "Preview catalog picker should appear")
+
         let screenNames = ["Launch", "Login", "Default Files", "Files", "Account"]
-        
+
         for screenName in screenNames {
-            // Find the picker button for this screen
-            let pickerButton = app.buttons[screenName]
-            
-            // If it's not selected or not visible, we might need to tap it.
-            if pickerButton.exists {
-                pickerButton.tap()
-                
+            // Find the segment button within the segmented control
+            let segmentButton = picker.buttons[screenName]
+
+            if segmentButton.waitForExistence(timeout: 5) {
+                segmentButton.tap()
+
                 // Give it a moment to settle/animate
                 sleep(1)
-                
+
                 // Take screenshot
                 let screenshot = app.screenshot()
                 let attachment = XCTAttachment(screenshot: screenshot)
@@ -38,9 +41,6 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
                 attachment.lifetime = .keepAlways
                 add(attachment)
             } else {
-                // If the screen name button doesn't exist, we fail.
-                // Note: We might need to handle the case where the picker isn't immediately visible, 
-                // but for a preview catalog it should be.
                 XCTFail("Could not find picker button for \(screenName)")
             }
         }
