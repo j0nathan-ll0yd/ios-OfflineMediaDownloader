@@ -8,29 +8,21 @@ struct DiagnosticView: View {
   private let theme = DarkProfessionalTheme()
 
   /// Extract user profile from keychain items
+  /// The displayValue format is: "FirstName LastName (email@example.com)"
   private var userProfile: (name: String, email: String) {
-    // Try to find user data in keychain items
     if let userData = store.keychainItems.first(where: { $0.itemType == .userData }) {
-      // Parse user data JSON - simplified extraction
       let value = userData.displayValue
-      let name = extractJSONValue(from: value, key: "firstName") ?? "User"
-      let lastName = extractJSONValue(from: value, key: "lastName") ?? ""
-      let fullName = [name, lastName].filter { !$0.isEmpty }.joined(separator: " ")
-      let email = extractJSONValue(from: value, key: "email") ?? "No email"
-      return (fullName.isEmpty ? "User" : fullName, email)
+      // Parse format: "FirstName LastName (email@example.com)"
+      if let emailStart = value.lastIndex(of: "("),
+         let emailEnd = value.lastIndex(of: ")") {
+        let name = String(value[..<emailStart]).trimmingCharacters(in: .whitespaces)
+        let email = String(value[value.index(after: emailStart)..<emailEnd])
+        return (name.isEmpty ? "User" : name, email.isEmpty ? "No email" : email)
+      }
+      // Fallback if format doesn't match
+      return (value, "No email")
     }
     return ("User", "No email stored")
-  }
-
-  private func extractJSONValue(from json: String, key: String) -> String? {
-    // Simple extraction - looks for "key":"value" pattern
-    let pattern = "\"\(key)\":\"([^\"]*)\""
-    guard let regex = try? NSRegularExpression(pattern: pattern),
-          let match = regex.firstMatch(in: json, range: NSRange(json.startIndex..., in: json)),
-          let range = Range(match.range(at: 1), in: json) else {
-      return nil
-    }
-    return String(json[range])
   }
 
   private var initials: String {
