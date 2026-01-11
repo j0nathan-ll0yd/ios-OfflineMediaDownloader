@@ -71,7 +71,7 @@ struct DiagnosticFeature {
             if let token = try await keychainClient.getJwtToken() {
               items.append(KeychainItem(
                 name: "Token",
-                displayValue: String(token.prefix(50)) + "...",
+                displayValue: token,
                 itemType: .token
               ))
             }
