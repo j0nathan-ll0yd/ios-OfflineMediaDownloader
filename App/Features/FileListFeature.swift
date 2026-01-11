@@ -14,6 +14,8 @@ struct FileListFeature {
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
     var playingFile: File?
+    /// Shows loading overlay immediately when play is tapped (before player sheet appears)
+    var isPreparingToPlay: Bool = false
     /// Stores the pending URL for retry actions
     var pendingAddUrl: URL?
     /// URL to share via activity sheet
@@ -34,6 +36,7 @@ struct FileListFeature {
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
     case dismissPlayer
+    case startPlayer(File)
     case dismissShareSheet
     case alert(PresentationAction<Alert>)
     case detail(PresentationAction<FileDetailFeature.Action>)
@@ -253,11 +256,22 @@ struct FileListFeature {
         return .none
 
       case let .files(.element(id: _, action: .delegate(.playFile(file)))):
+        state.isPreparingToPlay = true
+        // Delay showing fullScreenCover slightly so loading overlay renders first
+        return .run { send in
+          try? await Task.sleep(for: .milliseconds(50))
+          await send(.startPlayer(file))
+        }
+
+      case let .startPlayer(file):
         state.playingFile = file
-        return .none
+        return .run { [coreDataClient] _ in
+          try? await coreDataClient.incrementPlayCount()
+        }
 
       case .dismissPlayer:
         state.playingFile = nil
+        state.isPreparingToPlay = false
         return .none
 
       case .dismissShareSheet:
@@ -267,6 +281,7 @@ struct FileListFeature {
       // MARK: - Push Notification Actions
       case let .fileAddedFromPush(file):
         // Add or update file in the list
+        let isNewFile = state.files[id: file.fileId] == nil
         if var existing = state.files[id: file.fileId] {
           // Preserve download state, update file metadata
           existing.file = file
@@ -279,6 +294,11 @@ struct FileListFeature {
         state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
         // Remove from pending if it was there
         state.pendingFileIds.removeAll { $0 == file.fileId }
+        // For new files, trigger onAppear to check download status
+        // (handles case where metadata notification was missed but file was downloaded)
+        if isNewFile {
+          return .send(.files(.element(id: file.fileId, action: .onAppear)))
+        }
         return .none
 
       case let .updateFileUrl(fileId, url):
@@ -290,8 +310,16 @@ struct FileListFeature {
         return .none
 
       case let .refreshFileState(fileId):
-        // Trigger onAppear for the specific file cell to re-check download status
-        return .send(.files(.element(id: fileId, action: .onAppear)))
+        // If file exists in state, trigger onAppear to re-check download status
+        if state.files[id: fileId] != nil {
+          return .send(.files(.element(id: fileId, action: .onAppear)))
+        }
+        // File not in state (metadata notification was missed) - load from CoreData
+        return .run { send in
+          if let file = try await coreDataClient.getFile(fileId) {
+            await send(.fileAddedFromPush(file))
+          }
+        }
 
       case let .fileTapped(fileState):
         // Navigate to file detail view
@@ -310,8 +338,12 @@ struct FileListFeature {
         return .none
 
       case let .detail(.presented(.delegate(.playFile(file)))):
-        state.playingFile = file
-        return .none
+        state.isPreparingToPlay = true
+        // Delay showing fullScreenCover slightly so loading overlay renders first
+        return .run { send in
+          try? await Task.sleep(for: .milliseconds(50))
+          await send(.startPlayer(file))
+        }
 
       case let .detail(.presented(.delegate(.shareFile(url)))):
         state.sharingFileURL = url

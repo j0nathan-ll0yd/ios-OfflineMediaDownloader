@@ -148,7 +148,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.unauthorized(requestId: "test-request-id") }
+      $0.serverClient.getFiles = { throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -168,7 +168,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id") }
+      $0.serverClient.getFiles = { throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -187,7 +187,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Database unavailable\n\nRequest ID: test-request-id")
+        TextState("Database unavailable\n\nCorrelation ID: test-correlation-id\nRequest ID: test-request-id")
       }
     }
   }
@@ -318,7 +318,7 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id"))))
     await store.receive(\.delegate.authenticationRequired)
   }
 
@@ -329,7 +329,7 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL", requestId: "test-request-id"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL", requestId: "test-request-id", correlationId: "test-correlation-id"))))
 
     await store.receive(\.showError) {
       $0.alert = AlertState {
@@ -339,7 +339,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Invalid URL\n\nRequest ID: test-request-id")
+        TextState("Invalid URL\n\nCorrelation ID: test-correlation-id\nRequest ID: test-request-id")
       }
     }
   }

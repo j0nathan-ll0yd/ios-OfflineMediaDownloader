@@ -15,6 +15,8 @@ struct DefaultFilesFeature {
     var isDownloaded: Bool = false
     var showBenefits: Bool = false
     var isPlaying: Bool = false
+    /// Shows loading overlay immediately when play is tapped
+    var isPreparingToPlay: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
   }
 
@@ -41,6 +43,7 @@ struct DefaultFilesFeature {
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.serverClient) var serverClient
+  @Dependency(\.coreDataClient) var coreDataClient
 
   private enum CancelID { case download }
 
@@ -135,12 +138,23 @@ struct DefaultFilesFeature {
         return .none
 
       case .playButtonTapped:
-        state.isPlaying = true
-        return .none
+        state.isPreparingToPlay = true
+        // Delay showing fullScreenCover slightly so loading overlay renders first
+        return .run { send in
+          try? await Task.sleep(for: .milliseconds(50))
+          await send(.setPlaying(true))
+        }
 
       case let .setPlaying(isPlaying):
         state.isPlaying = isPlaying
-        return .none
+        if !isPlaying {
+          state.isPreparingToPlay = false
+          return .none
+        }
+        // Increment play count when starting playback
+        return .run { [coreDataClient] _ in
+          try? await coreDataClient.incrementPlayCount()
+        }
 
       case .registerButtonTapped:
         // Handled by parent
@@ -183,6 +197,18 @@ struct DefaultFilesView: View {
       }
     }
     .background(theme.backgroundColor)
+    .overlay {
+      // Loading overlay shown immediately when play is tapped
+      if store.isPreparingToPlay {
+        ZStack {
+          Color.black.opacity(0.8)
+            .ignoresSafeArea()
+          ProgressView()
+            .scaleEffect(1.5)
+            .tint(.white)
+        }
+      }
+    }
     .alert($store.scope(state: \.alert, action: \.alert))
     .fullScreenCover(isPresented: $store.isPlaying.sending(\.setPlaying)) {
       videoPlayerContent

@@ -109,7 +109,10 @@ struct FileCellFeature {
         state.isDownloading = false
         state.downloadProgress = 1.0
         state.isDownloaded = true  // Update cached state
-        return .none
+        let fileId = state.file.fileId
+        return .run { [coreDataClient] _ in
+          try? await coreDataClient.markFileDownloaded(fileId)
+        }
 
       case let .downloadFailed(message):
         logger.error(.download, "Download failed", metadata: ["file": state.file.key, "error": message])

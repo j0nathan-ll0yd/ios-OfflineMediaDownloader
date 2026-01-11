@@ -179,7 +179,7 @@ struct RootFeature {
       case .login:
         return .none
 
-      // Handle auth required from MainFeature - user can continue browsing as guest
+      // Handle auth required from MainFeature - force user to re-login
       case .main(.delegate(.authenticationRequired)):
         state.isAuthenticated = false
         state.main.isAuthenticated = false
@@ -187,10 +187,12 @@ struct RootFeature {
         // Keep registration status - user is still registered, just needs to re-authenticate
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
+        // Present login sheet to force re-authentication
+        state.main.loginSheet = LoginFeature.State()
         return .run { [logger, keychainClient] _ in
           // Clear the stored JWT token since it's invalid
           try? await keychainClient.deleteJwtToken()
-          logger.info(.auth, "Session expired - user can continue browsing as guest")
+          logger.info(.auth, "Session expired - presenting login sheet for re-authentication")
         }
 
       // MARK: - Push Notification Handling
@@ -256,8 +258,11 @@ struct RootFeature {
 
       case let .backgroundDownloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
-        // Forward to MainFeature to refresh file state
-        return .send(.main(.fileList(.refreshFileState(fileId))))
+        // Mark file as downloaded for metrics tracking, then refresh UI state
+        return .run { [coreDataClient] send in
+          try? await coreDataClient.markFileDownloaded(fileId)
+          await send(.main(.fileList(.refreshFileState(fileId))))
+        }
 
       case let .backgroundDownloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])

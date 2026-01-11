@@ -23,6 +23,10 @@ struct DiagnosticFeature {
     var showDebugActions: Bool = false
     var isLoading: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
+    // Metrics
+    var downloadCount: Int = 0
+    var totalStorageBytes: Int64 = 0
+    var playCount: Int = 0
   }
 
   enum Action {
@@ -33,11 +37,12 @@ struct DiagnosticFeature {
     case keychainItemDeleted(KeychainItem.KeychainItemType)
     case truncateFilesButtonTapped
     case filesTruncated
-    case deleteAllDeveloperDataButtonTapped
-    case allDeveloperDataDeleted
     case showError(AppError)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
+    // Metrics
+    case loadMetrics
+    case metricsLoaded(FileMetrics)
 
     @CasePathable
     enum Alert: Equatable {
@@ -58,38 +63,41 @@ struct DiagnosticFeature {
       switch action {
       case .onAppear:
         state.isLoading = true
-        return .run { send in
-          var items: [KeychainItem] = []
+        return .merge(
+          .run { send in
+            var items: [KeychainItem] = []
 
-          // Load JWT Token
-          if let token = try await keychainClient.getJwtToken() {
-            items.append(KeychainItem(
-              name: "Token",
-              displayValue: String(token.prefix(50)) + "...",
-              itemType: .token
-            ))
-          }
+            // Load JWT Token
+            if let token = try await keychainClient.getJwtToken() {
+              items.append(KeychainItem(
+                name: "Token",
+                displayValue: token,
+                itemType: .token
+              ))
+            }
 
-          // Load User Data
-          if let userData = try? await keychainClient.getUserData() {
-            items.append(KeychainItem(
-              name: "UserData",
-              displayValue: "\(userData.firstName) \(userData.lastName) (\(userData.email))",
-              itemType: .userData
-            ))
-          }
+            // Load User Data
+            if let userData = try? await keychainClient.getUserData() {
+              items.append(KeychainItem(
+                name: "UserData",
+                displayValue: "\(userData.firstName) \(userData.lastName) (\(userData.email))",
+                itemType: .userData
+              ))
+            }
 
-          // Load Device Data
-          if let deviceData = try await keychainClient.getDeviceData() {
-            items.append(KeychainItem(
-              name: "DeviceData",
-              displayValue: deviceData.endpointArn,
-              itemType: .deviceData
-            ))
-          }
+            // Load Device Data
+            if let deviceData = try await keychainClient.getDeviceData() {
+              items.append(KeychainItem(
+                name: "DeviceData",
+                displayValue: deviceData.endpointArn,
+                itemType: .deviceData
+              ))
+            }
 
-          await send(.keychainItemsLoaded(items))
-        }
+            await send(.keychainItemsLoaded(items))
+          },
+          .send(.loadMetrics)
+        )
 
       case let .keychainItemsLoaded(items):
         state.keychainItems = items
@@ -132,6 +140,7 @@ struct DiagnosticFeature {
         return .run { send in
           do {
             try await coreDataClient.truncateFiles()
+            try await coreDataClient.resetMetrics()
             await send(.filesTruncated)
           } catch {
             await send(.showError(.storageError(operation: "truncate files")))
@@ -139,23 +148,8 @@ struct DiagnosticFeature {
         }
 
       case .filesTruncated:
-        return .none
-
-      case .deleteAllDeveloperDataButtonTapped:
-        return .run { send in
-          do {
-            try await keychainClient.deleteJwtToken()
-            try await keychainClient.deleteUserData()
-            try await keychainClient.deleteDeviceData()
-            await send(.allDeveloperDataDeleted)
-          } catch {
-            await send(.showError(.keychainError(operation: "delete all developer data")))
-          }
-        }
-
-      case .allDeveloperDataDeleted:
-        state.keychainItems = []
-        return .send(.delegate(.authenticationInvalidated))
+        // Reload metrics after truncate
+        return .send(.loadMetrics)
 
       case let .showError(appError):
         state.alert = AlertState {
@@ -173,6 +167,22 @@ struct DiagnosticFeature {
         return .none
 
       case .delegate:
+        return .none
+
+      case .loadMetrics:
+        return .run { send in
+          do {
+            let metrics = try await coreDataClient.getMetrics()
+            await send(.metricsLoaded(metrics))
+          } catch {
+            print("📊 Failed to load metrics: \(error)")
+          }
+        }
+
+      case let .metricsLoaded(metrics):
+        state.downloadCount = metrics.downloadCount
+        state.totalStorageBytes = metrics.totalStorageBytes
+        state.playCount = metrics.playCount
         return .none
       }
     }

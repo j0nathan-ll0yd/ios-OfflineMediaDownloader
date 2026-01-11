@@ -3,34 +3,25 @@ import ComposableArchitecture
 
 struct DiagnosticView: View {
   @Bindable var store: StoreOf<DiagnosticFeature>
-  @State private var showDebugSection = false
 
   private let theme = DarkProfessionalTheme()
 
   /// Extract user profile from keychain items
+  /// The displayValue format is: "FirstName LastName (email@example.com)"
   private var userProfile: (name: String, email: String) {
-    // Try to find user data in keychain items
     if let userData = store.keychainItems.first(where: { $0.itemType == .userData }) {
-      // Parse user data JSON - simplified extraction
       let value = userData.displayValue
-      let name = extractJSONValue(from: value, key: "firstName") ?? "User"
-      let lastName = extractJSONValue(from: value, key: "lastName") ?? ""
-      let fullName = [name, lastName].filter { !$0.isEmpty }.joined(separator: " ")
-      let email = extractJSONValue(from: value, key: "email") ?? "No email"
-      return (fullName.isEmpty ? "User" : fullName, email)
+      // Parse format: "FirstName LastName (email@example.com)"
+      if let emailStart = value.lastIndex(of: "("),
+         let emailEnd = value.lastIndex(of: ")") {
+        let name = String(value[..<emailStart]).trimmingCharacters(in: .whitespaces)
+        let email = String(value[value.index(after: emailStart)..<emailEnd])
+        return (name.isEmpty ? "User" : name, email.isEmpty ? "No email" : email)
+      }
+      // Fallback if format doesn't match
+      return (value, "No email")
     }
     return ("User", "No email stored")
-  }
-
-  private func extractJSONValue(from json: String, key: String) -> String? {
-    // Simple extraction - looks for "key":"value" pattern
-    let pattern = "\"\(key)\":\"([^\"]*)\""
-    guard let regex = try? NSRegularExpression(pattern: pattern),
-          let match = regex.firstMatch(in: json, range: NSRange(json.startIndex..., in: json)),
-          let range = Range(match.range(at: 1), in: json) else {
-      return nil
-    }
-    return String(json[range])
   }
 
   private var initials: String {
@@ -163,24 +154,37 @@ struct DiagnosticView: View {
     HStack(spacing: 12) {
       StatCard(
         title: "Downloads",
-        value: "0",
+        value: "\(store.downloadCount)",
         icon: "arrow.down.circle.fill",
         gradient: [theme.primaryColor, theme.accentColor]
       )
 
       StatCard(
         title: "Storage",
-        value: "0 MB",
+        value: formattedStorageSize,
         icon: "internaldrive.fill",
         gradient: [theme.accentColor, Color(hex: "5AC8FA")]
       )
 
       StatCard(
         title: "Watched",
-        value: "0",
+        value: "\(store.playCount)",
         icon: "play.circle.fill",
         gradient: [Color(hex: "5AC8FA"), theme.successColor]
       )
+    }
+  }
+
+  private var formattedStorageSize: String {
+    let bytes = store.totalStorageBytes
+    if bytes == 0 {
+      return "0 MB"
+    } else if bytes < 1_000_000 {
+      return String(format: "%.0f KB", Double(bytes) / 1_000)
+    } else if bytes < 1_000_000_000 {
+      return String(format: "%.1f MB", Double(bytes) / 1_000_000)
+    } else {
+      return String(format: "%.2f GB", Double(bytes) / 1_000_000_000)
     }
   }
 
@@ -243,109 +247,74 @@ struct DiagnosticView: View {
   #if DEBUG
   private var debugSection: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Button(action: { withAnimation { showDebugSection.toggle() } }) {
-        HStack {
-          Text("Developer")
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.textSecondary)
-            .textCase(.uppercase)
-
-          Spacer()
-
-          Image(systemName: showDebugSection ? "chevron.up" : "chevron.down")
-            .font(.caption)
-            .foregroundStyle(theme.textSecondary)
-        }
+      Text("Developer")
+        .font(.caption)
+        .fontWeight(.semibold)
+        .foregroundStyle(theme.textSecondary)
+        .textCase(.uppercase)
         .padding(.leading, 4)
-      }
 
-      if showDebugSection {
-        VStack(spacing: 0) {
-          // Loading indicator
-          if store.isLoading {
-            HStack {
-              ProgressView()
-                .tint(theme.primaryColor)
-              Text("Loading...")
-                .font(.subheadline)
-                .foregroundStyle(theme.textSecondary)
-            }
-            .padding(16)
+      VStack(spacing: 0) {
+        // Loading indicator
+        if store.isLoading {
+          HStack {
+            ProgressView()
+              .tint(theme.primaryColor)
+            Text("Loading...")
+              .font(.subheadline)
+              .foregroundStyle(theme.textSecondary)
           }
+          .padding(16)
+        }
 
-          // Keychain items
-          ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
-            NavigationLink(destination: KeychainDetailView(item: item)) {
-              keychainRow(item: item)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-              Button(role: .destructive) {
-                store.send(.deleteKeychainItem(IndexSet(integer: index)))
-              } label: {
-                Label("Delete", systemImage: "trash")
-              }
-            }
+        // Keychain items
+        ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
+          NavigationLink(destination: KeychainDetailView(item: item) {
+            store.send(.deleteKeychainItem(IndexSet(integer: index)))
+          }) {
+            keychainRow(item: item)
+          }
+          .buttonStyle(.plain)
 
+          if index < store.keychainItems.count - 1 {
             Divider()
               .background(DarkProfessionalTheme.divider)
               .padding(.leading, 52)
           }
+        }
 
-          // Delete Developer Data button
-          Button(action: { store.send(.deleteAllDeveloperDataButtonTapped) }) {
-            HStack(spacing: 12) {
-              ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                  .fill(theme.errorColor.opacity(0.15))
-                  .frame(width: 36, height: 36)
-
-                Image(systemName: "key.slash")
-                  .font(.system(size: 16))
-                  .foregroundStyle(theme.errorColor)
-              }
-
-              Text("Delete Developer Data")
-                .font(.body)
-                .foregroundStyle(theme.errorColor)
-
-              Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-          }
-
+        // Divider before Truncate button (only if there are keychain items)
+        if !store.keychainItems.isEmpty {
           Divider()
             .background(DarkProfessionalTheme.divider)
             .padding(.leading, 52)
-
-          // Truncate files button
-          Button(action: { store.send(.truncateFilesButtonTapped) }) {
-            HStack(spacing: 12) {
-              ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                  .fill(theme.errorColor.opacity(0.15))
-                  .frame(width: 36, height: 36)
-
-                Image(systemName: "trash")
-                  .font(.system(size: 16))
-                  .foregroundStyle(theme.errorColor)
-              }
-
-              Text("Truncate All Files")
-                .font(.body)
-                .foregroundStyle(theme.errorColor)
-
-              Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-          }
         }
-        .background(DarkProfessionalTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+        // Truncate files button
+        Button(action: { store.send(.truncateFilesButtonTapped) }) {
+          HStack(spacing: 12) {
+            ZStack {
+              RoundedRectangle(cornerRadius: 8)
+                .fill(theme.errorColor.opacity(0.15))
+                .frame(width: 36, height: 36)
+
+              Image(systemName: "trash")
+                .font(.system(size: 16))
+                .foregroundStyle(theme.errorColor)
+            }
+
+            Text("Truncate All Files")
+              .font(.body)
+              .foregroundStyle(theme.errorColor)
+
+            Spacer()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 10)
+        }
       }
+      .background(DarkProfessionalTheme.cardBackground)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
     }
   }
 
@@ -425,6 +394,7 @@ private struct StatCard: View {
 
 struct KeychainDetailView: View {
   let item: KeychainItem
+  var onDelete: (() -> Void)?
 
   private let theme = DarkProfessionalTheme()
 
@@ -475,10 +445,29 @@ struct KeychainDetailView: View {
               .font(.system(.body, design: .monospaced))
               .foregroundStyle(.white)
               .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
               .padding(16)
               .frame(maxWidth: .infinity, alignment: .leading)
               .background(DarkProfessionalTheme.cardBackground)
               .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+
+          // Delete button
+          if let onDelete = onDelete {
+            Button(action: onDelete) {
+              HStack {
+                Image(systemName: "trash")
+                Text("Delete")
+              }
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundStyle(.white)
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, 14)
+              .background(theme.errorColor)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.top, 8)
           }
         }
         .padding(16)

@@ -40,7 +40,7 @@ struct FileCellView: View {
           .font(.subheadline)
           .fontWeight(.medium)
           .foregroundStyle(.white)
-          .lineLimit(1)
+          .lineLimit(2)
 
         HStack(spacing: 6) {
           if let author = store.file.authorName {
@@ -219,6 +219,18 @@ struct FileListView: View {
       }
     }
     .preferredColorScheme(.dark)
+    .overlay {
+      // Loading overlay shown immediately when play is tapped
+      if store.isPreparingToPlay {
+        ZStack {
+          Color.black.opacity(0.8)
+            .ignoresSafeArea()
+          ProgressView()
+            .scaleEffect(1.5)
+            .tint(.white)
+        }
+      }
+    }
     .task {
       store.send(.onAppear)
       // Pre-warm pasteboard access (triggers permission dialog if needed)

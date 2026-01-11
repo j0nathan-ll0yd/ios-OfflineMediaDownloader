@@ -12,6 +12,11 @@ struct CoreDataClient: Sendable {
   var saveContext: @Sendable () async throws -> Void
   var truncateFiles: @Sendable () async throws -> Void
   var deleteFile: @Sendable (File) async throws -> Void
+  // Metrics
+  var getMetrics: @Sendable () async throws -> FileMetrics = { .zero }
+  var markFileDownloaded: @Sendable (_ fileId: String) async throws -> Void
+  var incrementPlayCount: @Sendable () async throws -> Void
+  var resetMetrics: @Sendable () async throws -> Void
 }
 
 extension DependencyValues {
@@ -25,6 +30,14 @@ enum CoreDataError: Error {
   case fetchFailed(String)
   case saveFailed(String)
   case deleteFailed(String)
+}
+
+struct FileMetrics: Equatable {
+  var downloadCount: Int
+  var totalStorageBytes: Int64
+  var playCount: Int
+
+  static let zero = FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0)
 }
 
 // MARK: - Live API implementation
@@ -159,7 +172,7 @@ extension CoreDataClient: DependencyKey {
       // Also delete from CoreData (use background context)
       let context = PersistenceController.shared.container.newBackgroundContext()
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-      
+
       try await context.perform {
         let request = FileEntity.fetchRequest()
         request.predicate = NSPredicate(format: "fileId == %@", file.fileId)
@@ -168,6 +181,112 @@ extension CoreDataClient: DependencyKey {
           try context.save()
           print("🗑️ Deleted FileEntity from CoreData: \(file.fileId)")
         }
+      }
+    },
+    getMetrics: {
+      let context = PersistenceController.shared.container.viewContext
+      let fileManager = FileManager.default
+      guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        return .zero
+      }
+
+      return try await context.perform {
+        // Count downloaded files
+        let fileRequest = FileEntity.fetchRequest()
+        fileRequest.predicate = NSPredicate(format: "isDownloaded == YES")
+        let downloadedFiles = try context.fetch(fileRequest)
+        let downloadCount = downloadedFiles.count
+
+        // Calculate storage from actual files on disk
+        var totalBytes: Int64 = 0
+        for entity in downloadedFiles {
+          if let urlString = entity.url,
+             let url = URL(string: urlString) {
+            let localURL = documentsPath.appendingPathComponent(url.lastPathComponent)
+            if let attrs = try? fileManager.attributesOfItem(atPath: localURL.path),
+               let size = attrs[.size] as? Int64 {
+              totalBytes += size
+            }
+          }
+        }
+
+        // Get play count from AppMetrics
+        let metricsRequest = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        metricsRequest.fetchLimit = 1
+        let metricsResults = try context.fetch(metricsRequest)
+        let playCount = metricsResults.first?.value(forKey: "playCount") as? Int64 ?? 0
+
+        print("📊 Metrics: \(downloadCount) downloads, \(totalBytes) bytes, \(playCount) plays")
+        return FileMetrics(
+          downloadCount: downloadCount,
+          totalStorageBytes: totalBytes,
+          playCount: Int(playCount)
+        )
+      }
+    },
+    markFileDownloaded: { fileId in
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          print("📊 File not found for marking downloaded: \(fileId)")
+          return
+        }
+        entity.isDownloaded = true
+        try context.save()
+        print("📊 Marked file as downloaded: \(fileId)")
+      }
+    },
+    incrementPlayCount: {
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        request.fetchLimit = 1
+        let results = try context.fetch(request)
+
+        let metrics: NSManagedObject
+        if let existing = results.first {
+          metrics = existing
+        } else {
+          // Create singleton AppMetrics if doesn't exist
+          let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context)!
+          metrics = NSManagedObject(entity: entity, insertInto: context)
+          metrics.setValue(Int64(0), forKey: "playCount")
+        }
+
+        let currentCount = metrics.value(forKey: "playCount") as? Int64 ?? 0
+        metrics.setValue(currentCount + 1, forKey: "playCount")
+        try context.save()
+        print("📊 Incremented play count to \(currentCount + 1)")
+      }
+    },
+    resetMetrics: {
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        // Reset isDownloaded on all FileEntity records
+        let fileRequest = FileEntity.fetchRequest()
+        let files = try context.fetch(fileRequest)
+        for file in files {
+          file.isDownloaded = false
+        }
+
+        // Reset play count in AppMetrics
+        let metricsRequest = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        let metricsResults = try context.fetch(metricsRequest)
+        if let metrics = metricsResults.first {
+          metrics.setValue(Int64(0), forKey: "playCount")
+        }
+
+        try context.save()
+        print("📊 Reset all metrics")
       }
     }
   )
@@ -183,6 +302,10 @@ extension CoreDataClient {
     updateFileUrl: { _, _ in },
     saveContext: { },
     truncateFiles: { },
-    deleteFile: { _ in }
+    deleteFile: { _ in },
+    getMetrics: { .zero },
+    markFileDownloaded: { _ in },
+    incrementPlayCount: { },
+    resetMetrics: { }
   )
 }

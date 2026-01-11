@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Network
 
 @main
 struct OfflineMediaDownloaderApp: App {
@@ -14,7 +15,11 @@ struct OfflineMediaDownloaderApp: App {
 
   var body: some Scene {
     WindowGroup {
-      AppContentView(store: appDelegate.store)
+      if CommandLine.arguments.contains("-showPreviewCatalog") {
+        RedesignPreviewCatalog()
+      } else {
+        AppContentView(store: appDelegate.store)
+      }
     }
   }
 }
@@ -23,14 +28,31 @@ struct OfflineMediaDownloaderApp: App {
 private struct AppContentView: View {
   let store: StoreOf<RootFeature>
   @SwiftUI.Environment(\.scenePhase) private var scenePhase: ScenePhase
+  @State private var hasLaunched = false
 
   var body: some View {
     RootView(store: store)
       .onChange(of: scenePhase) { _, newPhase in
         if newPhase == .active {
-          // Refresh file list to pick up any background downloads
+          if hasLaunched {
+            // Returning from background - refresh if we have connectivity
+            refreshIfConnected()
+          }
+          hasLaunched = true
+        }
+      }
+  }
+
+  private func refreshIfConnected() {
+    let monitor = NWPathMonitor()
+    monitor.pathUpdateHandler = { path in
+      monitor.cancel()
+      if path.status == .satisfied {
+        Task { @MainActor in
           store.send(.main(.fileList(.onAppear)))
         }
       }
+    }
+    monitor.start(queue: DispatchQueue.global(qos: .utility))
   }
 }
