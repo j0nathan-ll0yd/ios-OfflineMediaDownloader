@@ -267,22 +267,17 @@ struct DiagnosticView: View {
           .padding(16)
         }
 
-        // Keychain items with delete buttons
+        // Keychain items (swipe to delete individually)
         ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
-          HStack(spacing: 0) {
-            NavigationLink(destination: KeychainDetailView(item: item)) {
-              keychainRow(item: item)
-            }
-            .buttonStyle(.plain)
-
-            Button {
+          NavigationLink(destination: KeychainDetailView(item: item)) {
+            keychainRow(item: item)
+          }
+          .buttonStyle(.plain)
+          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
               store.send(.deleteKeychainItem(IndexSet(integer: index)))
             } label: {
-              Image(systemName: "trash")
-                .font(.system(size: 14))
-                .foregroundStyle(theme.errorColor)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+              Label("Delete", systemImage: "trash")
             }
           }
 
