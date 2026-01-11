@@ -43,6 +43,7 @@ struct DefaultFilesFeature {
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.serverClient) var serverClient
+  @Dependency(\.coreDataClient) var coreDataClient
 
   private enum CancelID { case download }
 
@@ -148,8 +149,12 @@ struct DefaultFilesFeature {
         state.isPlaying = isPlaying
         if !isPlaying {
           state.isPreparingToPlay = false
+          return .none
         }
-        return .none
+        // Increment play count when starting playback
+        return .run { [coreDataClient] _ in
+          try? await coreDataClient.incrementPlayCount()
+        }
 
       case .registerButtonTapped:
         // Handled by parent

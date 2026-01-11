@@ -155,24 +155,37 @@ struct DiagnosticView: View {
     HStack(spacing: 12) {
       StatCard(
         title: "Downloads",
-        value: "0",
+        value: "\(store.downloadCount)",
         icon: "arrow.down.circle.fill",
         gradient: [theme.primaryColor, theme.accentColor]
       )
 
       StatCard(
         title: "Storage",
-        value: "0 MB",
+        value: formattedStorageSize,
         icon: "internaldrive.fill",
         gradient: [theme.accentColor, Color(hex: "5AC8FA")]
       )
 
       StatCard(
         title: "Watched",
-        value: "0",
+        value: "\(store.playCount)",
         icon: "play.circle.fill",
         gradient: [Color(hex: "5AC8FA"), theme.successColor]
       )
+    }
+  }
+
+  private var formattedStorageSize: String {
+    let bytes = store.totalStorageBytes
+    if bytes == 0 {
+      return "0 MB"
+    } else if bytes < 1_000_000 {
+      return String(format: "%.0f KB", Double(bytes) / 1_000)
+    } else if bytes < 1_000_000_000 {
+      return String(format: "%.1f MB", Double(bytes) / 1_000_000)
+    } else {
+      return String(format: "%.2f GB", Double(bytes) / 1_000_000_000)
     }
   }
 

@@ -258,8 +258,11 @@ struct RootFeature {
 
       case let .backgroundDownloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
-        // Forward to MainFeature to refresh file state
-        return .send(.main(.fileList(.refreshFileState(fileId))))
+        // Mark file as downloaded for metrics tracking, then refresh UI state
+        return .run { [coreDataClient] send in
+          try? await coreDataClient.markFileDownloaded(fileId)
+          await send(.main(.fileList(.refreshFileState(fileId))))
+        }
 
       case let .backgroundDownloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])

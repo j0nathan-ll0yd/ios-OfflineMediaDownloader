@@ -265,7 +265,9 @@ struct FileListFeature {
 
       case let .startPlayer(file):
         state.playingFile = file
-        return .none
+        return .run { [coreDataClient] _ in
+          try? await coreDataClient.incrementPlayCount()
+        }
 
       case .dismissPlayer:
         state.playingFile = nil
