@@ -37,8 +37,6 @@ struct DiagnosticFeature {
     case keychainItemDeleted(KeychainItem.KeychainItemType)
     case truncateFilesButtonTapped
     case filesTruncated
-    case deleteAllDeveloperDataButtonTapped
-    case allDeveloperDataDeleted
     case showError(AppError)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
@@ -152,22 +150,6 @@ struct DiagnosticFeature {
       case .filesTruncated:
         // Reload metrics after truncate
         return .send(.loadMetrics)
-
-      case .deleteAllDeveloperDataButtonTapped:
-        return .run { send in
-          do {
-            try await keychainClient.deleteJwtToken()
-            try await keychainClient.deleteUserData()
-            try await keychainClient.deleteDeviceData()
-            await send(.allDeveloperDataDeleted)
-          } catch {
-            await send(.showError(.keychainError(operation: "delete all developer data")))
-          }
-        }
-
-      case .allDeveloperDataDeleted:
-        state.keychainItems = []
-        return .send(.delegate(.authenticationInvalidated))
 
       case let .showError(appError):
         state.alert = AlertState {

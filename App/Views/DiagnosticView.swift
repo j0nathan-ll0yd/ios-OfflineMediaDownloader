@@ -3,7 +3,6 @@ import ComposableArchitecture
 
 struct DiagnosticView: View {
   @Bindable var store: StoreOf<DiagnosticFeature>
-  @State private var showDebugSection = false
 
   private let theme = DarkProfessionalTheme()
 
@@ -248,109 +247,79 @@ struct DiagnosticView: View {
   #if DEBUG
   private var debugSection: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Button(action: { withAnimation { showDebugSection.toggle() } }) {
-        HStack {
-          Text("Developer")
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.textSecondary)
-            .textCase(.uppercase)
-
-          Spacer()
-
-          Image(systemName: showDebugSection ? "chevron.up" : "chevron.down")
-            .font(.caption)
-            .foregroundStyle(theme.textSecondary)
-        }
+      Text("Developer")
+        .font(.caption)
+        .fontWeight(.semibold)
+        .foregroundStyle(theme.textSecondary)
+        .textCase(.uppercase)
         .padding(.leading, 4)
-      }
 
-      if showDebugSection {
-        VStack(spacing: 0) {
-          // Loading indicator
-          if store.isLoading {
-            HStack {
-              ProgressView()
-                .tint(theme.primaryColor)
-              Text("Loading...")
-                .font(.subheadline)
-                .foregroundStyle(theme.textSecondary)
+      VStack(spacing: 0) {
+        // Loading indicator
+        if store.isLoading {
+          HStack {
+            ProgressView()
+              .tint(theme.primaryColor)
+            Text("Loading...")
+              .font(.subheadline)
+              .foregroundStyle(theme.textSecondary)
+          }
+          .padding(16)
+        }
+
+        // Keychain items (swipe to delete individually)
+        ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
+          NavigationLink(destination: KeychainDetailView(item: item)) {
+            keychainRow(item: item)
+          }
+          .buttonStyle(.plain)
+          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+              store.send(.deleteKeychainItem(IndexSet(integer: index)))
+            } label: {
+              Label("Delete", systemImage: "trash")
             }
-            .padding(16)
           }
 
-          // Keychain items
-          ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
-            NavigationLink(destination: KeychainDetailView(item: item)) {
-              keychainRow(item: item)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-              Button(role: .destructive) {
-                store.send(.deleteKeychainItem(IndexSet(integer: index)))
-              } label: {
-                Label("Delete", systemImage: "trash")
-              }
-            }
-
+          if index < store.keychainItems.count - 1 {
             Divider()
               .background(DarkProfessionalTheme.divider)
               .padding(.leading, 52)
           }
+        }
 
-          // Delete Developer Data button
-          Button(action: { store.send(.deleteAllDeveloperDataButtonTapped) }) {
-            HStack(spacing: 12) {
-              ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                  .fill(theme.errorColor.opacity(0.15))
-                  .frame(width: 36, height: 36)
-
-                Image(systemName: "key.slash")
-                  .font(.system(size: 16))
-                  .foregroundStyle(theme.errorColor)
-              }
-
-              Text("Delete Developer Data")
-                .font(.body)
-                .foregroundStyle(theme.errorColor)
-
-              Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-          }
-
+        // Divider before Truncate button (only if there are keychain items)
+        if !store.keychainItems.isEmpty {
           Divider()
             .background(DarkProfessionalTheme.divider)
             .padding(.leading, 52)
-
-          // Truncate files button
-          Button(action: { store.send(.truncateFilesButtonTapped) }) {
-            HStack(spacing: 12) {
-              ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                  .fill(theme.errorColor.opacity(0.15))
-                  .frame(width: 36, height: 36)
-
-                Image(systemName: "trash")
-                  .font(.system(size: 16))
-                  .foregroundStyle(theme.errorColor)
-              }
-
-              Text("Truncate All Files")
-                .font(.body)
-                .foregroundStyle(theme.errorColor)
-
-              Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-          }
         }
-        .background(DarkProfessionalTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+        // Truncate files button
+        Button(action: { store.send(.truncateFilesButtonTapped) }) {
+          HStack(spacing: 12) {
+            ZStack {
+              RoundedRectangle(cornerRadius: 8)
+                .fill(theme.errorColor.opacity(0.15))
+                .frame(width: 36, height: 36)
+
+              Image(systemName: "trash")
+                .font(.system(size: 16))
+                .foregroundStyle(theme.errorColor)
+            }
+
+            Text("Truncate All Files")
+              .font(.body)
+              .foregroundStyle(theme.errorColor)
+
+            Spacer()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 10)
+        }
       }
+      .background(DarkProfessionalTheme.cardBackground)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
     }
   }
 
