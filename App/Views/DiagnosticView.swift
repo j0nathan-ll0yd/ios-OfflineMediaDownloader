@@ -267,19 +267,14 @@ struct DiagnosticView: View {
           .padding(16)
         }
 
-        // Keychain items (swipe to delete individually)
+        // Keychain items
         ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
-          NavigationLink(destination: KeychainDetailView(item: item)) {
+          NavigationLink(destination: KeychainDetailView(item: item) {
+            store.send(.deleteKeychainItem(IndexSet(integer: index)))
+          }) {
             keychainRow(item: item)
           }
           .buttonStyle(.plain)
-          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-              store.send(.deleteKeychainItem(IndexSet(integer: index)))
-            } label: {
-              Label("Delete", systemImage: "trash")
-            }
-          }
 
           if index < store.keychainItems.count - 1 {
             Divider()
@@ -399,6 +394,7 @@ private struct StatCard: View {
 
 struct KeychainDetailView: View {
   let item: KeychainItem
+  var onDelete: (() -> Void)?
 
   private let theme = DarkProfessionalTheme()
 
@@ -449,10 +445,29 @@ struct KeychainDetailView: View {
               .font(.system(.body, design: .monospaced))
               .foregroundStyle(.white)
               .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
               .padding(16)
               .frame(maxWidth: .infinity, alignment: .leading)
               .background(DarkProfessionalTheme.cardBackground)
               .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+
+          // Delete button
+          if let onDelete = onDelete {
+            Button(action: onDelete) {
+              HStack {
+                Image(systemName: "trash")
+                Text("Delete")
+              }
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundStyle(.white)
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, 14)
+              .background(theme.errorColor)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.top, 8)
           }
         }
         .padding(16)
