@@ -11,6 +11,8 @@
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
+		SHARE00000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = SHARE00000000000000002 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		SHARE00000000000000003 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = SHARE00000000000000004 /* Valet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,7 +30,28 @@
 			remoteGlobalIDString = C41DD8832CC6C52600F041C6;
 			remoteInfo = OfflineMediaDownloader;
 		};
+		SHARE00000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = SHARE00000000000000006;
+			remoteInfo = ShareExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		SHARE0000000000000000E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				SHARE00000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -36,6 +59,7 @@
 		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8BD2CC6C6F500F041C6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		SHARE00000000000000002 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -45,6 +69,13 @@
 				Info.plist,
 			);
 			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
+		};
+		SHARE00000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = SHARE00000000000000006 /* ShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -65,6 +96,14 @@
 		C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = OfflineMediaDownloaderUITests;
+			sourceTree = "<group>";
+		};
+		SHARE00000000000000008 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				SHARE00000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -94,6 +133,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		SHARE00000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				SHARE00000000000000003 /* Valet in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -103,6 +150,7 @@
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
 				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
 				C41DD8862CC6C52600F041C6 /* App */,
+				SHARE00000000000000008 /* ShareExtension */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 				C41DD91A2CC6E34400F041C6 /* Frameworks */,
@@ -118,6 +166,7 @@
 				C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */,
 				C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */,
 				C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */,
+				SHARE00000000000000002 /* ShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -139,10 +188,12 @@
 				C41DD8802CC6C52600F041C6 /* Sources */,
 				C41DD8812CC6C52600F041C6 /* Frameworks */,
 				C41DD8822CC6C52600F041C6 /* Resources */,
+				SHARE0000000000000000E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				SHARE0000000000000000D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C41DD8862CC6C52600F041C6 /* App */,
@@ -203,6 +254,29 @@
 			productReference = C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		SHARE00000000000000006 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = SHARE0000000000000000A /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				SHARE0000000000000000B /* Sources */,
+				SHARE00000000000000009 /* Frameworks */,
+				SHARE0000000000000000C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				SHARE00000000000000008 /* ShareExtension */,
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+				SHARE00000000000000004 /* Valet */,
+			);
+			productName = ShareExtension;
+			productReference = SHARE00000000000000002 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -223,6 +297,9 @@
 					C41DD8A22CC6C52700F041C6 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = C41DD8832CC6C52600F041C6;
+					};
+					SHARE00000000000000006 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -248,6 +325,7 @@
 				C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */,
 				C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
+				SHARE00000000000000006 /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -268,6 +346,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C41DD8A12CC6C52700F041C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		SHARE0000000000000000C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -299,6 +384,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		SHARE0000000000000000B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -311,6 +403,11 @@
 			isa = PBXTargetDependency;
 			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
 			targetProxy = C41DD8A42CC6C52700F041C6 /* PBXContainerItemProxy */;
+		};
+		SHARE0000000000000000D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = SHARE00000000000000006 /* ShareExtension */;
+			targetProxy = SHARE00000000000000005 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -585,6 +682,62 @@
 			};
 			name = Release;
 		};
+		SHARE0000000000000000F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		SHARE00000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -620,6 +773,15 @@
 			buildConfigurations = (
 				C41DD8B42CC6C52700F041C6 /* Debug */,
 				C41DD8B52CC6C52700F041C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		SHARE0000000000000000A /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				SHARE0000000000000000F /* Debug */,
+				SHARE00000000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -666,6 +828,11 @@
 		C41DD9412D12ABC100F041C6 /* APITypes */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = APITypes;
+		};
+		SHARE00000000000000004 /* Valet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */;
+			productName = Valet;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
