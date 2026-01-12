@@ -55,7 +55,7 @@ struct DefaultFilesFeature {
         state.isLoadingFile = true
         return .run { send in
           do {
-            let response = try await serverClient.getFiles()
+            let response = try await serverClient.getFiles(.all)
             if let firstFile = response.body?.contents.first {
               await send(.fileLoaded(firstFile))
             } else {
