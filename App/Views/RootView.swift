@@ -252,9 +252,10 @@ struct RootFeature {
         )
 
       case let .downloadReadyProcessed(fileId, _, url, size):
-        // Start background download
+        // Start background download and update Live Activity
         return .run { [logger, downloadClient] send in
           logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
+          await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
           let stream = downloadClient.downloadFile(url, size)
           for await progress in stream {
             switch progress {

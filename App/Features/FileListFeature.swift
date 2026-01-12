@@ -202,7 +202,10 @@ struct FileListFeature {
 
       case let .addPendingFileId(fileId):
         state.pendingFileIds.append(fileId)
-        return .none
+        // Start Live Activity immediately while app is in foreground
+        return .run { _ in
+          await LiveActivityManager.shared.startActivityWithId(fileId: fileId)
+        }
 
       case .addFromClipboard:
         state.showAddConfirmation = false
