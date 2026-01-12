@@ -6,9 +6,10 @@
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
 	<true/>
-	<key>MEDIA_DOWNLOADER_API_KEY</key>
-	<string>$(MEDIA_DOWNLOADER_API_KEY)</string>
-	<key>MEDIA_DOWNLOADER_BASE_PATH</key>
-	<string>$(MEDIA_DOWNLOADER_BASE_PATH)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
 </dict>
 </plist>

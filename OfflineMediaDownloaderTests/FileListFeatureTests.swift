@@ -64,7 +64,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { TestData.validFileResponse }
+      $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
     }
 
@@ -89,7 +89,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { TestData.validFileResponse }
+      $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
     }
 
@@ -115,7 +115,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw TestData.TestNetworkError.notConnected }
+      $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -148,7 +148,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
+      $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -168,7 +168,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id", correlationId: "test-correlation-id") }
+      $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -248,7 +248,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { TestData.validFileResponse }
+      $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
     }
 

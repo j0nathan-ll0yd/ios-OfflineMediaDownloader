@@ -45,6 +45,7 @@ struct FileListFeature {
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case refreshFileState(String)  // fileId
+    case fileFailed(fileId: String, error: String)
     case clearAllFiles  // Clears state and CoreData (used on registration)
     case delegate(Delegate)
 
@@ -108,7 +109,7 @@ struct FileListFeature {
         state.isLoading = true
         return .run { send in
           await send(.remoteFilesResponse(Result {
-            try await serverClient.getFiles()
+            try await serverClient.getFiles(.all)
           }))
         }
 
@@ -201,7 +202,10 @@ struct FileListFeature {
 
       case let .addPendingFileId(fileId):
         state.pendingFileIds.append(fileId)
-        return .none
+        // Start Live Activity immediately while app is in foreground
+        return .run { _ in
+          await LiveActivityManager.shared.startActivityWithId(fileId: fileId)
+        }
 
       case .addFromClipboard:
         state.showAddConfirmation = false
@@ -320,6 +324,24 @@ struct FileListFeature {
             await send(.fileAddedFromPush(file))
           }
         }
+
+      case let .fileFailed(fileId, error):
+        // Update file state to show error
+        if var fileState = state.files[id: fileId] {
+          fileState.file.status = .failed
+          state.files[id: fileId] = fileState
+        }
+        // Show error alert to user
+        state.alert = AlertState {
+          TextState("Download Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState(error)
+        }
+        return .none
 
       case let .fileTapped(fileState):
         // Navigate to file detail view

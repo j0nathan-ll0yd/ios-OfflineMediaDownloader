@@ -9,6 +9,7 @@ struct CoreDataClient: Sendable {
   var cacheFiles: @Sendable ([File]) async throws -> Void
   var cacheFile: @Sendable (File) async throws -> Void
   var updateFileUrl: @Sendable (_ fileId: String, _ url: URL) async throws -> Void
+  var updateFileStatus: @Sendable (_ fileId: String, _ status: FileStatus) async throws -> Void
   var saveContext: @Sendable () async throws -> Void
   var truncateFiles: @Sendable () async throws -> Void
   var deleteFile: @Sendable (File) async throws -> Void
@@ -95,7 +96,7 @@ extension CoreDataClient: DependencyKey {
       // Use background context for write operations
       let context = PersistenceController.shared.container.newBackgroundContext()
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-      
+
       try await context.perform {
         let request = FileEntity.fetchRequest()
         request.predicate = NSPredicate(format: "fileId == %@", fileId)
@@ -107,6 +108,24 @@ extension CoreDataClient: DependencyKey {
         entity.url = url.absoluteString
         try context.save()
         print("📁 Updated URL for file: \(fileId)")
+      }
+    },
+    updateFileStatus: { fileId, status in
+      // Use background context for write operations
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          print("📁 File not found for status update: \(fileId)")
+          return
+        }
+        entity.status = status.rawValue
+        try context.save()
+        print("📁 Updated status for file: \(fileId) to \(status.rawValue)")
       }
     },
     saveContext: {
@@ -300,6 +319,7 @@ extension CoreDataClient {
     cacheFiles: { _ in },
     cacheFile: { _ in },
     updateFileUrl: { _, _ in },
+    updateFileStatus: { _, _ in },
     saveContext: { },
     truncateFiles: { },
     deleteFile: { _ in },

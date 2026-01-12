@@ -229,19 +229,33 @@ struct RootFeature {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
+        case let .failure(fileId, _, _, errorMessage):
+          // Update file status to failed in CoreData and UI, end Live Activity
+          return .run { [coreDataClient] send in
+            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
+            try await coreDataClient.updateFileStatus(fileId, .failed)
+            await send(.main(.fileList(.fileFailed(fileId: fileId, error: errorMessage))))
+          }
+
         case .unknown:
           logger.warning(.push, "Unknown push notification type")
           return .none
         }
 
       case let .fileMetadataSaved(file):
-        // Forward to MainFeature to update FileList
-        return .send(.main(.fileList(.fileAddedFromPush(file))))
+        // Forward to MainFeature to update FileList and start Live Activity
+        return .merge(
+          .send(.main(.fileList(.fileAddedFromPush(file)))),
+          .run { _ in
+            await LiveActivityManager.shared.startActivity(for: file)
+          }
+        )
 
       case let .downloadReadyProcessed(fileId, _, url, size):
-        // Start background download
+        // Start background download and update Live Activity
         return .run { [logger, downloadClient] send in
           logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
+          await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
           let stream = downloadClient.downloadFile(url, size)
           for await progress in stream {
             switch progress {
@@ -249,24 +263,27 @@ struct RootFeature {
               await send(.backgroundDownloadCompleted(fileId: fileId))
             case let .failed(message):
               await send(.backgroundDownloadFailed(fileId: fileId, error: message))
-            case .progress:
-              // Progress updates not needed for background downloads from push
-              break
+            case let .progress(percent):
+              await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
             }
           }
         }
 
       case let .backgroundDownloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
-        // Mark file as downloaded for metrics tracking, then refresh UI state
+        // Mark file as downloaded for metrics tracking, end Live Activity, then refresh UI state
         return .run { [coreDataClient] send in
+          await LiveActivityManager.shared.endActivity(fileId: fileId, status: .downloaded)
           try? await coreDataClient.markFileDownloaded(fileId)
           await send(.main(.fileList(.refreshFileState(fileId))))
         }
 
       case let .backgroundDownloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
-        return .none
+        // End Live Activity with failed status
+        return .run { _ in
+          await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: error)
+        }
 
       case .main:
         return .none
