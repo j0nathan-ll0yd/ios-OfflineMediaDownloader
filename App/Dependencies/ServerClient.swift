@@ -69,31 +69,6 @@ extension ServerClientError: LocalizedError {
   }
 }
 
-// MARK: - Error Message Extraction
-
-/// Extension to extract a string message from the API error message type
-/// which can be either a simple string or a validation errors dictionary
-extension Components.Schemas.ErrorResponse.errorPayload.messagePayload {
-  var stringValue: String {
-    switch self {
-    case .case1(let message):
-      return message
-    case .case2(let validationErrors):
-      // Format validation errors as readable string
-      let errors = validationErrors.additionalProperties
-        .flatMap { field, messages in
-          messages.map { "\(field): \($0)" }
-        }
-        .joined(separator: ", ")
-      return errors.isEmpty ? "Validation error" : errors
-    }
-  }
-
-  func contains(_ substring: String) -> Bool {
-    stringValue.contains(substring)
-  }
-}
-
 // MARK: - OpenAPI Client Factory
 
 /// Shared pinned URLSession for all API requests
@@ -197,7 +172,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .unauthorized(let errorResponse):
         print("🔒 Unauthorized response: HTTP 401")
@@ -267,7 +242,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
@@ -328,7 +303,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
@@ -342,14 +317,14 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "User not found", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .conflict(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 409")
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Conflict", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .internalServerError(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 500")
@@ -373,9 +348,11 @@ extension ServerClient: DependencyKey {
       print("📡 ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
-      // TODO: Add query parameter support when backend API is updated
-      // For now, fetch all files regardless of statusFilter
+      // Map our FileStatusFilter enum to the generated API enum
+      let apiStatus: Operations.Files_listFiles.Input.Query.statusPayload = statusFilter == .all ? .all : .downloaded
+
       let response = try await client.Files_listFiles(
+        query: .init(status: apiStatus),
         headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
       )
 
@@ -475,7 +452,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message.stringValue, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
