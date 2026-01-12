@@ -263,9 +263,8 @@ struct RootFeature {
               await send(.backgroundDownloadCompleted(fileId: fileId))
             case let .failed(message):
               await send(.backgroundDownloadFailed(fileId: fileId, error: message))
-            case .progress:
-              // Progress updates not needed for background downloads from push
-              break
+            case let .progress(percent):
+              await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
             }
           }
         }

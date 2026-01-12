@@ -348,11 +348,9 @@ extension ServerClient: DependencyKey {
       print("📡 ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
-      // Map our FileStatusFilter enum to the generated API enum
-      let apiStatus: Operations.Files_listFiles.Input.Query.statusPayload = statusFilter == .all ? .all : .downloaded
-
+      // TODO: Add query parameter support when backend API is deployed and OpenAPI types regenerated
+      // For now, fetch files without status filter (backend returns all by default after deployment)
       let response = try await client.Files_listFiles(
-        query: .init(status: apiStatus),
         headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
       )
 

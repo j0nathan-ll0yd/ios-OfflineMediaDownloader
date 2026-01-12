@@ -1,7 +1,10 @@
 import ActivityKit
 import Foundation
+import os.log
 import SwiftUI
 import WidgetKit
+
+private let widgetLogger = Logger(subsystem: "lifegames.OfflineMediaDownloader.DownloadActivityWidget", category: "Widget")
 
 // MARK: - Activity Attributes
 
@@ -33,6 +36,7 @@ struct DownloadActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: DownloadActivityAttributes.self) { context in
       // Lock Screen / Banner UI
+      let _ = widgetLogger.info("Widget rendering lock screen: progress=\(context.state.progressPercent)%, status=\(context.state.status.rawValue)")
       LockScreenView(context: context)
     } dynamicIsland: { context in
       DynamicIsland {
@@ -45,6 +49,7 @@ struct DownloadActivityWidget: Widget {
           Text("\(context.state.progressPercent)%")
             .font(.title2)
             .fontWeight(.semibold)
+            .contentTransition(.numericText())
         }
         DynamicIslandExpandedRegion(.center) {
           Text(context.state.title)
@@ -55,6 +60,7 @@ struct DownloadActivityWidget: Widget {
           VStack(spacing: 8) {
             ProgressView(value: Double(context.state.progressPercent), total: 100)
               .tint(progressColor(for: context.state.status))
+              .animation(.linear, value: context.state.progressPercent)
 
             if let author = context.state.authorName {
               Text(author)
@@ -77,6 +83,8 @@ struct DownloadActivityWidget: Widget {
         Text("\(context.state.progressPercent)%")
           .font(.caption)
           .fontWeight(.semibold)
+          .contentTransition(.numericText())
+          .id(context.state.progressPercent)
       } minimal: {
         statusIcon(for: context.state.status)
           .font(.caption)
@@ -148,8 +156,10 @@ struct LockScreenView: View {
           Text("\(context.state.progressPercent)%")
             .font(.headline)
             .fontWeight(.semibold)
+            .contentTransition(.numericText())
           ProgressView(value: Double(context.state.progressPercent), total: 100)
             .frame(width: 60)
+            .animation(.linear, value: context.state.progressPercent)
         }
       } else {
         statusBadge
