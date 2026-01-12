@@ -172,7 +172,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .unauthorized(let errorResponse):
         print("🔒 Unauthorized response: HTTP 401")
@@ -193,7 +193,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.internalServerError(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.registerDevice HTTP status: \(statusCode)")
@@ -242,7 +242,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
@@ -256,7 +256,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.internalServerError(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.registerUser HTTP status: \(statusCode)")
@@ -303,7 +303,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
@@ -317,21 +317,21 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "User not found", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .conflict(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 409")
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Conflict", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .internalServerError(let errorResponse):
         print("📡 ServerClient.loginUser HTTP status: 500")
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.internalServerError(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.loginUser HTTP status: \(statusCode)")
@@ -391,7 +391,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.internalServerError(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.getFiles HTTP status: \(statusCode)")
@@ -450,7 +450,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.badRequest(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .forbidden(let errorResponse):
         print("🔒 Forbidden response: HTTP 403")
@@ -464,7 +464,7 @@ extension ServerClient: DependencyKey {
         guard case .json(let error) = errorResponse.body else {
           throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
         }
-        throw ServerClientError.internalServerError(message: error.error.message, requestId: error.requestId, correlationId: nil)
+        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
 
       case .undocumented(let statusCode, let payload):
         print("📡 ServerClient.addFile HTTP status: \(statusCode)")
