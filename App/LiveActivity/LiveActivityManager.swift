@@ -34,7 +34,7 @@ actor LiveActivityManager {
       progressPercent: percent,
       errorMessage: nil
     )
-    await activity.update(using: newState)
+    await activity.update(ActivityContent(state: newState, staleDate: nil))
   }
 
   func endActivity(fileId: String, status: DownloadActivityStatus, errorMessage: String? = nil) async {
@@ -44,7 +44,7 @@ actor LiveActivityManager {
       progressPercent: status == .downloaded ? 100 : 0,
       errorMessage: errorMessage
     )
-    await activity.end(using: finalState, dismissalPolicy: .default)
+    await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .default)
     activeActivities[fileId] = nil
   }
 }
