@@ -4,12 +4,17 @@ import UIKit
 import APITypes
 import OpenAPIURLSession
 
+enum FileStatusFilter: String {
+  case all = "all"
+  case downloaded = "downloaded"
+}
+
 @DependencyClient
 struct ServerClient {
   var registerDevice: @Sendable (_ token: String) async throws -> RegisterDeviceResponse
   var registerUser: @Sendable (_ userData: User, _ authorizationCode: String) async throws -> LoginResponse
   var loginUser: @Sendable (_ authorizationCode: String) async throws -> LoginResponse
-  var getFiles: @Sendable () async throws -> FileResponse
+  var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
 }
 
@@ -364,10 +369,12 @@ extension ServerClient: DependencyKey {
       }
     },
 
-    getFiles: {
-      print("📡 ServerClient.getFiles called")
+    getFiles: { statusFilter in
+      print("📡 ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
+      // TODO: Add query parameter support when backend API is updated
+      // For now, fetch all files regardless of statusFilter
       let response = try await client.Files_listFiles(
         headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
       )
@@ -562,7 +569,7 @@ extension ServerClient {
         requestId: "test-request-id"
       )
     },
-    getFiles: {
+    getFiles: { _ in
       FileResponse(
         body: FileList(contents: [], keyCount: 0),
         error: nil,

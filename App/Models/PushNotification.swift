@@ -6,6 +6,8 @@ enum PushNotificationType: Equatable, Sendable {
   case metadata(File)
   /// Download URL is ready - can start downloading
   case downloadReady(fileId: String, key: String, url: URL, size: Int64)
+  /// File processing failed
+  case failure(fileId: String, title: String?, errorCategory: String, errorMessage: String)
   /// Unknown or malformed notification
   case unknown
 
@@ -39,6 +41,16 @@ enum PushNotificationType: Equatable, Sendable {
         return .unknown
       }
       return .downloadReady(fileId: fileId, key: key, url: url, size: Int64(size))
+
+    case "FailureNotification":
+      guard let fileId = fileData["fileId"] as? String,
+            let errorCategory = fileData["errorCategory"] as? String,
+            let errorMessage = fileData["errorMessage"] as? String else {
+        print("Missing required fields in FailureNotification")
+        return .unknown
+      }
+      let title = fileData["title"] as? String
+      return .failure(fileId: fileId, title: title, errorCategory: errorCategory, errorMessage: errorMessage)
 
     default:
       print("Unknown notificationType: \(notificationType)")
