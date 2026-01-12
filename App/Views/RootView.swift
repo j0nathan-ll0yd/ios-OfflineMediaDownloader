@@ -247,7 +247,7 @@ struct RootFeature {
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
           .run { _ in
-            try? await LiveActivityManager.shared.startActivity(for: file)
+            await LiveActivityManager.shared.startActivity(for: file)
           }
         )
 
