@@ -11,6 +11,9 @@
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
+		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
+		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
+		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,7 +31,28 @@
 			remoteGlobalIDString = C41DD8832CC6C52600F041C6;
 			remoteInfo = OfflineMediaDownloader;
 		};
+		C44108362F1487B3007EAB48 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C44108242F1487B2007EAB48;
+			remoteInfo = DownloadActivityWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C441083D2F1487B3007EAB48 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -36,6 +60,10 @@
 		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8BD2CC6C6F500F041C6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownloadActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		C44108282F1487B2007EAB48 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -45,6 +73,13 @@
 				Info.plist,
 			);
 			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
+		};
+		C441083C2F1487B3007EAB48 /* Exceptions for "DownloadActivityWidget" folder in "DownloadActivityWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -65,6 +100,14 @@
 		C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = OfflineMediaDownloaderUITests;
+			sourceTree = "<group>";
+		};
+		C441082A2F1487B2007EAB48 /* DownloadActivityWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C441083C2F1487B3007EAB48 /* Exceptions for "DownloadActivityWidget" folder in "DownloadActivityWidgetExtension" target */,
+			);
+			path = DownloadActivityWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -94,17 +137,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C44108222F1487B2007EAB48 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */,
+				C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		C41DD87B2CC6C52600F041C6 = {
 			isa = PBXGroup;
 			children = (
+				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
 				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
+				C441082A2F1487B2007EAB48 /* DownloadActivityWidget */,
 				C41DD91A2CC6E34400F041C6 /* Frameworks */,
 				C41DD8852CC6C52600F041C6 /* Products */,
 			);
@@ -118,6 +172,7 @@
 				C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */,
 				C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */,
 				C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */,
+				C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -125,6 +180,8 @@
 		C41DD91A2CC6E34400F041C6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C44108262F1487B2007EAB48 /* WidgetKit.framework */,
+				C44108282F1487B2007EAB48 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -139,10 +196,12 @@
 				C41DD8802CC6C52600F041C6 /* Sources */,
 				C41DD8812CC6C52600F041C6 /* Frameworks */,
 				C41DD8822CC6C52600F041C6 /* Resources */,
+				C441083D2F1487B3007EAB48 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C44108372F1487B3007EAB48 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C41DD8862CC6C52600F041C6 /* App */,
@@ -203,6 +262,28 @@
 			productReference = C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C44108392F1487B3007EAB48 /* Build configuration list for PBXNativeTarget "DownloadActivityWidgetExtension" */;
+			buildPhases = (
+				C44108212F1487B2007EAB48 /* Sources */,
+				C44108222F1487B2007EAB48 /* Frameworks */,
+				C44108232F1487B2007EAB48 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C441082A2F1487B2007EAB48 /* DownloadActivityWidget */,
+			);
+			name = DownloadActivityWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = DownloadActivityWidgetExtension;
+			productReference = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -210,7 +291,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					C41DD8832CC6C52600F041C6 = {
@@ -223,6 +304,9 @@
 					C41DD8A22CC6C52700F041C6 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = C41DD8832CC6C52600F041C6;
+					};
+					C44108242F1487B2007EAB48 = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -248,6 +332,7 @@
 				C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */,
 				C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
+				C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -268,6 +353,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C41DD8A12CC6C52700F041C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C44108232F1487B2007EAB48 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -299,6 +391,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C44108212F1487B2007EAB48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -311,6 +410,11 @@
 			isa = PBXTargetDependency;
 			target = C41DD8832CC6C52600F041C6 /* OfflineMediaDownloader */;
 			targetProxy = C41DD8A42CC6C52700F041C6 /* PBXContainerItemProxy */;
+		};
+		C44108372F1487B3007EAB48 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
+			targetProxy = C44108362F1487B3007EAB48 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -585,6 +689,70 @@
 			};
 			name = Release;
 		};
+		C441083A2F1487B3007EAB48 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = DownloadActivityWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DownloadActivityWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DownloadActivityWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.DownloadActivityWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C441083B2F1487B3007EAB48 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = DownloadActivityWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DownloadActivityWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DownloadActivityWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.DownloadActivityWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -620,6 +788,15 @@
 			buildConfigurations = (
 				C41DD8B42CC6C52700F041C6 /* Debug */,
 				C41DD8B52CC6C52700F041C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C44108392F1487B3007EAB48 /* Build configuration list for PBXNativeTarget "DownloadActivityWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C441083A2F1487B3007EAB48 /* Debug */,
+				C441083B2F1487B3007EAB48 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
