@@ -10,11 +10,13 @@ struct DownloadActivityAttributes: ActivityAttributes {
     var status: DownloadActivityStatus
     var progressPercent: Int
     var errorMessage: String?
+    // Dynamic content that can be updated
+    var title: String
+    var authorName: String?
   }
 
+  // Only truly static attributes here
   var fileId: String
-  var title: String
-  var authorName: String?
 }
 
 enum DownloadActivityStatus: String, Codable {
@@ -45,7 +47,7 @@ struct DownloadActivityWidget: Widget {
             .fontWeight(.semibold)
         }
         DynamicIslandExpandedRegion(.center) {
-          Text(context.attributes.title)
+          Text(context.state.title)
             .font(.headline)
             .lineLimit(1)
         }
@@ -54,7 +56,7 @@ struct DownloadActivityWidget: Widget {
             ProgressView(value: Double(context.state.progressPercent), total: 100)
               .tint(progressColor(for: context.state.status))
 
-            if let author = context.attributes.authorName {
+            if let author = context.state.authorName {
               Text(author)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -121,11 +123,11 @@ struct LockScreenView: View {
         .font(.title)
 
       VStack(alignment: .leading, spacing: 4) {
-        Text(context.attributes.title)
+        Text(context.state.title)
           .font(.headline)
           .lineLimit(1)
 
-        if let author = context.attributes.authorName {
+        if let author = context.state.authorName {
           Text(author)
             .font(.subheadline)
             .foregroundStyle(.secondary)

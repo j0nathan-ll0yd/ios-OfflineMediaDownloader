@@ -7,6 +7,8 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "OfflineM
 actor LiveActivityManager {
   static let shared = LiveActivityManager()
   private var activeActivities: [String: Activity<DownloadActivityAttributes>] = [:]
+  // Track current state so we can preserve title/author when updating progress
+  private var currentStates: [String: DownloadActivityAttributes.ContentState] = [:]
 
   /// Start a Live Activity with just a fileId (used when queueing, before metadata is available)
   func startActivityWithId(fileId: String) async {
@@ -24,16 +26,14 @@ actor LiveActivityManager {
       return
     }
 
-    let attributes = DownloadActivityAttributes(
-      fileId: fileId,
-      title: "Queued...",
-      authorName: nil
-    )
+    let attributes = DownloadActivityAttributes(fileId: fileId)
 
     let initialState = DownloadActivityAttributes.ContentState(
       status: .queued,
       progressPercent: 0,
-      errorMessage: nil
+      errorMessage: nil,
+      title: "Queued...",
+      authorName: nil
     )
 
     do {
@@ -42,18 +42,34 @@ actor LiveActivityManager {
         content: ActivityContent(state: initialState, staleDate: nil)
       )
       activeActivities[fileId] = activity
+      currentStates[fileId] = initialState
       logger.info("Live Activity (pending) started for fileId: \(fileId), activityId: \(activity.id)")
     } catch {
       logger.error("Failed to start Live Activity: \(error.localizedDescription)")
     }
   }
 
-  /// Start or update a Live Activity with full file metadata (called from push notification)
-  /// If activity already exists (started when queued), this is a no-op since attributes can't be updated
+  /// Update Live Activity with metadata when received from push notification
+  func updateMetadata(fileId: String, title: String, authorName: String?) async {
+    guard let activity = activeActivities[fileId],
+          var state = currentStates[fileId] else {
+      logger.debug("No active Live Activity to update metadata for fileId: \(fileId)")
+      return
+    }
+
+    state.title = title
+    state.authorName = authorName
+    currentStates[fileId] = state
+
+    await activity.update(ActivityContent(state: state, staleDate: nil))
+    logger.info("Live Activity metadata updated for fileId: \(fileId), title: \(title)")
+  }
+
+  /// Start a Live Activity with full file metadata (called from push notification if no activity exists)
   func startActivity(for file: File) async {
-    // If activity already exists from queueing, skip - we can't update static attributes
+    // If activity already exists, just update the metadata
     if activeActivities[file.fileId] != nil {
-      logger.debug("Live Activity already exists for fileId: \(file.fileId), skipping metadata update")
+      await updateMetadata(fileId: file.fileId, title: file.title ?? "Video", authorName: file.authorName)
       return
     }
 
@@ -66,16 +82,14 @@ actor LiveActivityManager {
       return
     }
 
-    let attributes = DownloadActivityAttributes(
-      fileId: file.fileId,
-      title: file.title ?? "Video",
-      authorName: file.authorName
-    )
+    let attributes = DownloadActivityAttributes(fileId: file.fileId)
 
     let initialState = DownloadActivityAttributes.ContentState(
       status: .queued,
       progressPercent: 0,
-      errorMessage: nil
+      errorMessage: nil,
+      title: file.title ?? "Video",
+      authorName: file.authorName
     )
 
     do {
@@ -84,6 +98,7 @@ actor LiveActivityManager {
         content: ActivityContent(state: initialState, staleDate: nil)
       )
       activeActivities[file.fileId] = activity
+      currentStates[file.fileId] = initialState
       logger.info("Live Activity started for fileId: \(file.fileId), activityId: \(activity.id)")
     } catch {
       logger.error("Failed to start Live Activity: \(error.localizedDescription)")
@@ -91,31 +106,34 @@ actor LiveActivityManager {
   }
 
   func updateProgress(fileId: String, percent: Int, status: DownloadActivityStatus) async {
-    guard let activity = activeActivities[fileId] else {
+    guard let activity = activeActivities[fileId],
+          var state = currentStates[fileId] else {
       logger.debug("No active Live Activity for fileId: \(fileId)")
       return
     }
-    let newState = DownloadActivityAttributes.ContentState(
-      status: status,
-      progressPercent: percent,
-      errorMessage: nil
-    )
-    await activity.update(ActivityContent(state: newState, staleDate: nil))
-    logger.debug("Live Activity updated for fileId: \(fileId), progress: \(percent)%")
+
+    state.status = status
+    state.progressPercent = percent
+    currentStates[fileId] = state
+
+    await activity.update(ActivityContent(state: state, staleDate: nil))
+    logger.debug("Live Activity updated for fileId: \(fileId), progress: \(percent)%, status: \(status.rawValue)")
   }
 
   func endActivity(fileId: String, status: DownloadActivityStatus, errorMessage: String? = nil) async {
-    guard let activity = activeActivities[fileId] else {
+    guard let activity = activeActivities[fileId],
+          var state = currentStates[fileId] else {
       logger.debug("No active Live Activity to end for fileId: \(fileId)")
       return
     }
-    let finalState = DownloadActivityAttributes.ContentState(
-      status: status,
-      progressPercent: status == .downloaded ? 100 : 0,
-      errorMessage: errorMessage
-    )
-    await activity.end(ActivityContent(state: finalState, staleDate: nil), dismissalPolicy: .default)
+
+    state.status = status
+    state.progressPercent = status == .downloaded ? 100 : 0
+    state.errorMessage = errorMessage
+
+    await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .default)
     activeActivities[fileId] = nil
+    currentStates[fileId] = nil
     logger.info("Live Activity ended for fileId: \(fileId), status: \(status.rawValue)")
   }
 }

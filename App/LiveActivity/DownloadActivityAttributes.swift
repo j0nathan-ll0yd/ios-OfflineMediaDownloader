@@ -6,11 +6,13 @@ struct DownloadActivityAttributes: ActivityAttributes {
     var status: DownloadActivityStatus
     var progressPercent: Int
     var errorMessage: String?
+    // Dynamic content that can be updated
+    var title: String
+    var authorName: String?
   }
 
+  // Only truly static attributes here
   var fileId: String
-  var title: String
-  var authorName: String?
 }
 
 enum DownloadActivityStatus: String, Codable {
