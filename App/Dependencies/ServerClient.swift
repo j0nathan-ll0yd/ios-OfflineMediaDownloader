@@ -69,6 +69,50 @@ extension ServerClientError: LocalizedError {
   }
 }
 
+// MARK: - Generic Response Handling
+
+/// Generic handler for OpenAPI responses that extracts success/error and maps to domain types
+private func handleAPIResponse<SuccessPayload, DomainResponse>(
+  endpoint: String,
+  successExtractor: () -> SuccessPayload?,
+  errorExtractor: () -> (statusCode: Int, message: String?, requestId: String?)?,
+  transform: (SuccessPayload) throws -> DomainResponse
+) throws -> DomainResponse {
+  if let payload = successExtractor() {
+    print("📡 ServerClient.\(endpoint) succeeded")
+    return try transform(payload)
+  }
+
+  if let (statusCode, message, requestId) = errorExtractor() {
+    print("📡 ServerClient.\(endpoint) failed: HTTP \(statusCode)")
+    throw mapStatusCodeToError(statusCode, message: message, requestId: requestId)
+  }
+
+  throw ServerClientError.networkError(message: "Unexpected response", requestId: nil, correlationId: nil)
+}
+
+/// Centralized error mapping from HTTP status codes
+private func mapStatusCodeToError(
+  _ statusCode: Int,
+  message: String?,
+  requestId: String?
+) -> ServerClientError {
+  switch statusCode {
+  case 400:
+    return .badRequest(message: message ?? "Bad request", requestId: requestId, correlationId: nil)
+  case 401, 403:
+    return .unauthorized(requestId: requestId, correlationId: nil)
+  case 404:
+    return .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
+  case 409:
+    return .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
+  case 500...599:
+    return .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
+  default:
+    return .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
+  }
+}
+
 // MARK: - OpenAPI Client Factory
 
 /// Shared pinned URLSession for all API requests
@@ -144,66 +188,33 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      switch response {
-      case .ok(let okResponse):
-        print("📡 ServerClient.registerDevice HTTP status: 200")
-        guard case .json(let data) = okResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
+      return try handleAPIResponse(
+        endpoint: "registerDevice",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          case .created(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
+          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: {
+          RegisterDeviceResponse(
+            body: EndpointResponse(endpointArn: $0.endpointArn),
+            error: nil,
+            requestId: "generated"
+          )
         }
-        return RegisterDeviceResponse(
-          body: EndpointResponse(endpointArn: data.body.value1.endpointArn),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .created(let createdResponse):
-        print("📡 ServerClient.registerDevice HTTP status: 201")
-        guard case .json(let data) = createdResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
-        }
-        return RegisterDeviceResponse(
-          body: EndpointResponse(endpointArn: data.body.value1.endpointArn),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .badRequest(let errorResponse):
-        print("📡 ServerClient.registerDevice HTTP status: 400")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .unauthorized(let errorResponse):
-        print("🔒 Unauthorized response: HTTP 401")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .forbidden(let errorResponse):
-        print("🔒 Forbidden response: HTTP 403")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .internalServerError(let errorResponse):
-        print("📡 ServerClient.registerDevice HTTP status: 500")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .undocumented(let statusCode, let payload):
-        print("📡 ServerClient.registerDevice HTTP status: \(statusCode)")
-        let requestId = payload.headerFields[.init("x-amzn-requestid")!]
-        if statusCode == 401 || statusCode == 403 {
-          print("🔒 Unauthorized response: HTTP \(statusCode)")
-          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
-        }
-        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
-      }
+      )
     },
 
     registerUser: { userData, authorizationCode in
@@ -225,48 +236,31 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      switch response {
-      case .ok(let okResponse):
-        print("📡 ServerClient.registerUser HTTP status: 200")
-        guard case .json(let data) = okResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
+      return try handleAPIResponse(
+        endpoint: "registerUser",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: {
+          LoginResponse(
+            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            error: nil,
+            requestId: "generated"
+          )
         }
-        return LoginResponse(
-          body: TokenResponse(token: data.body.value1.token, expiresAt: nil, sessionId: nil, userId: nil),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .badRequest(let errorResponse):
-        print("📡 ServerClient.registerUser HTTP status: 400")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .forbidden(let errorResponse):
-        print("🔒 Forbidden response: HTTP 403")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .internalServerError(let errorResponse):
-        print("📡 ServerClient.registerUser HTTP status: 500")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .undocumented(let statusCode, let payload):
-        print("📡 ServerClient.registerUser HTTP status: \(statusCode)")
-        let requestId = payload.headerFields[.init("x-amzn-requestid")!]
-        if statusCode == 401 || statusCode == 403 {
-          print("🔒 Unauthorized response: HTTP \(statusCode)")
-          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
-        }
-        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
-      }
+      )
     },
 
     loginUser: { authorizationCode in
@@ -286,62 +280,33 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      switch response {
-      case .ok(let okResponse):
-        print("📡 ServerClient.loginUser HTTP status: 200")
-        guard case .json(let data) = okResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
+      return try handleAPIResponse(
+        endpoint: "loginUser",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
+          case .notFound(let r): return (404, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .conflict(let r): return (409, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: {
+          LoginResponse(
+            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            error: nil,
+            requestId: "generated"
+          )
         }
-        return LoginResponse(
-          body: TokenResponse(token: data.body.value1.token, expiresAt: nil, sessionId: nil, userId: nil),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .badRequest(let errorResponse):
-        print("📡 ServerClient.loginUser HTTP status: 400")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .forbidden(let errorResponse):
-        print("🔒 Forbidden response: HTTP 403")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .notFound(let errorResponse):
-        print("📡 ServerClient.loginUser HTTP status: 404")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "User not found", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .conflict(let errorResponse):
-        print("📡 ServerClient.loginUser HTTP status: 409")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "Conflict", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .internalServerError(let errorResponse):
-        print("📡 ServerClient.loginUser HTTP status: 500")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .undocumented(let statusCode, let payload):
-        print("📡 ServerClient.loginUser HTTP status: \(statusCode)")
-        let requestId = payload.headerFields[.init("x-amzn-requestid")!]
-        if statusCode == 401 || statusCode == 403 {
-          print("🔒 Unauthorized response: HTTP \(statusCode)")
-          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
-        }
-        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
-      }
+      )
     },
 
     getFiles: { statusFilter in
@@ -354,54 +319,32 @@ extension ServerClient: DependencyKey {
         headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
       )
 
-      switch response {
-      case .ok(let okResponse):
-        print("📡 ServerClient.getFiles HTTP status: 200")
-        guard case .json(let data) = okResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
+      return try handleAPIResponse(
+        endpoint: "getFiles",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
+          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: {
+          let files: [File] = $0.contents.map { mapAPIFileToDomainFile($0) }
+          return FileResponse(
+            body: FileList(contents: files, keyCount: Int($0.keyCount)),
+            error: nil,
+            requestId: "generated"
+          )
         }
-
-        // Map API files to domain File objects
-        let files: [File] = data.body.value1.contents.map { apiFile in
-          mapAPIFileToDomainFile(apiFile)
-        }
-
-        return FileResponse(
-          body: FileList(contents: files, keyCount: Int(data.body.value1.keyCount)),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .unauthorized(let errorResponse):
-        print("🔒 Unauthorized response: HTTP 401")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .forbidden(let errorResponse):
-        print("🔒 Forbidden response: HTTP 403")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .internalServerError(let errorResponse):
-        print("📡 ServerClient.getFiles HTTP status: 500")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .undocumented(let statusCode, let payload):
-        print("📡 ServerClient.getFiles HTTP status: \(statusCode)")
-        let requestId = payload.headerFields[.init("x-amzn-requestid")!]
-        if statusCode == 401 || statusCode == 403 {
-          print("🔒 Unauthorized response: HTTP \(statusCode)")
-          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
-        }
-        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
-      }
+      )
     },
 
     addFile: { url in
@@ -422,60 +365,32 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      switch response {
-      case .ok(let okResponse):
-        print("📡 ServerClient.addFile HTTP status: 200")
-        guard case .json(let data) = okResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
+      return try handleAPIResponse(
+        endpoint: "addFile",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          case .accepted(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: {
+          DownloadFileResponse(
+            body: DownloadFileResponseDetail(status: $0.status.rawValue),
+            error: nil,
+            requestId: "generated"
+          )
         }
-        return DownloadFileResponse(
-          body: DownloadFileResponseDetail(status: data.body.value1.status.rawValue),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .accepted(let acceptedResponse):
-        print("📡 ServerClient.addFile HTTP status: 202")
-        guard case .json(let data) = acceptedResponse.body else {
-          throw ServerClientError.networkError(message: "Invalid response format", requestId: nil, correlationId: nil)
-        }
-        return DownloadFileResponse(
-          body: DownloadFileResponseDetail(status: data.body.value1.status.rawValue),
-          error: nil,
-          requestId: "generated"
-        )
-
-      case .badRequest(let errorResponse):
-        print("📡 ServerClient.addFile HTTP status: 400")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.badRequest(message: "Bad request", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.badRequest(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .forbidden(let errorResponse):
-        print("🔒 Forbidden response: HTTP 403")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.unauthorized(requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.unauthorized(requestId: error.requestId, correlationId: nil)
-
-      case .internalServerError(let errorResponse):
-        print("📡 ServerClient.addFile HTTP status: 500")
-        guard case .json(let error) = errorResponse.body else {
-          throw ServerClientError.internalServerError(message: "Internal server error", requestId: nil, correlationId: nil)
-        }
-        throw ServerClientError.internalServerError(message: "\(error.error.message)", requestId: error.requestId, correlationId: nil)
-
-      case .undocumented(let statusCode, let payload):
-        print("📡 ServerClient.addFile HTTP status: \(statusCode)")
-        let requestId = payload.headerFields[.init("x-amzn-requestid")!]
-        // Handle 401/403 as unauthorized even if not in OpenAPI spec
-        if statusCode == 401 || statusCode == 403 {
-          print("🔒 Unauthorized response: HTTP \(statusCode)")
-          throw ServerClientError.unauthorized(requestId: requestId, correlationId: nil)
-        }
-        throw ServerClientError.networkError(message: "Unexpected response: \(statusCode)", requestId: requestId, correlationId: nil)
-      }
+      )
     }
   )
 }
