@@ -199,10 +199,10 @@ extension ServerClient: DependencyKey {
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
           default: return nil
           }
@@ -246,9 +246,9 @@ extension ServerClient: DependencyKey {
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
           default: return nil
           }
@@ -290,11 +290,11 @@ extension ServerClient: DependencyKey {
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .notFound(let r): return (404, try? r.body.json.error.message, try? r.body.json.requestId)
-          case .conflict(let r): return (409, try? r.body.json.error.message, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .notFound(let r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case .conflict(let r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
           default: return nil
           }
@@ -331,7 +331,7 @@ extension ServerClient: DependencyKey {
           switch response {
           case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
           default: return nil
           }
@@ -376,9 +376,9 @@ extension ServerClient: DependencyKey {
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, try? r.body.json.error.message, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
           default: return nil
           }
