@@ -20,6 +20,8 @@ struct FileListFeature {
     var pendingAddUrl: URL?
     /// URL to share via activity sheet
     var sharingFileURL: URL?
+    /// Child feature for unauthenticated users to preview default files
+    var defaultFiles: DefaultFilesFeature.State = DefaultFilesFeature.State()
   }
 
   enum Action {
@@ -41,6 +43,8 @@ struct FileListFeature {
     case alert(PresentationAction<Alert>)
     case detail(PresentationAction<FileDetailFeature.Action>)
     case fileTapped(FileCellFeature.State)
+    // Child feature for unauthenticated users
+    case defaultFiles(DefaultFilesFeature.Action)
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
@@ -376,7 +380,13 @@ struct FileListFeature {
 
       case .files:
         return .none
+
+      case .defaultFiles:
+        return .none
       }
+    }
+    Scope(state: \.defaultFiles, action: \.defaultFiles) {
+      DefaultFilesFeature()
     }
     .ifLet(\.$selectedFile, action: \.detail) {
       FileDetailFeature()

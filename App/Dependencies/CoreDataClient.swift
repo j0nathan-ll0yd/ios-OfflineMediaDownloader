@@ -203,9 +203,11 @@ extension CoreDataClient: DependencyKey {
       }
     },
     getMetrics: {
+      // Capture documentsPath synchronously before entering async context to avoid capturing FileManager
+      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
       let context = PersistenceController.shared.container.viewContext
-      let fileManager = FileManager.default
-      guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+
+      guard let documentsPath else {
         return .zero
       }
 
@@ -217,12 +219,13 @@ extension CoreDataClient: DependencyKey {
         let downloadCount = downloadedFiles.count
 
         // Calculate storage from actual files on disk
+        // Use FileManager.default inside perform block (same thread context)
         var totalBytes: Int64 = 0
         for entity in downloadedFiles {
           if let urlString = entity.url,
              let url = URL(string: urlString) {
             let localURL = documentsPath.appendingPathComponent(url.lastPathComponent)
-            if let attrs = try? fileManager.attributesOfItem(atPath: localURL.path),
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: localURL.path),
                let size = attrs[.size] as? Int64 {
               totalBytes += size
             }

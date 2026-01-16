@@ -9,7 +9,7 @@
 # Or symlink manually:
 #   ln -s ../../.githooks/pre-commit .git/hooks/pre-commit
 
-set -e
+set -euo pipefail
 
 echo "Running pre-commit checks..."
 

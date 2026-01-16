@@ -95,6 +95,8 @@ extension KeychainClient: DependencyKey {
     },
     getJwtToken: {
       do {
+        // JWT tokens use regular keychain with .whenUnlocked accessibility
+        // SecureEnclaveValet requires biometric prompt per-access which isn't appropriate for frequent token checks
         return try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtToken.rawValue)
       } catch {
         // itemNotFound is expected when token doesn't exist - only log unexpected errors
@@ -140,6 +142,7 @@ extension KeychainClient: DependencyKey {
     setJwtToken: { token in
       debugPrint("KeychainClient.setJwtToken called with token length: \(token.count)")
       do {
+        // JWT tokens use regular keychain with .whenUnlocked accessibility
         try ValetUtil.shared.keychain.setString(token, forKey: KeychainKeys.jwtToken.rawValue)
         debugPrint("KeychainClient.setJwtToken succeeded")
       } catch {
@@ -162,5 +165,18 @@ extension KeychainClient: DependencyKey {
     deleteDeviceData: {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.endpointArn.rawValue)
     }
+  )
+
+  static let testValue = KeychainClient(
+    getUserData: { User(email: "test@example.com", firstName: "Test", identifier: "test-id", lastName: "User") },
+    getJwtToken: { "test-jwt-token" },
+    getDeviceData: { Device(endpointArn: "test-endpoint-arn") },
+    getUserIdentifier: { "test-user-id" },
+    setUserData: { _ in },
+    setJwtToken: { _ in },
+    setDeviceData: { _ in },
+    deleteUserData: { },
+    deleteJwtToken: { },
+    deleteDeviceData: { }
   )
 }

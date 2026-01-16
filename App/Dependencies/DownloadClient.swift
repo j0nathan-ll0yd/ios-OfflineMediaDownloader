@@ -123,7 +123,43 @@ actor DownloadManager: NSObject {
 }
 
 // MARK: - URLSession Delegate
-extension DownloadManager: URLSessionDownloadDelegate {
+extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
+  // MARK: Authentication Challenge (Certificate Pinning)
+  nonisolated func urlSession(
+    _ session: URLSession,
+    didReceive challenge: URLAuthenticationChallenge,
+    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+  ) {
+    // Only handle server trust challenges
+    guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+          let serverTrust = challenge.protectionSpace.serverTrust else {
+      completionHandler(.performDefaultHandling, nil)
+      return
+    }
+
+    // First, perform standard trust evaluation
+    var error: CFError?
+    let trustValid = SecTrustEvaluateWithError(serverTrust, &error)
+
+    guard trustValid else {
+      print("📥 Certificate validation failed: \(error?.localizedDescription ?? "Unknown error")")
+      completionHandler(.cancelAuthenticationChallenge, nil)
+      return
+    }
+
+    // Then, validate our certificate pins
+    let pinValid = CertificatePinning.validate(serverTrust: serverTrust)
+
+    if pinValid {
+      print("📥 Certificate pinning validated for download")
+      completionHandler(.useCredential, URLCredential(trust: serverTrust))
+    } else {
+      print("📥 Certificate pinning failed - download connection rejected")
+      completionHandler(.cancelAuthenticationChallenge, nil)
+    }
+  }
+
+  // MARK: Download Completion
   nonisolated func urlSession(
     _ session: URLSession,
     downloadTask: URLSessionDownloadTask,

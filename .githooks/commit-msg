@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 # commit-msg hook: Block AI attribution in commit messages
 # This enforces the Zero AI References in Commits convention
 #
