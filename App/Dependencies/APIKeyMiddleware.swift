@@ -2,8 +2,27 @@ import Foundation
 import OpenAPIRuntime
 import HTTPTypes
 
-/// Middleware that intercepts API requests and adds the API key as an HTTP header
-/// Uses x-api-key header which AWS API Gateway supports natively
+// MARK: - ⚠️ CRITICAL: API Key Authentication ⚠️
+//
+// The API key MUST be sent as a QUERY PARAMETER, not a header.
+//
+// WHY: The AWS API Gateway Lambda authorizer is configured to read the API key
+// from the query string parameter `ApiKey`. Using a header (like x-api-key)
+// will result in 401/403 errors because the authorizer won't find the key.
+//
+// CORRECT:   ?ApiKey=xxx (query parameter)
+// INCORRECT: X-API-Key: xxx (header) ← DO NOT USE
+//
+// This was incorrectly changed to a header in the past and caused auth failures.
+// See commit 244478b for the original fix.
+//
+// If you're seeing 401 errors and the API key looks correct, verify this file
+// is using query parameters, not headers.
+
+/// Middleware that adds the API key as a query parameter to all requests.
+///
+/// - Important: The backend authorizer expects `?ApiKey=xxx` as a query parameter.
+///   Do NOT change this to use headers - it will break authentication.
 struct APIKeyMiddleware: ClientMiddleware {
   let apiKey: String
 
@@ -16,10 +35,13 @@ struct APIKeyMiddleware: ClientMiddleware {
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
 
-    // Add API key as header (more secure than query params - not logged/cached)
-    request.headerFields[HTTPField.Name("x-api-key")!] = apiKey
+    // ⚠️ CRITICAL: Must be query parameter, not header. See comment block above.
+    if let currentPath = request.path {
+      let separator = currentPath.contains("?") ? "&" : "?"
+      request.path = "\(currentPath)\(separator)ApiKey=\(apiKey)"
+    }
 
-    print("🔑 APIKeyMiddleware: Added x-api-key header")
+    print("🔑 APIKeyMiddleware: Added API key as query parameter to path: \(request.path ?? "nil")")
 
     return try await next(request, body, baseURL)
   }

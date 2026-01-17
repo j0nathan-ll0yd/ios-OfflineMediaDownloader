@@ -24,6 +24,8 @@ struct DefaultFilesFeature {
     case onAppear
     case fileLoaded(File?)
     case fileFetchFailed(String)
+    /// Called by parent when it has already fetched files - avoids duplicate API call
+    case parentProvidedFile(File?)
     case downloadButtonTapped
     case playButtonTapped
     case downloadProgress(Int)
@@ -51,20 +53,22 @@ struct DefaultFilesFeature {
     Reduce { state, action in
       switch action {
       case .onAppear:
+        // Don't fetch here - parent (FileListFeature) will provide the file
+        // via parentProvidedFile action to avoid duplicate API calls.
+        // Just mark as loading until parent provides data.
         guard state.file == nil else { return .none }
         state.isLoadingFile = true
-        return .run { send in
-          do {
-            let response = try await serverClient.getFiles(.all)
-            if let firstFile = response.body?.contents.first {
-              await send(.fileLoaded(firstFile))
-            } else {
-              await send(.fileLoaded(nil))
-            }
-          } catch {
-            await send(.fileFetchFailed(error.localizedDescription))
-          }
+        return .none
+
+      case let .parentProvidedFile(file):
+        // Parent has fetched files and is sharing with us
+        state.isLoadingFile = false
+        state.file = file
+        // Check if already downloaded
+        if let url = file?.url, fileClient.fileExists(url) {
+          state.isDownloaded = true
         }
+        return .none
 
       case let .fileLoaded(file):
         state.isLoadingFile = false

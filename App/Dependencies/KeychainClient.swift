@@ -97,10 +97,15 @@ extension KeychainClient: DependencyKey {
       do {
         // JWT tokens use regular keychain with .whenUnlocked accessibility
         // SecureEnclaveValet requires biometric prompt per-access which isn't appropriate for frequent token checks
-        return try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtToken.rawValue)
+        let token = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtToken.rawValue)
+        let preview = String(token.prefix(20)) + "..."
+        print("🔑 KeychainClient.getJwtToken: found token (\(preview))")
+        return token
       } catch {
         // itemNotFound is expected when token doesn't exist - only log unexpected errors
-        if !isItemNotFoundError(error) {
+        if isItemNotFoundError(error) {
+          print("🔑 KeychainClient.getJwtToken: no token found (itemNotFound)")
+        } else {
           print("⚠️ KeychainClient.getJwtToken unexpected error: \(error)")
         }
         return nil
@@ -140,13 +145,14 @@ extension KeychainClient: DependencyKey {
       }
     },
     setJwtToken: { token in
-      debugPrint("KeychainClient.setJwtToken called with token length: \(token.count)")
+      let preview = String(token.prefix(20)) + "..."
+      print("🔑 KeychainClient.setJwtToken: storing token (\(token.count) chars, \(preview))")
       do {
         // JWT tokens use regular keychain with .whenUnlocked accessibility
         try ValetUtil.shared.keychain.setString(token, forKey: KeychainKeys.jwtToken.rawValue)
-        debugPrint("KeychainClient.setJwtToken succeeded")
+        print("🔑 KeychainClient.setJwtToken: succeeded")
       } catch {
-        debugPrint("KeychainClient.setJwtToken failed: \(error)")
+        print("⚠️ KeychainClient.setJwtToken: failed with error: \(error)")
         throw error
       }
     },
@@ -160,7 +166,9 @@ extension KeychainClient: DependencyKey {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.lastName.rawValue)
     },
     deleteJwtToken: {
+      print("🔑 KeychainClient.deleteJwtToken: removing token from keychain")
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtToken.rawValue)
+      print("🔑 KeychainClient.deleteJwtToken: token removed")
     },
     deleteDeviceData: {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.endpointArn.rawValue)

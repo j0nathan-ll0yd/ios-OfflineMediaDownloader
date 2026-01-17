@@ -42,12 +42,13 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
 }
 
 @Reducer
-struct LoginFeature: Reducer {
+struct LoginFeature {
   @ObservableState
   struct State: Equatable {
     var registrationStatus: RegistrationStatus = .unregistered
     var loginStatus: LoginStatus = .unauthenticated
     var isSigningIn: Bool = false
+    var isCompletingRegistration: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
     var pendingUserData: User?
   }
@@ -111,14 +112,24 @@ struct LoginFeature: Reducer {
         return .run { send in
           debugPrint("LoginFeature: storing token in keychain")
           try await keychainClient.setJwtToken(token)
-          debugPrint("LoginFeature: token stored, sending delegate")
+
+          // Verify token was actually stored
+          let storedToken = try await keychainClient.getJwtToken()
+          guard storedToken == token else {
+            debugPrint("⚠️ LoginFeature: token verification failed - stored token doesn't match")
+            await send(.showError(.loginFailed(reason: "Failed to store authentication token")))
+            return
+          }
+          debugPrint("LoginFeature: token stored and verified ✓")
           await send(.delegate(.loginCompleted))
         }
 
       case let .registrationResponse(.success(response)):
         debugPrint("LoginFeature: registrationResponse success, body: \(String(describing: response.body))")
         state.isSigningIn = false
+        state.isCompletingRegistration = true  // Keep loading visible during token storage
         guard let token = response.body?.token else {
+          state.isCompletingRegistration = false
           return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
@@ -129,7 +140,16 @@ struct LoginFeature: Reducer {
         return .run { send in
           debugPrint("LoginFeature: storing token in keychain")
           try await keychainClient.setJwtToken(token)
-          debugPrint("LoginFeature: token stored")
+
+          // Verify token was actually stored
+          let storedToken = try await keychainClient.getJwtToken()
+          guard storedToken == token else {
+            debugPrint("⚠️ LoginFeature: token verification failed - stored token doesn't match")
+            await send(.showError(.registrationFailed(reason: "Failed to store authentication token")))
+            return
+          }
+          debugPrint("LoginFeature: token stored and verified ✓")
+
           if let userData = userData {
             try await keychainClient.setUserData(userData)
             debugPrint("LoginFeature: userData stored")
@@ -302,7 +322,7 @@ struct LoginView: View {
       }
 
       // Loading overlay
-      if store.isSigningIn {
+      if store.isSigningIn || store.isCompletingRegistration {
         Color.black.opacity(0.5)
           .ignoresSafeArea()
 
@@ -310,7 +330,7 @@ struct LoginView: View {
           ProgressView()
             .scaleEffect(1.2)
             .tint(theme.primaryColor)
-          Text("Signing in...")
+          Text(store.isCompletingRegistration ? "Setting up account..." : "Signing in...")
             .font(.subheadline)
             .foregroundStyle(.white)
         }
