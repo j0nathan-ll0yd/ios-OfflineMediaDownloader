@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 # Setup git hooks for iOS project
 # Run this once after cloning the repository
 

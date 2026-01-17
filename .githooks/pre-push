@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 # pre-push hook: Block direct master pushes and verify build
 # This enforces the worktree workflow and ensures code quality
 #

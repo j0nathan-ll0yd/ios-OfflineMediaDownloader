@@ -179,11 +179,6 @@ struct FileListView: View {
 
   private let theme = DarkProfessionalTheme()
 
-  // Store for DefaultFilesView (for unauthenticated users)
-  @State private var defaultFilesStore = Store(initialState: DefaultFilesFeature.State()) {
-    DefaultFilesFeature()
-  }
-
   var body: some View {
     NavigationStack {
       ZStack {
@@ -264,9 +259,10 @@ struct FileListView: View {
   private var fileListContent: some View {
     // Unauthenticated users always see DefaultFilesView
     if !store.isAuthenticated {
-      DefaultFilesView(store: defaultFilesStore) {
-        store.send(.delegate(.loginRequired))
-      }
+      DefaultFilesView(
+        store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
+        onRegisterTapped: { store.send(.delegate(.loginRequired)) }
+      )
     } else if store.isLoading && store.files.isEmpty {
       loadingView
     } else if store.files.isEmpty {

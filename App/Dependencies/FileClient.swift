@@ -61,4 +61,16 @@ extension FileClient: DependencyKey {
       try FileManager.default.moveItem(at: from, to: to)
     }
   )
+
+  static let testValue = FileClient(
+    documentsDirectory: {
+      URL(fileURLWithPath: "/tmp/test-documents")
+    },
+    filePath: { url in
+      URL(fileURLWithPath: "/tmp/test-documents").appendingPathComponent(url.lastPathComponent)
+    },
+    fileExists: { _ in false },
+    deleteFile: { _ in },
+    moveFile: { _, _ in }
+  )
 }

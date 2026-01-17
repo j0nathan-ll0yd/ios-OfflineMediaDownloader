@@ -6,7 +6,7 @@
 # This script copies the OpenAPI specification from the backend package
 # to the iOS APITypes package, enabling type generation from the API contract.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IOS_ROOT="$(dirname "$SCRIPT_DIR")"

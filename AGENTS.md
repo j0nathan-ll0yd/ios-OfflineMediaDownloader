@@ -15,7 +15,7 @@ When working on this codebase, watch for emerging patterns and conventions. Use 
 | "Prefer", repeated decisions | Recommended | Prefer delegate actions for parent communication |
 | "Consider", "Might" | Optional | Consider emoji logging prefixes |
 
-When you detect a new convention, document it in `docs/wiki/Meta/Emerging-Conventions.md`.
+When you detect a new convention, document it in `Docs/wiki/Meta/Emerging-Conventions.md`.
 
 ---
 
@@ -424,40 +424,40 @@ ForEach(store.scope(state: \.items, action: \.items)) { itemStore in
 
 ## Wiki Conventions
 
-See `docs/wiki/` for detailed documentation on each topic:
+See `Docs/wiki/` for detailed documentation on each topic:
 
 ### Conventions/
-- [Naming-Conventions.md](docs/wiki/Conventions/Naming-Conventions.md) - PascalCase, camelCase rules
-- [Git-Workflow.md](docs/wiki/Conventions/Git-Workflow.md) - Conventional commits
-- [Import-Organization.md](docs/wiki/Conventions/Import-Organization.md) - Import ordering
-- [File-Organization.md](docs/wiki/Conventions/File-Organization.md) - Feature grouping
+- [Naming-Conventions.md](Docs/wiki/Conventions/Naming-Conventions.md) - PascalCase, camelCase rules
+- [Git-Workflow.md](Docs/wiki/Conventions/Git-Workflow.md) - Conventional commits
+- [Import-Organization.md](Docs/wiki/Conventions/Import-Organization.md) - Import ordering
+- [File-Organization.md](Docs/wiki/Conventions/File-Organization.md) - Feature grouping
 
 ### TCA/
-- [Reducer-Patterns.md](docs/wiki/TCA/Reducer-Patterns.md) - @Reducer macro usage
-- [Feature-State-Design.md](docs/wiki/TCA/Feature-State-Design.md) - State modeling
-- [Action-Naming.md](docs/wiki/TCA/Action-Naming.md) - Action naming conventions
-- [Delegation-Pattern.md](docs/wiki/TCA/Delegation-Pattern.md) - Child→parent communication
-- [Effect-Patterns.md](docs/wiki/TCA/Effect-Patterns.md) - Async effects, streams
-- [Dependency-Client-Design.md](docs/wiki/TCA/Dependency-Client-Design.md) - Client architecture
-- [Cancel-ID-Management.md](docs/wiki/TCA/Cancel-ID-Management.md) - Effect cancellation
+- [Reducer-Patterns.md](Docs/wiki/TCA/Reducer-Patterns.md) - @Reducer macro usage
+- [Feature-State-Design.md](Docs/wiki/TCA/Feature-State-Design.md) - State modeling
+- [Action-Naming.md](Docs/wiki/TCA/Action-Naming.md) - Action naming conventions
+- [Delegation-Pattern.md](Docs/wiki/TCA/Delegation-Pattern.md) - Child→parent communication
+- [Effect-Patterns.md](Docs/wiki/TCA/Effect-Patterns.md) - Async effects, streams
+- [Dependency-Client-Design.md](Docs/wiki/TCA/Dependency-Client-Design.md) - Client architecture
+- [Cancel-ID-Management.md](Docs/wiki/TCA/Cancel-ID-Management.md) - Effect cancellation
 
 ### Views/
-- [Store-Integration.md](docs/wiki/Views/Store-Integration.md) - @Bindable usage
-- [Binding-Patterns.md](docs/wiki/Views/Binding-Patterns.md) - Two-way bindings
-- [Child-Feature-Scoping.md](docs/wiki/Views/Child-Feature-Scoping.md) - store.scope()
-- [Navigation-Patterns.md](docs/wiki/Views/Navigation-Patterns.md) - Sheets, covers, links
+- [Store-Integration.md](Docs/wiki/Views/Store-Integration.md) - @Bindable usage
+- [Binding-Patterns.md](Docs/wiki/Views/Binding-Patterns.md) - Two-way bindings
+- [Child-Feature-Scoping.md](Docs/wiki/Views/Child-Feature-Scoping.md) - store.scope()
+- [Navigation-Patterns.md](Docs/wiki/Views/Navigation-Patterns.md) - Sheets, covers, links
 
 ### Testing/
-- [TestStore-Usage.md](docs/wiki/Testing/TestStore-Usage.md) - TestStoreOf patterns
-- [Dependency-Mocking.md](docs/wiki/Testing/Dependency-Mocking.md) - Test values
-- [Swift-Testing-Patterns.md](docs/wiki/Testing/Swift-Testing-Patterns.md) - @Test macro
+- [TestStore-Usage.md](Docs/wiki/Testing/TestStore-Usage.md) - TestStoreOf patterns
+- [Dependency-Mocking.md](Docs/wiki/Testing/Dependency-Mocking.md) - Test values
+- [Swift-Testing-Patterns.md](Docs/wiki/Testing/Swift-Testing-Patterns.md) - @Test macro
 
 ### Infrastructure/
-- [CoreData-Integration.md](docs/wiki/Infrastructure/CoreData-Integration.md) - Upsert patterns
-- [Keychain-Storage-Valet.md](docs/wiki/Infrastructure/Keychain-Storage-Valet.md) - Valet usage
-- [Push-Notification-Flow.md](docs/wiki/Infrastructure/Push-Notification-Flow.md) - APNS routing
-- [Background-Downloads.md](docs/wiki/Infrastructure/Background-Downloads.md) - URLSession
-- [Environment-Configuration.md](docs/wiki/Infrastructure/Environment-Configuration.md) - xcconfig
+- [CoreData-Integration.md](Docs/wiki/Infrastructure/CoreData-Integration.md) - Upsert patterns
+- [Keychain-Storage-Valet.md](Docs/wiki/Infrastructure/Keychain-Storage-Valet.md) - Valet usage
+- [Push-Notification-Flow.md](Docs/wiki/Infrastructure/Push-Notification-Flow.md) - APNS routing
+- [Background-Downloads.md](Docs/wiki/Infrastructure/Background-Downloads.md) - URLSession
+- [Environment-Configuration.md](Docs/wiki/Infrastructure/Environment-Configuration.md) - xcconfig
 
 ---
 
@@ -559,7 +559,7 @@ newEndpoint: { _ in Response() }
 
 ### Adding a New Dependency Client
 
-See [Dependency-Client-Design.md](docs/wiki/TCA/Dependency-Client-Design.md) for the full template.
+See [Dependency-Client-Design.md](Docs/wiki/TCA/Dependency-Client-Design.md) for the full template.
 
 1. Create file in `App/Dependencies/`
 2. Define `@DependencyClient` struct
@@ -646,4 +646,4 @@ This is a recommended convention, not enforced.
 - **TCA Documentation**: https://pointfreeco.github.io/swift-composable-architecture/
 - **Valet Documentation**: https://github.com/square/Valet
 - **Swift Testing**: https://developer.apple.com/documentation/testing
-- **Wiki Conventions**: `docs/wiki/`
+- **Wiki Conventions**: `Docs/wiki/`

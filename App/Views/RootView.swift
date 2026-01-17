@@ -353,11 +353,11 @@ struct RootView: View {
   }
 }
 
-// MARK: - Launch View
+// MARK: - Launch View (Pure SwiftUI - not TCA managed)
 struct LaunchView: View {
   let status: String
-  @State private var dotOffset: CGFloat = 0
-  @State private var showShapes = false
+  @State private var dotOffset: CGFloat = 0  // non-tca
+  @State private var showShapes = false  // non-tca
 
   private let theme = DarkProfessionalTheme()
 
