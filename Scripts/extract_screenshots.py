@@ -21,21 +21,21 @@ def find_attachments(obj, found_attachments, xcresult_path):
     if isinstance(obj, dict):
         type_name = obj.get("_type", {}).get("_name")
         if type_name:
-           print(f"Seen type: {type_name}")
-            
+            print(f"Seen type: {type_name}")
+
         if type_name == "ActionTestAttachment":
             name = obj.get("name", {}).get("_value")
             payload_ref = obj.get("payloadRef", {}).get("id", {}).get("_value")
             if name and payload_ref:
                 print(f"Found attachment: {name}, ref: {payload_ref}")
                 found_attachments.append((name, payload_ref))
-        
+
         if type_name == "ActionTestMetadata":
-             summary_ref = obj.get("summaryRef", {}).get("id", {}).get("_value")
-             if summary_ref:
-                 print(f"Fetching summaryRef: {summary_ref}")
-                 summary = get_json(xcresult_path, summary_ref)
-                 find_attachments(summary, found_attachments, xcresult_path)
+            summary_ref = obj.get("summaryRef", {}).get("id", {}).get("_value")
+            if summary_ref:
+                print(f"Fetching summaryRef: {summary_ref}")
+                summary = get_json(xcresult_path, summary_ref)
+                find_attachments(summary, found_attachments, xcresult_path)
 
         for key, value in obj.items():
             find_attachments(value, found_attachments, xcresult_path)
@@ -73,26 +73,26 @@ def main():
         print(f"Tests Ref: {tests_ref}")
         
         if tests_ref:
-             tests_result = get_json(xcresult_path, tests_ref)
-             print(f"Tests Result keys: {tests_result.keys()}")
-             # Traverse this for attachments
-             attachments = []
-             find_attachments(tests_result, attachments, xcresult_path)
-             
-             print(f"Found {len(attachments)} attachments in tests result.")
-             
-             for name, payload_id in attachments:
-                 # Clean up name for filename
-                 safe_name = "".join([c for c in name if c.isalpha() or c.isdigit() or c in (' ', '-', '_')]).rstrip()
-                 if not safe_name.endswith(".png"):
-                     safe_name += ".png"
-                 
-                 out_path = os.path.join(output_dir, safe_name)
-                 print(f"Exporting {safe_name}...")
-                 try:
+            tests_result = get_json(xcresult_path, tests_ref)
+            print(f"Tests Result keys: {tests_result.keys()}")
+            # Traverse this for attachments
+            attachments = []
+            find_attachments(tests_result, attachments, xcresult_path)
+
+            print(f"Found {len(attachments)} attachments in tests result.")
+
+            for name, payload_id in attachments:
+                # Clean up name for filename
+                safe_name = "".join([c for c in name if c.isalpha() or c.isdigit() or c in (' ', '-', '_')]).rstrip()
+                if not safe_name.endswith(".png"):
+                    safe_name += ".png"
+
+                out_path = os.path.join(output_dir, safe_name)
+                print(f"Exporting {safe_name}...")
+                try:
                     export_attachment(xcresult_path, payload_id, out_path)
-                 except Exception as e:
-                     print(f"Failed to export {safe_name}: {e}")
+                except Exception as e:
+                    print(f"Failed to export {safe_name}: {e}")
 
 if __name__ == "__main__":
     main()

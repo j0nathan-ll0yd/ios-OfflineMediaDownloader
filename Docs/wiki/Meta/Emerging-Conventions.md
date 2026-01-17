@@ -38,49 +38,26 @@ Once a pattern is mature (confirmed by team or repeated 3+ times):
 
 ## Log
 
-### 2024-XX-XX (Template)
+### 2025-01-16
 
-**Pattern**: [Description]
-**Signal**: [Detection method]
-**Context**: [Background]
-**Proposed Action**: [Next step]
-
----
-
-### Initial Conventions (Project Setup)
-
-**Pattern**: All TCA features use delegate actions for parent communication
-**Signal**: Zero-tolerance rule from architecture decision
-**Context**: NotificationCenter was used in MVVM version, TCA uses typed actions
-**Status**: Documented in [Delegation-Pattern.md](../TCA/Delegation-Pattern.md)
+**Pattern**: CancelID enum for async effects
+**Signal**: DiagnosticFeature was missing CancelID, other features had it
+**Context**: All async effects should be cancellable for proper cleanup
+**Status**: ✅ Fixed in DiagnosticFeature, documented in Effect-Patterns.md
 
 ---
 
-**Pattern**: State preservation during list refresh
-**Signal**: Repeated implementation pattern across FileListFeature
-**Context**: When refreshing files, download progress/status should not reset
-**Status**: Documented in [Feature-State-Design.md](../TCA/Feature-State-Design.md)
+### Documented Conventions (from project setup)
 
----
+The following patterns were established at project start and have been documented:
 
-**Pattern**: Emoji prefixes for logging categories
-**Signal**: Consistent usage across all dependency clients
-**Context**: Makes logs easier to filter and read
-**Status**: Documented in AGENTS.md as Recommended
-
----
-
-**Pattern**: Background thread for expensive operations
-**Signal**: UIPasteboard.hasStrings blocking main thread for 1-3s
-**Context**: First access to pasteboard causes initialization delay
-**Status**: Should document in Performance section
-
----
-
-**Pattern**: Auth error escalation via delegate
-**Signal**: Repeated pattern in FileListFeature, FileCellFeature
-**Context**: 401/403 errors should trigger logout flow
-**Status**: Documented in [Delegation-Pattern.md](../TCA/Delegation-Pattern.md)
+| Pattern | Status | Location |
+|---------|--------|----------|
+| Delegate actions for parent communication | ✅ Documented | [Delegation-Pattern.md](../TCA/Delegation-Pattern.md) |
+| State preservation during list refresh | ✅ Documented | [Feature-State-Design.md](../TCA/Feature-State-Design.md) |
+| Emoji prefixes for logging categories | ✅ Documented | AGENTS.md (Recommended) |
+| Auth error escalation via delegate | ✅ Documented | [Delegation-Pattern.md](../TCA/Delegation-Pattern.md) |
+| Background thread for expensive operations | ⏳ Pending | Should add to Performance section |
 
 ---
 

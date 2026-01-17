@@ -58,6 +58,8 @@ struct DiagnosticFeature {
   @Dependency(\.keychainClient) var keychainClient
   @Dependency(\.coreDataClient) var coreDataClient
 
+  private enum CancelID { case loadData }
+
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
@@ -95,7 +97,8 @@ struct DiagnosticFeature {
             }
 
             await send(.keychainItemsLoaded(items))
-          },
+          }
+          .cancellable(id: CancelID.loadData),
           .send(.loadMetrics)
         )
 

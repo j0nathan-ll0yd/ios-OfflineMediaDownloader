@@ -2,7 +2,8 @@ import Foundation
 import OpenAPIRuntime
 import HTTPTypes
 
-/// Middleware that intercepts API requests and adds the API key as a query parameter
+/// Middleware that intercepts API requests and adds the API key as an HTTP header
+/// Uses x-api-key header which AWS API Gateway supports natively
 struct APIKeyMiddleware: ClientMiddleware {
   let apiKey: String
 
@@ -15,14 +16,10 @@ struct APIKeyMiddleware: ClientMiddleware {
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
 
-    // Add API key as query parameter (backend authorizer expects ?ApiKey=xxx)
-    // Modify the request path to include the query parameter
-    if let currentPath = request.path {
-      let separator = currentPath.contains("?") ? "&" : "?"
-      request.path = "\(currentPath)\(separator)ApiKey=\(apiKey)"
-    }
+    // Add API key as header (more secure than query params - not logged/cached)
+    request.headerFields[HTTPField.Name("x-api-key")!] = apiKey
 
-    print("🔑 APIKeyMiddleware: Added API key as query parameter to path: \(request.path ?? "nil")")
+    print("🔑 APIKeyMiddleware: Added x-api-key header")
 
     return try await next(request, body, baseURL)
   }

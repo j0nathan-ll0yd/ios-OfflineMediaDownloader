@@ -12,14 +12,17 @@ NC='\033[0m' # No Color
 
 # Files to check (passed as arguments or find all Swift files)
 if [ $# -eq 0 ]; then
-    FILES=$(find . -name "*.swift" -not -path "*/.*" -not -path "*/DerivedData/*")
+    FILES=()
+    while IFS= read -r -d '' file; do
+        FILES+=("$file")
+    done < <(find . -name "*.swift" -not -path "*/.*" -not -path "*/DerivedData/*" -print0)
 else
-    FILES="$@"
+    FILES=("$@")
 fi
 
 VIOLATIONS=0
 
-for file in $FILES; do
+for file in "${FILES[@]}"; do
     # Skip non-Swift files
     [[ "$file" != *.swift ]] && continue
     # Skip if file doesn't exist
@@ -100,13 +103,15 @@ for file in $FILES; do
 
     # Check if this is a reducer file
     if grep -qE '@Reducer' "$file" 2>/dev/null; then
-        # Check for @ObservableState on State struct
+        # ZERO-TOLERANCE: @ObservableState required on State struct
         if grep -qE 'struct\s+State' "$file" 2>/dev/null; then
             if ! grep -qE '@ObservableState' "$file" 2>/dev/null; then
-                echo -e "${YELLOW}WARNING: Reducer State may be missing @ObservableState${NC}"
+                echo -e "${RED}VIOLATION: Reducer State missing @ObservableState${NC}"
                 echo "   File: $file"
-                echo "   Rule: All TCA State structs should have @ObservableState"
+                echo "   Rule: All TCA State structs MUST have @ObservableState"
+                echo "   Fix: Add @ObservableState before struct State"
                 echo ""
+                VIOLATIONS=$((VIOLATIONS + 1))
             fi
         fi
     fi
