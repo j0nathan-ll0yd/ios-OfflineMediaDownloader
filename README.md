@@ -8,7 +8,7 @@ This app serves as the companion iOS client for the [AWS media downloader backen
 
 ## Architecture
 
-- **iOS 18+**, **Swift 6.1**
+- **iOS 26+**, **Swift 6.1**
 - **The Composable Architecture (TCA)** 1.22.2+
 - **Valet** for Keychain/Secure Enclave storage
 - **CoreData** for local file persistence

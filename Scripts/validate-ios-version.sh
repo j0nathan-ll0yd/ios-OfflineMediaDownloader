@@ -11,14 +11,17 @@ NC='\033[0m' # No Color
 
 # Files to check (passed as arguments or find all Swift files)
 if [ $# -eq 0 ]; then
-    FILES=$(find . -name "*.swift" -not -path "*/.*" -not -path "*/DerivedData/*")
+    FILES=()
+    while IFS= read -r -d '' file; do
+        FILES+=("$file")
+    done < <(find . -name "*.swift" -not -path "*/.*" -not -path "*/DerivedData/*" -print0)
 else
-    FILES="$@"
+    FILES=("$@")
 fi
 
 VIOLATIONS=0
 
-for file in $FILES; do
+for file in "${FILES[@]}"; do
     # Skip non-Swift files
     [[ "$file" != *.swift ]] && continue
     # Skip if file doesn't exist
