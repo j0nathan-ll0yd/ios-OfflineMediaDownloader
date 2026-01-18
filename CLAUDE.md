@@ -114,3 +114,65 @@ TCA tests use `TestStoreOf<Feature>`:
 - TCA: `swift-composable-architecture` 1.22.2+
 - Keychain: `Valet` (Secure Enclave support)
 - iOS 18+ (Swift 6.1)
+
+## Critical Conventions (DO NOT CHANGE)
+
+These are architectural decisions that MUST NOT be modified without explicit confirmation from the project owner. Past changes to these caused production issues.
+
+### API Key Authentication
+
+**The API key MUST be sent as a query parameter (`?ApiKey=xxx`), NOT as a header.**
+
+- File: `App/Dependencies/APIKeyMiddleware.swift`
+- The AWS API Gateway Lambda authorizer reads from query string, not headers
+- Using `X-API-Key` header will cause 401/403 errors
+- Reference: commit `244478b`
+
+```swift
+// ✅ CORRECT - Query parameter
+request.path = "\(currentPath)?ApiKey=\(apiKey)"
+
+// ❌ WRONG - Header (DO NOT USE)
+request.headerFields["X-API-Key"] = apiKey
+```
+
+### OpenAPI Spec Sync
+
+The OpenAPI spec is generated from TypeSpec in the backend repo and synced here:
+- Source: `aws-cloudformation-media-downloader/docs/api/openapi.yaml`
+- Target: `APITypes/Sources/APITypes/openapi.yaml`
+- Sync script: `./Scripts/sync-openapi.sh`
+
+Do NOT manually edit the openapi.yaml - fix issues in the backend TypeSpec definitions.
+
+### Parent-Child Data Sharing (Avoid Duplicate API Calls)
+
+When a parent feature fetches data that a child feature also needs, the parent MUST share data with the child via actions rather than both fetching independently.
+
+**Example: FileListFeature → DefaultFilesFeature**
+
+```swift
+// ❌ WRONG - Child fetches independently (causes duplicate /files calls)
+case .onAppear:
+  return .run { send in
+    let response = try await serverClient.getFiles(.all)  // DUPLICATE!
+    await send(.fileLoaded(response.body?.contents.first))
+  }
+
+// ✅ CORRECT - Parent shares data with child
+// In parent (FileListFeature):
+case let .remoteFilesResponse(.success(response)):
+  return .send(.defaultFiles(.parentProvidedFile(response.body?.contents.first)))
+
+// In child (DefaultFilesFeature):
+case .onAppear:
+  state.isLoadingFile = true
+  return .none  // Wait for parent to provide data
+
+case let .parentProvidedFile(file):
+  state.isLoadingFile = false
+  state.file = file
+  return .none
+```
+
+This pattern prevents duplicate API calls and keeps data flow unidirectional.

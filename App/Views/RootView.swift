@@ -81,6 +81,7 @@ struct RootFeature {
     case backgroundDownloadFailed(fileId: String, error: String)
     case login(LoginFeature.Action)
     case main(MainFeature.Action)
+    case requestDeviceRegistration
     #if DEBUG
     case shakeDetected
     case diagnostic(PresentationAction<DiagnosticFeature.Action>)
@@ -160,13 +161,21 @@ struct RootFeature {
         }
         return .none
 
+      case .requestDeviceRegistration:
+        logger.info(.push, "Re-requesting device registration with authentication")
+        return .run { _ in
+          await MainActor.run {
+            UIApplication.shared.registerForRemoteNotifications()
+          }
+        }
+
       // Handle delegate actions from LoginFeature (direct login, not from sheet)
       case .login(.delegate(.loginCompleted)),
            .login(.delegate(.registrationCompleted)):
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
-        return .none
+        return .send(.requestDeviceRegistration)
 
       // Handle delegate actions from MainFeature's login sheet
       case .main(.delegate(.loginCompleted)),
@@ -174,7 +183,7 @@ struct RootFeature {
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
-        return .none
+        return .send(.requestDeviceRegistration)
 
       case .login:
         return .none

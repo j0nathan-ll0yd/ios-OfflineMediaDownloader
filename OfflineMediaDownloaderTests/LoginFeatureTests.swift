@@ -11,10 +11,12 @@ struct LoginFeatureTests {
   @MainActor
   @Test("Login success stores token and notifies delegate")
   func loginSuccess() async throws {
+    let expectedToken = TestData.validLoginResponse.body!.token
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     } withDependencies: {
       $0.keychainClient.setJwtToken = { _ in }
+      $0.keychainClient.getJwtToken = { expectedToken }  // For verification
     }
 
     await store.send(.loginResponse(.success(TestData.validLoginResponse))) {
@@ -100,14 +102,17 @@ struct LoginFeatureTests {
     var state = LoginFeature.State()
     state.pendingUserData = TestData.sampleUser
 
+    let expectedToken = TestData.validLoginResponse.body!.token
     let store = TestStore(initialState: state) {
       LoginFeature()
     } withDependencies: {
       $0.keychainClient.setJwtToken = { _ in }
+      $0.keychainClient.getJwtToken = { expectedToken }  // For verification
       $0.keychainClient.setUserData = { _ in }
     }
 
     await store.send(.registrationResponse(.success(TestData.validLoginResponse))) {
+      $0.isCompletingRegistration = true
       $0.registrationStatus = .registered
       $0.loginStatus = .authenticated
     }

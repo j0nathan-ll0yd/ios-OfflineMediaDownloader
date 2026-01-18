@@ -77,11 +77,15 @@ struct FileListFeature {
         // Load cached files immediately for instant display
         // For unauthenticated users, also fetch from server automatically
         // so they see default files on first launch
-        let shouldAutoRefresh = !state.isAuthenticated
+        let isAuthenticated = state.isAuthenticated
+        print("📋 FileListFeature.onAppear: isAuthenticated=\(isAuthenticated)")
         return .run { send in
           let files = try await coreDataClient.getFiles()
           await send(.localFilesLoaded(files))
-          if shouldAutoRefresh {
+          // Only auto-refresh for unauthenticated users (to show default files)
+          // Authenticated users should pull-to-refresh manually
+          if !isAuthenticated {
+            print("📋 FileListFeature.onAppear: triggering auto-refresh for guest user")
             await send(.refreshButtonTapped)
           }
         }
@@ -135,19 +139,30 @@ struct FileListFeature {
           state.pendingFileIds.removeAll { availableIds.contains($0) }
         }
         state.isLoading = false
+        // Share first file with DefaultFilesFeature (for unauthenticated users)
+        let firstFile = response.body?.contents.first
         // Cache files to disk for instant display on next launch
-        return .run { [files = response.body?.contents ?? []] _ in
-          try await coreDataClient.cacheFiles(files)
-        }
+        return .merge(
+          .send(.defaultFiles(.parentProvidedFile(firstFile))),
+          .run { [files = response.body?.contents ?? []] _ in
+            try await coreDataClient.cacheFiles(files)
+          }
+        )
 
       case let .remoteFilesResponse(.failure(error)):
         state.isLoading = false
         let appError = AppError.from(error)
         // Check if this is an auth error - redirect to login
         if appError.requiresReauth {
-          return .send(.delegate(.authenticationRequired))
+          return .merge(
+            .send(.defaultFiles(.fileFetchFailed(appError.message))),
+            .send(.delegate(.authenticationRequired))
+          )
         }
-        return .send(.showError(appError))
+        return .merge(
+          .send(.defaultFiles(.fileFetchFailed(appError.message))),
+          .send(.showError(appError))
+        )
 
       case .addButtonTapped:
         // Adding files requires authentication
