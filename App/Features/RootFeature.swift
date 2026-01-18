@@ -17,6 +17,9 @@ func setupNotifications() {
   }
 }
 
+// Token refresh threshold - refresh if token expires within this time
+private let tokenRefreshThreshold: TimeInterval = 5 * 60  // 5 minutes
+
 // MARK: - RootFeature
 
 @Reducer
@@ -53,6 +56,9 @@ struct RootFeature {
     case didRegisterForRemoteNotificationsWithDeviceToken(String)
     case didFailToRegisterForRemoteNotificationsWithError(Error)
     case deviceRegistrationResponse(Result<RegisterDeviceResponse, Error>)
+    // Token refresh actions
+    case checkTokenExpiration
+    case tokenRefreshResponse(Result<LoginResponse, Error>)
     // Push notification actions
     case receivedPushNotification([AnyHashable: Any])
     case processedPushNotification(PushNotificationType)
@@ -113,7 +119,8 @@ struct RootFeature {
         state.main.fileList.isRegistered = authState.isRegistered
 
         if authState.isAuthenticated {
-          logger.info(.auth, "User is authenticated")
+          logger.info(.auth, "User is authenticated - checking token expiration")
+          return .send(.checkTokenExpiration)
         } else if authState.isRegistered {
           logger.info(.auth, "User registered but not authenticated - signed out")
         } else {
@@ -146,6 +153,7 @@ struct RootFeature {
           state.main.fileList.isAuthenticated = false
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
+            try? await keychainClient.deleteTokenExpiresAt()
           }
         }
         return .none
@@ -157,6 +165,51 @@ struct RootFeature {
             UIApplication.shared.registerForRemoteNotifications()
           }
         }
+
+      // MARK: - Token Refresh
+
+      case .checkTokenExpiration:
+        return .run { [keychainClient, serverClient, logger] send in
+          guard let expiresAt = try await keychainClient.getTokenExpiresAt() else {
+            logger.info(.auth, "No expiration date stored - skipping refresh check")
+            return
+          }
+
+          let timeUntilExpiration = expiresAt.timeIntervalSinceNow
+          if timeUntilExpiration < tokenRefreshThreshold {
+            logger.info(.auth, "Token expires soon (\(Int(timeUntilExpiration))s) - refreshing")
+            await send(.tokenRefreshResponse(Result {
+              try await serverClient.refreshToken()
+            }))
+          } else {
+            logger.info(.auth, "Token valid for \(Int(timeUntilExpiration))s - no refresh needed")
+          }
+        }
+
+      case let .tokenRefreshResponse(.success(response)):
+        guard let token = response.body?.token else {
+          logger.warning(.auth, "Refresh succeeded but no token in response")
+          return .none
+        }
+        let expirationDate = response.body?.expirationDate
+        return .run { [keychainClient, logger] _ in
+          try await keychainClient.setJwtToken(token)
+          if let expirationDate = expirationDate {
+            try await keychainClient.setTokenExpiresAt(expirationDate)
+          }
+          logger.info(.auth, "Token refreshed successfully")
+        }
+
+      case let .tokenRefreshResponse(.failure(error)):
+        // If refresh fails with 401, token is invalid - trigger re-auth
+        if let serverError = error as? ServerClientError,
+           case .unauthorized = serverError {
+          logger.warning(.auth, "Token refresh failed with 401 - session expired")
+          return .send(.main(.delegate(.authenticationRequired)))
+        }
+        // For other errors, log but don't interrupt user
+        logger.warning(.auth, "Token refresh failed: \(error)")
+        return .none
 
       // Handle delegate actions from LoginFeature (direct login, not from sheet)
       case .login(.delegate(.loginCompleted)),
@@ -194,8 +247,9 @@ struct RootFeature {
         // Present login sheet to force re-authentication
         state.main.loginSheet = LoginFeature.State()
         return .run { [logger, keychainClient] _ in
-          // Clear the stored JWT token since it's invalid
+          // Clear the stored JWT token and expiration since it's invalid
           try? await keychainClient.deleteJwtToken()
+          try? await keychainClient.deleteTokenExpiresAt()
           logger.info(.auth, "Session expired - presenting login sheet for re-authentication")
         }
 

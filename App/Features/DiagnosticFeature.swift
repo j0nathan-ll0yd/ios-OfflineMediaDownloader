@@ -198,8 +198,9 @@ struct DiagnosticFeature {
         return .run { send in
           // 1. Call logout API (best-effort - ignore errors)
           try? await serverClient.logoutUser()
-          // 2. Always delete local JWT token
+          // 2. Always delete local JWT token and expiration
           try? await keychainClient.deleteJwtToken()
+          try? await keychainClient.deleteTokenExpiresAt()
           await send(.signOutCompleted)
         }
 
