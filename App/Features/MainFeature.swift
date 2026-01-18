@@ -32,6 +32,7 @@ struct MainFeature {
       case authenticationRequired
       case loginCompleted
       case registrationCompleted
+      case signedOut
     }
   }
 
@@ -111,6 +112,12 @@ struct MainFeature {
           .send(.fileList(.clearAllFiles)),
           .send(.delegate(.authenticationRequired))
         )
+
+      case .diagnostic(.delegate(.signedOut)):
+        state.isAuthenticated = false
+        state.fileList.isAuthenticated = false
+        // Do NOT clear files - user keeps local content
+        return .send(.delegate(.signedOut))
 
       case .diagnostic:
         return .none

@@ -204,6 +204,12 @@ struct RootFeature {
           logger.info(.auth, "Session expired - presenting login sheet for re-authentication")
         }
 
+      case .main(.delegate(.signedOut)):
+        state.isAuthenticated = false
+        state.main.isAuthenticated = false
+        // Keep login.registrationStatus = .registered so user can log back in
+        return .none
+
       // MARK: - Push Notification Handling
       case let .receivedPushNotification(userInfo):
         let notificationType = PushNotificationType.parse(from: userInfo)

@@ -43,6 +43,9 @@ struct DiagnosticFeature {
     // Metrics
     case loadMetrics
     case metricsLoaded(FileMetrics)
+    // Sign-out
+    case signOutButtonTapped
+    case signOutCompleted
 
     @CasePathable
     enum Alert: Equatable {
@@ -52,11 +55,13 @@ struct DiagnosticFeature {
     @CasePathable
     enum Delegate: Equatable {
       case authenticationInvalidated
+      case signedOut
     }
   }
 
   @Dependency(\.keychainClient) var keychainClient
   @Dependency(\.coreDataClient) var coreDataClient
+  @Dependency(\.serverClient) var serverClient
 
   private enum CancelID { case loadData }
 
@@ -187,6 +192,20 @@ struct DiagnosticFeature {
         state.totalStorageBytes = metrics.totalStorageBytes
         state.playCount = metrics.playCount
         return .none
+
+      case .signOutButtonTapped:
+        state.isLoading = true
+        return .run { send in
+          // 1. Call logout API (best-effort - ignore errors)
+          try? await serverClient.logoutUser()
+          // 2. Always delete local JWT token
+          try? await keychainClient.deleteJwtToken()
+          await send(.signOutCompleted)
+        }
+
+      case .signOutCompleted:
+        state.isLoading = false
+        return .send(.delegate(.signedOut))
       }
     }
     .ifLet(\.$alert, action: \.alert)
