@@ -396,26 +396,23 @@ extension ServerClient: DependencyKey {
 
     logoutUser: {
       print("📡 ServerClient.logoutUser called")
-      // TODO: Backend PR must be merged and OpenAPI types regenerated before this can call the real endpoint
-      // For now, this is a placeholder that succeeds immediately
-      // The real implementation will look like:
-      // let client = makeAuthenticatedAPIClient()
-      // let response = try await client.Authentication_logoutUser(
-      //   headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
-      // )
-      // switch response {
-      // case .noContent:
-      //   print("📡 ServerClient.logoutUser succeeded")
-      //   return
-      // case .unauthorized(let r):
-      //   throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
-      // case .internalServerError(let r):
-      //   throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
-      // case .undocumented(let code, let p):
-      //   throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
-      // }
-      print("📡 ServerClient.logoutUser succeeded (placeholder - backend not deployed yet)")
-      return
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.Authentication_logoutUser(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
+      )
+
+      switch response {
+      case .noContent:
+        print("📡 ServerClient.logoutUser succeeded")
+        return
+      case .unauthorized(let r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case .internalServerError(let r):
+        throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
+      case .undocumented(let code, let p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     }
   )
 }
