@@ -208,9 +208,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_DeviceRegistrationResponse) in
           RegisterDeviceResponse(
-            body: EndpointResponse(endpointArn: $0.endpointArn),
+            body: EndpointResponse(endpointArn: response.endpointArn),
             error: nil,
             requestId: "generated"
           )
@@ -254,9 +254,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
           LoginResponse(
-            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
             error: nil,
             requestId: "generated"
           )
