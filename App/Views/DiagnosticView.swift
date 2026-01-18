@@ -282,19 +282,18 @@ struct DiagnosticView: View {
           }
           .buttonStyle(.plain)
 
-          if index < store.keychainItems.count - 1 {
-            Divider()
-              .background(DarkProfessionalTheme.divider)
-              .padding(.leading, 52)
-          }
-        }
-
-        // Divider before Truncate button (only if there are keychain items)
-        if !store.keychainItems.isEmpty {
           Divider()
             .background(DarkProfessionalTheme.divider)
             .padding(.leading, 52)
         }
+
+        // Token expiration row
+        tokenExpirationRow
+
+        // Divider before Truncate button
+        Divider()
+          .background(DarkProfessionalTheme.divider)
+          .padding(.leading, 52)
 
         // Truncate files button
         Button(action: { store.send(.truncateFilesButtonTapped) }) {
@@ -356,6 +355,66 @@ struct DiagnosticView: View {
     .padding(.horizontal, 12)
     .padding(.vertical, 10)
     .contentShape(Rectangle())
+  }
+
+  private var tokenExpirationRow: some View {
+    HStack(spacing: 12) {
+      ZStack {
+        RoundedRectangle(cornerRadius: 8)
+          .fill(theme.warningColor.opacity(0.15))
+          .frame(width: 36, height: 36)
+
+        Image(systemName: "clock")
+          .font(.system(size: 16))
+          .foregroundStyle(theme.warningColor)
+      }
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Token Expires")
+          .font(.body)
+          .foregroundStyle(.white)
+
+        if let expiresAt = store.tokenExpiresAt {
+          Text(formattedExpiration(expiresAt))
+            .font(.caption)
+            .foregroundStyle(expirationTextColor(expiresAt))
+            .lineLimit(1)
+        } else {
+          Text("Not set")
+            .font(.caption)
+            .foregroundStyle(theme.textSecondary)
+        }
+      }
+
+      Spacer()
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+  }
+
+  private func formattedExpiration(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .short
+    let timeUntil = date.timeIntervalSinceNow
+    if timeUntil < 0 {
+      return "Expired: \(formatter.string(from: date))"
+    } else if timeUntil < 300 {
+      return "Expiring soon: \(formatter.string(from: date))"
+    } else {
+      return formatter.string(from: date)
+    }
+  }
+
+  private func expirationTextColor(_ date: Date) -> Color {
+    let timeUntil = date.timeIntervalSinceNow
+    if timeUntil < 0 {
+      return theme.errorColor
+    } else if timeUntil < 300 {
+      return theme.warningColor
+    } else {
+      return theme.successColor
+    }
   }
   #endif
 }

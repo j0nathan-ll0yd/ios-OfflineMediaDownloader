@@ -257,7 +257,13 @@ extension ServerClient: DependencyKey {
         },
         transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
           LoginResponse(
-            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(
+              token: response.token,
+              expiresAt: nil,
+              expiresAtString: response.expiresAt,
+              sessionId: response.sessionId,
+              userId: response.userId
+            ),
             error: nil,
             requestId: "generated"
           )
@@ -303,7 +309,13 @@ extension ServerClient: DependencyKey {
         },
         transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
           LoginResponse(
-            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(
+              token: response.token,
+              expiresAt: nil,
+              expiresAtString: response.expiresAt,
+              sessionId: response.sessionId,
+              userId: response.userId
+            ),
             error: nil,
             requestId: "generated"
           )

@@ -13,12 +13,14 @@ struct DiagnosticFeatureTests {
   @Test("onAppear loads all keychain items")
   func onAppearLoadsAllItems() async throws {
     let testToken = "test-token-012345678901234567890123456789012345678"  // 50 chars
+    let testExpiration = Date().addingTimeInterval(3600)
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { TestData.sampleUser }
       $0.keychainClient.getDeviceData = { TestData.sampleDevice }
+      $0.keychainClient.getTokenExpiresAt = { testExpiration }
       $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
@@ -30,6 +32,10 @@ struct DiagnosticFeatureTests {
     await store.receive(\.loadMetrics)
     // Metrics are already 0 in initial state, so no state change to assert
     await store.receive(\.metricsLoaded)
+
+    await store.receive(\.tokenExpirationLoaded) {
+      $0.tokenExpiresAt = testExpiration
+    }
 
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
@@ -55,6 +61,7 @@ struct DiagnosticFeatureTests {
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
+      $0.keychainClient.getTokenExpiresAt = { nil }
       $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
@@ -65,6 +72,9 @@ struct DiagnosticFeatureTests {
     // .loadMetrics is sent synchronously, while keychainItemsLoaded comes from async run
     await store.receive(\.loadMetrics)
     await store.receive(\.metricsLoaded)
+
+    await store.receive(\.tokenExpirationLoaded)
+    // tokenExpiresAt remains nil
 
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
@@ -83,6 +93,7 @@ struct DiagnosticFeatureTests {
       $0.keychainClient.getJwtToken = { nil }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
+      $0.keychainClient.getTokenExpiresAt = { nil }
       $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
@@ -93,6 +104,9 @@ struct DiagnosticFeatureTests {
     // .loadMetrics is sent synchronously, while keychainItemsLoaded comes from async run
     await store.receive(\.loadMetrics)
     await store.receive(\.metricsLoaded)
+
+    await store.receive(\.tokenExpirationLoaded)
+    // tokenExpiresAt remains nil
 
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false

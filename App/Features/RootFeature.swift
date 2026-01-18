@@ -211,26 +211,28 @@ struct RootFeature {
         logger.warning(.auth, "Token refresh failed: \(error)")
         return .none
 
-      // Handle delegate actions from LoginFeature (direct login, not from sheet)
+      // Handle login completion - user already registered, just re-authenticated
       case .login(.delegate(.loginCompleted)),
-           .login(.delegate(.registrationCompleted)):
+           .main(.delegate(.loginCompleted)):
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
-        // User is now registered (login/registration completed)
+        // User is already registered, just needs authentication state updated
         state.main.isRegistered = true
         state.main.fileList.isRegistered = true
-        return .send(.requestDeviceRegistration)
+        // Don't trigger device registration - user already registered their device
+        return .none
 
-      // Handle delegate actions from MainFeature's login sheet
-      case .main(.delegate(.loginCompleted)),
+      // Handle registration completion - first time registration
+      case .login(.delegate(.registrationCompleted)),
            .main(.delegate(.registrationCompleted)):
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
-        // User is now registered (login/registration completed)
+        // User is now registered for the first time
         state.main.isRegistered = true
         state.main.fileList.isRegistered = true
+        // Only trigger device registration on first registration
         return .send(.requestDeviceRegistration)
 
       case .login:

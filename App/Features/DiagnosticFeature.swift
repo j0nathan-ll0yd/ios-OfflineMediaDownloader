@@ -27,6 +27,8 @@ struct DiagnosticFeature {
     var downloadCount: Int = 0
     var totalStorageBytes: Int64 = 0
     var playCount: Int = 0
+    // Token expiration
+    var tokenExpiresAt: Date?
   }
 
   enum Action {
@@ -43,6 +45,8 @@ struct DiagnosticFeature {
     // Metrics
     case loadMetrics
     case metricsLoaded(FileMetrics)
+    // Token expiration
+    case tokenExpirationLoaded(Date?)
     // Sign-out
     case signOutButtonTapped
     case signOutCompleted
@@ -100,6 +104,10 @@ struct DiagnosticFeature {
                 itemType: .deviceData
               ))
             }
+
+            // Load token expiration
+            let expiresAt = try? await keychainClient.getTokenExpiresAt()
+            await send(.tokenExpirationLoaded(expiresAt))
 
             await send(.keychainItemsLoaded(items))
           }
@@ -191,6 +199,10 @@ struct DiagnosticFeature {
         state.downloadCount = metrics.downloadCount
         state.totalStorageBytes = metrics.totalStorageBytes
         state.playCount = metrics.playCount
+        return .none
+
+      case let .tokenExpirationLoaded(expiresAt):
+        state.tokenExpiresAt = expiresAt
         return .none
 
       case .signOutButtonTapped:

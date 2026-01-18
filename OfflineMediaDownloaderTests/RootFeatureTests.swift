@@ -127,8 +127,10 @@ struct RootFeatureTests {
   // MARK: - Login Completion Tests
 
   @MainActor
-  @Test("Login completion from child sets authenticated state and triggers device registration")
+  @Test("Login completion from child sets authenticated state without device registration")
   func loginCompletionSetsAuthenticated() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -142,8 +144,7 @@ struct RootFeatureTests {
       $0.main.isRegistered = true
       $0.main.fileList.isRegistered = true
     }
-
-    await store.receive(\.requestDeviceRegistration)
+    // No device registration triggered for login (only for first registration)
   }
 
   @MainActor
@@ -167,8 +168,10 @@ struct RootFeatureTests {
   }
 
   @MainActor
-  @Test("Login completion from MainFeature sheet triggers device registration")
+  @Test("Login completion from MainFeature sheet sets authenticated state without device registration")
   func loginCompletionFromSheetTriggersDeviceRegistration() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -182,8 +185,7 @@ struct RootFeatureTests {
       $0.main.isRegistered = true
       $0.main.fileList.isRegistered = true
     }
-
-    await store.receive(\.requestDeviceRegistration)
+    // No device registration triggered for login (only for first registration)
   }
 
   @MainActor
