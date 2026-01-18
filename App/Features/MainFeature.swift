@@ -7,6 +7,7 @@ struct MainFeature {
   struct State: Equatable {
     var selectedTab: Tab = .files
     var isAuthenticated: Bool = false
+    var isRegistered: Bool = false
     var fileList: FileListFeature.State = FileListFeature.State()
     var diagnostic: DiagnosticFeature.State = DiagnosticFeature.State()
     var accountLogin: LoginFeature.State = LoginFeature.State()
@@ -108,6 +109,7 @@ struct MainFeature {
       case .diagnostic(.delegate(.authenticationInvalidated)):
         state.isAuthenticated = false
         state.fileList.isAuthenticated = false
+        // Keep isRegistered - user is still registered, just needs to re-authenticate
         return .concatenate(
           .send(.fileList(.clearAllFiles)),
           .send(.delegate(.authenticationRequired))
@@ -116,6 +118,7 @@ struct MainFeature {
       case .diagnostic(.delegate(.signedOut)):
         state.isAuthenticated = false
         state.fileList.isAuthenticated = false
+        // Keep isRegistered - user is still registered, just signed out
         // Do NOT clear files - user keeps local content
         return .send(.delegate(.signedOut))
 

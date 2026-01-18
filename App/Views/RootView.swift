@@ -124,11 +124,16 @@ struct RootFeature {
         // Propagate auth state to MainFeature
         state.main.isAuthenticated = authState.isAuthenticated
         state.main.fileList.isAuthenticated = authState.isAuthenticated
+        // Propagate registration status to MainFeature
+        state.main.isRegistered = authState.isRegistered
+        state.main.fileList.isRegistered = authState.isRegistered
 
         if authState.isAuthenticated {
           logger.info(.auth, "User is authenticated")
+        } else if authState.isRegistered {
+          logger.info(.auth, "User registered but not authenticated - signed out")
         } else {
-          logger.info(.auth, "User not authenticated - browsing as guest")
+          logger.info(.auth, "User not registered - browsing as guest")
         }
         return .none
 
@@ -175,6 +180,9 @@ struct RootFeature {
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
+        // User is now registered (login/registration completed)
+        state.main.isRegistered = true
+        state.main.fileList.isRegistered = true
         return .send(.requestDeviceRegistration)
 
       // Handle delegate actions from MainFeature's login sheet
@@ -183,6 +191,9 @@ struct RootFeature {
         state.isAuthenticated = true
         state.main.isAuthenticated = true
         state.main.fileList.isAuthenticated = true
+        // User is now registered (login/registration completed)
+        state.main.isRegistered = true
+        state.main.fileList.isRegistered = true
         return .send(.requestDeviceRegistration)
 
       case .login:
