@@ -19,16 +19,22 @@ struct DiagnosticFeatureTests {
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { TestData.sampleUser }
       $0.keychainClient.getDeviceData = { TestData.sampleDevice }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
     await store.send(.onAppear) {
       $0.isLoading = true
     }
 
+    // .loadMetrics is sent synchronously, while keychainItemsLoaded comes from async run
+    await store.receive(\.loadMetrics)
+    // Metrics are already 0 in initial state, so no state change to assert
+    await store.receive(\.metricsLoaded)
+
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
       $0.keychainItems = [
-        KeychainItem(name: "Token", displayValue: testToken + "...", itemType: .token),
+        KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
         KeychainItem(
           name: "UserData",
           displayValue: "\(TestData.sampleUser.firstName) \(TestData.sampleUser.lastName) (\(TestData.sampleUser.email))",
@@ -49,16 +55,21 @@ struct DiagnosticFeatureTests {
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
     await store.send(.onAppear) {
       $0.isLoading = true
     }
 
+    // .loadMetrics is sent synchronously, while keychainItemsLoaded comes from async run
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
+
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
       $0.keychainItems = [
-        KeychainItem(name: "Token", displayValue: testToken + "...", itemType: .token)
+        KeychainItem(name: "Token", displayValue: testToken, itemType: .token)
       ]
     }
   }
@@ -72,11 +83,16 @@ struct DiagnosticFeatureTests {
       $0.keychainClient.getJwtToken = { nil }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
     await store.send(.onAppear) {
       $0.isLoading = true
     }
+
+    // .loadMetrics is sent synchronously, while keychainItemsLoaded comes from async run
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
 
     await store.receive(\.keychainItemsLoaded) {
       $0.isLoading = false
@@ -136,6 +152,7 @@ struct DiagnosticFeatureTests {
     }
 
     await store.receive(\.keychainItemDeleted)
+    await store.receive(\.delegate.authenticationInvalidated)
     #expect(deleteTokenCalled.value == true)
   }
 
@@ -159,6 +176,7 @@ struct DiagnosticFeatureTests {
     }
 
     await store.receive(\.keychainItemDeleted)
+    await store.receive(\.delegate.authenticationInvalidated)
     #expect(deleteUserDataCalled.value == true)
   }
 
@@ -212,10 +230,14 @@ struct DiagnosticFeatureTests {
       DiagnosticFeature()
     } withDependencies: {
       $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
+      $0.coreDataClient.resetMetrics = { }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
 
     await store.send(.truncateFilesButtonTapped)
     await store.receive(\.filesTruncated)
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
 
     #expect(truncateCalled.value == true)
   }

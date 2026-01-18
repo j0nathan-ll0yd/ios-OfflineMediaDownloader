@@ -82,10 +82,12 @@ struct RootFeatureTests {
   // MARK: - Login Completion Tests
 
   @MainActor
-  @Test("Login completion from child sets authenticated state")
+  @Test("Login completion from child sets authenticated state and triggers device registration")
   func loginCompletionSetsAuthenticated() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.login(.delegate(.loginCompleted))) {
@@ -93,13 +95,17 @@ struct RootFeatureTests {
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
     }
+
+    await store.receive(\.requestDeviceRegistration)
   }
 
   @MainActor
-  @Test("Registration completion from child sets authenticated state")
+  @Test("Registration completion from child sets authenticated state and triggers device registration")
   func registrationCompletionSetsAuthenticated() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
     }
 
     await store.send(.login(.delegate(.registrationCompleted))) {
@@ -107,6 +113,44 @@ struct RootFeatureTests {
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
     }
+
+    await store.receive(\.requestDeviceRegistration)
+  }
+
+  @MainActor
+  @Test("Login completion from MainFeature sheet triggers device registration")
+  func loginCompletionFromSheetTriggersDeviceRegistration() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.delegate(.loginCompleted))) {
+      $0.isAuthenticated = true
+      $0.main.isAuthenticated = true
+      $0.main.fileList.isAuthenticated = true
+    }
+
+    await store.receive(\.requestDeviceRegistration)
+  }
+
+  @MainActor
+  @Test("Registration completion from MainFeature sheet triggers device registration")
+  func registrationCompletionFromSheetTriggersDeviceRegistration() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.delegate(.registrationCompleted))) {
+      $0.isAuthenticated = true
+      $0.main.isAuthenticated = true
+      $0.main.fileList.isAuthenticated = true
+    }
+
+    await store.receive(\.requestDeviceRegistration)
   }
 
   // MARK: - Device Registration Tests
@@ -201,6 +245,7 @@ struct RootFeatureTests {
       $0.main.fileList.isAuthenticated = false
       $0.login.loginStatus = .unauthenticated
       $0.login.alert = nil
+      $0.main.loginSheet = LoginFeature.State()
     }
   }
 
