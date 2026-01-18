@@ -16,6 +16,7 @@ struct ServerClient {
   var loginUser: @Sendable (_ authorizationCode: String) async throws -> LoginResponse
   var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
+  var logoutUser: @Sendable () async throws -> Void
 }
 
 extension DependencyValues {
@@ -207,9 +208,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_DeviceRegistrationResponse) in
           RegisterDeviceResponse(
-            body: EndpointResponse(endpointArn: $0.endpointArn),
+            body: EndpointResponse(endpointArn: response.endpointArn),
             error: nil,
             requestId: "generated"
           )
@@ -253,9 +254,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
           LoginResponse(
-            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
             error: nil,
             requestId: "generated"
           )
@@ -299,9 +300,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
           LoginResponse(
-            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
             error: nil,
             requestId: "generated"
           )
@@ -336,10 +337,10 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
-          let files: [File] = $0.contents.map { mapAPIFileToDomainFile($0) }
+        transform: { (response: Components.Schemas.Models_period_FileListResponse) in
+          let files: [File] = response.contents.map { mapAPIFileToDomainFile($0) }
           return FileResponse(
-            body: FileList(contents: files, keyCount: Int($0.keyCount)),
+            body: FileList(contents: files, keyCount: Int(response.keyCount)),
             error: nil,
             requestId: "generated"
           )
@@ -383,14 +384,35 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
           DownloadFileResponse(
-            body: DownloadFileResponseDetail(status: $0.status.rawValue),
+            body: DownloadFileResponseDetail(status: response.status.rawValue),
             error: nil,
             requestId: "generated"
           )
         }
       )
+    },
+
+    logoutUser: {
+      print("📡 ServerClient.logoutUser called")
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.Authentication_logoutUser(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
+      )
+
+      switch response {
+      case .noContent:
+        print("📡 ServerClient.logoutUser succeeded")
+        return
+      case .unauthorized(let r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case .internalServerError(let r):
+        throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
+      case .undocumented(let code, let p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     }
   )
 }
@@ -472,6 +494,7 @@ extension ServerClient {
         error: nil,
         requestId: "test-request-id"
       )
-    }
+    },
+    logoutUser: { }
   )
 }

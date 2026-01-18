@@ -257,8 +257,9 @@ struct FileListView: View {
 
   @ViewBuilder
   private var fileListContent: some View {
-    // Unauthenticated users always see DefaultFilesView
-    if !store.isAuthenticated {
+    // Show DefaultFilesView only for UNREGISTERED users with no files
+    // Registered users (even if signed out) should never see default file
+    if !store.isRegistered && store.files.isEmpty {
       DefaultFilesView(
         store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
         onRegisterTapped: { store.send(.delegate(.loginRequired)) }

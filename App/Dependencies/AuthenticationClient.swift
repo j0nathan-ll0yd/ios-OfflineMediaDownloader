@@ -68,8 +68,22 @@ extension AuthenticationClient: DependencyKey {
       case .success(let credentialState):
         switch credentialState {
         case .authorized:
-          loginStatus = .authenticated
-          logger.info(.auth, "Apple ID credentials authorized")
+          // Apple credentials are valid, but also verify JWT token exists
+          let hasJwtToken: Bool
+          do {
+            hasJwtToken = try await keychainClient.getJwtToken() != nil
+          } catch {
+            logger.warning(.auth, "Error checking JWT token", metadata: ["error": "\(error)"])
+            hasJwtToken = false
+          }
+
+          if hasJwtToken {
+            loginStatus = .authenticated
+            logger.info(.auth, "Apple ID credentials authorized and JWT token present")
+          } else {
+            loginStatus = .unauthenticated
+            logger.info(.auth, "Apple ID credentials authorized but JWT token missing - user signed out")
+          }
         case .revoked:
           loginStatus = .unauthenticated
           logger.info(.auth, "Apple ID credentials revoked")

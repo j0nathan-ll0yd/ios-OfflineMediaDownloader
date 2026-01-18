@@ -10,6 +10,7 @@ struct FileListFeature {
     var pendingFileIds: [String] = []
     var isLoading: Bool = false
     var isAuthenticated: Bool = false
+    var isRegistered: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
@@ -75,17 +76,16 @@ struct FileListFeature {
       switch action {
       case .onAppear:
         // Load cached files immediately for instant display
-        // For unauthenticated users, also fetch from server automatically
-        // so they see default files on first launch
         let isAuthenticated = state.isAuthenticated
-        print("📋 FileListFeature.onAppear: isAuthenticated=\(isAuthenticated)")
+        let isRegistered = state.isRegistered
+        print("📋 FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
         return .run { send in
           let files = try await coreDataClient.getFiles()
           await send(.localFilesLoaded(files))
-          // Only auto-refresh for unauthenticated users (to show default files)
-          // Authenticated users should pull-to-refresh manually
-          if !isAuthenticated {
-            print("📋 FileListFeature.onAppear: triggering auto-refresh for guest user")
+          // Only auto-refresh for UNREGISTERED users (to show default files for demo)
+          // Registered users (authenticated or not) should pull-to-refresh manually
+          if !isRegistered {
+            print("📋 FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
             await send(.refreshButtonTapped)
           }
         }
@@ -114,6 +114,10 @@ struct FileListFeature {
         }
 
       case .refreshButtonTapped:
+        // Registered but unauthenticated users need to login first
+        if state.isRegistered && !state.isAuthenticated {
+          return .send(.delegate(.authenticationRequired))
+        }
         state.isLoading = true
         return .run { send in
           await send(.remoteFilesResponse(Result {
@@ -139,11 +143,12 @@ struct FileListFeature {
           state.pendingFileIds.removeAll { availableIds.contains($0) }
         }
         state.isLoading = false
-        // Share first file with DefaultFilesFeature (for unauthenticated users)
+        // Share first file with DefaultFilesFeature ONLY for unregistered users
         let firstFile = response.body?.contents.first
+        let isRegistered = state.isRegistered
         // Cache files to disk for instant display on next launch
         return .merge(
-          .send(.defaultFiles(.parentProvidedFile(firstFile))),
+          isRegistered ? .none : .send(.defaultFiles(.parentProvidedFile(firstFile))),
           .run { [files = response.body?.contents ?? []] _ in
             try await coreDataClient.cacheFiles(files)
           }

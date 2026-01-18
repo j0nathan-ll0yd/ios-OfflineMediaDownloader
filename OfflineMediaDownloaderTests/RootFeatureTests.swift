@@ -53,6 +53,8 @@ struct RootFeatureTests {
       $0.login.registrationStatus = .registered
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
     }
   }
 
@@ -76,6 +78,45 @@ struct RootFeatureTests {
       $0.isLaunching = false
       $0.isAuthenticated = false
       $0.login.registrationStatus = .registered
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
+    }
+  }
+
+  @MainActor
+  @Test("Signed out user with Apple credentials but no JWT token is unauthenticated")
+  func signedOutUserNoJwtTokenIsUnauthenticated() async throws {
+    // This test documents the scenario where:
+    // 1. User was previously logged in (Apple credentials authorized + JWT token)
+    // 2. User signed out (JWT token deleted, but Apple credentials still valid)
+    // 3. App relaunched
+    // 4. determineAuthState should return unauthenticated because JWT token is missing
+    //
+    // The AuthenticationClient.determineAuthState now checks for JWT token existence,
+    // not just Apple credential state.
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        // This simulates: Apple credentials authorized BUT no JWT token
+        // Result: registered but unauthenticated
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+      }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.isAuthenticated = false
+      $0.login.registrationStatus = .registered
+      // User sees main view with local files only, no API calls made
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
+      // isAuthenticated remains false - user must re-login to access remote data
     }
   }
 
@@ -94,6 +135,8 @@ struct RootFeatureTests {
       $0.isAuthenticated = true
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
     }
 
     await store.receive(\.requestDeviceRegistration)
@@ -112,6 +155,8 @@ struct RootFeatureTests {
       $0.isAuthenticated = true
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
     }
 
     await store.receive(\.requestDeviceRegistration)
@@ -130,6 +175,8 @@ struct RootFeatureTests {
       $0.isAuthenticated = true
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
     }
 
     await store.receive(\.requestDeviceRegistration)
@@ -148,6 +195,8 @@ struct RootFeatureTests {
       $0.isAuthenticated = true
       $0.main.isAuthenticated = true
       $0.main.fileList.isAuthenticated = true
+      $0.main.isRegistered = true
+      $0.main.fileList.isRegistered = true
     }
 
     await store.receive(\.requestDeviceRegistration)

@@ -12,7 +12,8 @@ struct FileListFeatureTests {
   @Test("onAppear loads files from CoreData without loading indicator")
   func onAppearLoadsFiles() async throws {
     var state = FileListFeature.State()
-    state.isAuthenticated = true  // Prevent auto-refresh for unauthenticated users
+    state.isAuthenticated = true  // User is authenticated
+    state.isRegistered = true     // Prevent auto-refresh (only unregistered users auto-refresh)
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -34,7 +35,8 @@ struct FileListFeatureTests {
   @Test("Local files preserve download state on reload")
   func preserveDownloadStateOnReload() async throws {
     var state = FileListFeature.State()
-    state.isAuthenticated = true  // Prevent auto-refresh for unauthenticated users
+    state.isAuthenticated = true  // User is authenticated
+    state.isRegistered = true     // Prevent auto-refresh (only unregistered users auto-refresh)
     var existingCellState = FileCellFeature.State(file: TestData.sampleFile)
     existingCellState.isDownloaded = true
     existingCellState.downloadProgress = 1.0

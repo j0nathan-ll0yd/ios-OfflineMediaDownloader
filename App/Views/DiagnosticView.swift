@@ -68,16 +68,22 @@ struct DiagnosticView: View {
           }
           .padding(.horizontal, 16)
 
-          // Sign out button (placeholder action)
-          Button(action: { }) {
-            Text("Sign Out")
-              .font(.headline)
-              .foregroundStyle(theme.errorColor)
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 14)
-              .background(theme.errorColor.opacity(0.15))
-              .clipShape(RoundedRectangle(cornerRadius: 12))
+          // Sign out button
+          Button(action: { store.send(.signOutButtonTapped) }) {
+            if store.isLoading {
+              ProgressView()
+                .tint(theme.errorColor)
+            } else {
+              Text("Sign Out")
+                .font(.headline)
+                .foregroundStyle(theme.errorColor)
+            }
           }
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 14)
+          .background(theme.errorColor.opacity(0.15))
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+          .disabled(store.isLoading)
           .padding(.horizontal, 16)
           .padding(.top, 8)
 
