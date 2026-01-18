@@ -300,9 +300,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
           LoginResponse(
-            body: TokenResponse(token: $0.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
             error: nil,
             requestId: "generated"
           )
@@ -337,10 +337,10 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
-          let files: [File] = $0.contents.map { mapAPIFileToDomainFile($0) }
+        transform: { (response: Components.Schemas.Models_period_FileListResponse) in
+          let files: [File] = response.contents.map { mapAPIFileToDomainFile($0) }
           return FileResponse(
-            body: FileList(contents: files, keyCount: Int($0.keyCount)),
+            body: FileList(contents: files, keyCount: Int(response.keyCount)),
             error: nil,
             requestId: "generated"
           )
@@ -384,9 +384,9 @@ extension ServerClient: DependencyKey {
           default: return nil
           }
         },
-        transform: {
+        transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
           DownloadFileResponse(
-            body: DownloadFileResponseDetail(status: $0.status.rawValue),
+            body: DownloadFileResponseDetail(status: response.status.rawValue),
             error: nil,
             requestId: "generated"
           )
