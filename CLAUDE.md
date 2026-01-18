@@ -4,27 +4,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains an iOS app migration project: migrating from MVVM to The Composable Architecture (TCA). The Composable migration is **partially complete** and needs to be finished.
-
-- **OfflineMediaDownloaderMVVM/** - Reference implementation using MVVM pattern (complete)
-- **OfflineMediaDownloaderCompostable/** - Target implementation using TCA (partial)
-
-The app is an offline media downloader that connects to an AWS backend, supports Sign in with Apple authentication, push notifications, background downloads, and CoreData persistence.
+This is an iOS offline media downloader app built with The Composable Architecture (TCA). The app connects to an AWS backend, supports Sign in with Apple authentication, push notifications, background downloads, and CoreData persistence.
 
 ## Build Commands
 
 Open the Xcode project and build/run from there:
 ```bash
-open OfflineMediaDownloaderCompostable/OfflineMediaDownloader.xcodeproj
-open OfflineMediaDownloaderMVVM/OfflineMediaDownloader.xcodeproj
+open OfflineMediaDownloader.xcodeproj
 ```
 
-For the TCA Swift Package (MyPackage):
+Run tests:
 ```bash
-cd OfflineMediaDownloaderCompostable/MyPackage
-swift build
-swift test
+xcodebuild -project OfflineMediaDownloader.xcodeproj -scheme OfflineMediaDownloader test
 ```
+
+## Codebase Structure
+
+```
+/ios-OfflineMediaDownloader/
+├── App/
+│   ├── Dependencies/           # @DependencyClient implementations (10 clients)
+│   ├── DesignSystem/           # Theme, Components, Previews
+│   ├── Enums/                  # AuthState, FileStatus, etc.
+│   ├── Extensions/             # String, Environment, DateFormatters
+│   ├── Features/               # TCA @Reducer features (all features here)
+│   ├── Helpers/                # TestHelper
+│   ├── LiveActivity/           # Download activity support
+│   ├── Models/                 # Domain models + Mappers
+│   └── Views/                  # SwiftUI views only
+├── APITypes/                   # OpenAPI generated types (Swift Package)
+├── OfflineMediaDownloaderTests/
+└── OfflineMediaDownloaderUITests/
+```
+
+### Organization Convention
+
+- **Features go in `App/Features/`**: All TCA @Reducer structs (RootFeature, LoginFeature, MainFeature, etc.)
+- **Views go in `App/Views/`**: SwiftUI View structs only
+- **Dependencies go in `App/Dependencies/`**: All @DependencyClient implementations
 
 ## Environment Configuration
 
@@ -32,39 +49,13 @@ The app requires environment variables configured in `Development.xcconfig`:
 - `MEDIA_DOWNLOADER_API_KEY` - API Gateway key
 - `MEDIA_DOWNLOADER_BASE_PATH` - API Gateway invoke URL (note: `//` must be escaped as `$()` in xcconfig)
 
-## Architecture Comparison
+## TCA Architecture
 
-### MVVM (Reference - Complete)
-- ViewModels are `ObservableObject` classes with `@Published` properties
-- Uses Combine for reactive data flow and NotificationCenter for event bus
-- Direct dependencies on helpers (KeychainHelper, CoreDataHelper, Server)
-- Views observe ViewModels via `@ObservedObject`
-
-### TCA (Target - Partial)
 - Features are `@Reducer` structs with `State`, `Action`, and `body`
-- Uses `@DependencyClient` for dependency injection (ServerClient, KeychainClient, AuthenticationClient)
+- Uses `@DependencyClient` for dependency injection (ServerClient, KeychainClient, AuthenticationClient, etc.)
 - Views use `StoreOf<Feature>` with `@Bindable`
 - Effects return `.run { }` blocks for async operations
-- Uses Valet library for keychain storage (vs custom KeychainHelper in MVVM)
-
-## Migration Status
-
-**Completed in TCA:**
-- RootFeature/RootView - App entry point with launch flow
-- LoginFeature/LoginView - Sign in with Apple integration
-- FileListFeature/FileListView - Basic file list structure
-- Dependencies: ServerClient, KeychainClient, AuthenticationClient
-
-**Missing from TCA (exists in MVVM):**
-- DiagnosticView/DiagnosticViewModel - Account tab with keychain inspection
-- FileCellView/FileCellViewModel - Individual file cell with download/playback
-- PendingFileView/PendingFileViewModel - Files being processed
-- AVPlayerView - Video playback
-- MainView TabView navigation structure
-- CoreData integration for local file persistence
-- Background download handling
-- Push notification device registration flow
-- Event bus equivalent for cross-feature communication
+- Uses Valet library for keychain storage
 
 ## TCA Patterns Used
 
