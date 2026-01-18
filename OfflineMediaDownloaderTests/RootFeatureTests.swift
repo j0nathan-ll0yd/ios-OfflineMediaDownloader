@@ -353,8 +353,12 @@ struct RootFeatureTests {
       $0.fileClient.fileExists = { _ in true }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
+    store.exhaustivity = .off
 
     await store.send(.backgroundDownloadCompleted(fileId: TestData.sampleFile.fileId))
+
+    // Expect completion forwarded to active downloads
+    await store.receive(\.main.activeDownloads.downloadCompleted)
 
     // Expect the refresh action to be forwarded to fileList
     await store.receive(\.main.fileList.refreshFileState)
@@ -376,9 +380,12 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.logger.log = { _, _, _, _, _, _ in }
     }
+    store.exhaustivity = .off
 
     await store.send(.backgroundDownloadFailed(fileId: "file-123", error: "Network error"))
-    // No state changes expected - error is logged
+
+    // Expect failure forwarded to active downloads
+    await store.receive(\.main.activeDownloads.downloadFailed)
   }
 
   @MainActor

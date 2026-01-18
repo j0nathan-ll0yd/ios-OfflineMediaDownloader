@@ -11,6 +11,7 @@ struct MainFeature {
     var fileList: FileListFeature.State = FileListFeature.State()
     var diagnostic: DiagnosticFeature.State = DiagnosticFeature.State()
     var accountLogin: LoginFeature.State = LoginFeature.State()
+    var activeDownloads: ActiveDownloadsFeature.State = ActiveDownloadsFeature.State()
     @Presents var loginSheet: LoginFeature.State?
 
     enum Tab: Equatable, Sendable {
@@ -24,6 +25,7 @@ struct MainFeature {
     case fileList(FileListFeature.Action)
     case diagnostic(DiagnosticFeature.Action)
     case accountLogin(LoginFeature.Action)
+    case activeDownloads(ActiveDownloadsFeature.Action)
     case presentLoginSheet
     case loginSheet(PresentationAction<LoginFeature.Action>)
     case delegate(Delegate)
@@ -48,6 +50,10 @@ struct MainFeature {
 
     Scope(state: \.accountLogin, action: \.accountLogin) {
       LoginFeature()
+    }
+
+    Scope(state: \.activeDownloads, action: \.activeDownloads) {
+      ActiveDownloadsFeature()
     }
 
     Reduce { state, action in
@@ -103,6 +109,20 @@ struct MainFeature {
         state.loginSheet = LoginFeature.State()
         return .none
 
+      // Forward download tracking delegates to ActiveDownloadsFeature
+      case let .fileList(.delegate(.downloadStarted(file))):
+        let title = file.title ?? file.key
+        return .send(.activeDownloads(.downloadStarted(fileId: file.fileId, title: title, isBackground: false)))
+
+      case let .fileList(.delegate(.downloadProgressUpdated(fileId, percent))):
+        return .send(.activeDownloads(.downloadProgressUpdated(fileId: fileId, percent: percent)))
+
+      case let .fileList(.delegate(.downloadCompleted(fileId))):
+        return .send(.activeDownloads(.downloadCompleted(fileId: fileId)))
+
+      case let .fileList(.delegate(.downloadFailed(fileId, error))):
+        return .send(.activeDownloads(.downloadFailed(fileId: fileId, error: error)))
+
       case .fileList:
         return .none
 
@@ -123,6 +143,9 @@ struct MainFeature {
         return .send(.delegate(.signedOut))
 
       case .diagnostic:
+        return .none
+
+      case .activeDownloads:
         return .none
 
       case .delegate:

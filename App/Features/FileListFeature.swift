@@ -65,6 +65,11 @@ struct FileListFeature {
     enum Delegate: Equatable {
       case authenticationRequired
       case loginRequired
+      // Download tracking delegates for in-app progress banner
+      case downloadStarted(File)
+      case downloadProgressUpdated(fileId: String, percent: Int)
+      case downloadCompleted(fileId: String)
+      case downloadFailed(fileId: String, error: String)
     }
   }
 
@@ -397,6 +402,19 @@ struct FileListFeature {
 
       case .detail:
         return .none
+
+      // MARK: - Download Tracking Delegates (forward to parent for in-app banner)
+      case let .files(.element(id: _, action: .delegate(.downloadStarted(file)))):
+        return .send(.delegate(.downloadStarted(file)))
+
+      case let .files(.element(id: _, action: .delegate(.downloadProgressUpdated(fileId, percent)))):
+        return .send(.delegate(.downloadProgressUpdated(fileId: fileId, percent: percent)))
+
+      case let .files(.element(id: _, action: .delegate(.downloadCompleted(fileId)))):
+        return .send(.delegate(.downloadCompleted(fileId: fileId)))
+
+      case let .files(.element(id: _, action: .delegate(.downloadFailed(fileId, error)))):
+        return .send(.delegate(.downloadFailed(fileId: fileId, error: error)))
 
       case .files:
         return .none

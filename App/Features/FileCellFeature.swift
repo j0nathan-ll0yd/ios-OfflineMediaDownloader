@@ -39,6 +39,11 @@ struct FileCellFeature {
     enum Delegate: Equatable {
       case fileDeleted(File)
       case playFile(File)
+      // Download tracking delegates for in-app progress banner
+      case downloadStarted(File)
+      case downloadProgressUpdated(fileId: String, percent: Int)
+      case downloadCompleted(fileId: String)
+      case downloadFailed(fileId: String, error: String)
     }
   }
 
@@ -74,21 +79,25 @@ struct FileCellFeature {
         }
         state.isDownloading = true
         state.downloadProgress = 0
-        let expectedSize = Int64(state.file.size ?? 0)
-        return .run { send in
-          let stream = downloadClient.downloadFile(remoteURL, expectedSize)
-          for await progress in stream {
-            switch progress {
-            case let .progress(percent):
-              await send(.downloadProgressUpdated(Double(percent) / 100.0))
-            case let .completed(localURL):
-              await send(.downloadCompleted(localURL))
-            case let .failed(message):
-              await send(.downloadFailed(message))
+        let file = state.file
+        let expectedSize = Int64(file.size ?? 0)
+        return .merge(
+          .send(.delegate(.downloadStarted(file))),
+          .run { send in
+            let stream = downloadClient.downloadFile(remoteURL, expectedSize)
+            for await progress in stream {
+              switch progress {
+              case let .progress(percent):
+                await send(.downloadProgressUpdated(Double(percent) / 100.0))
+              case let .completed(localURL):
+                await send(.downloadCompleted(localURL))
+              case let .failed(message):
+                await send(.downloadFailed(message))
+              }
             }
           }
-        }
-        .cancellable(id: CancelID.download, cancelInFlight: true)
+          .cancellable(id: CancelID.download, cancelInFlight: true)
+        )
 
       case .cancelDownloadButtonTapped:
         state.isDownloading = false
@@ -103,21 +112,26 @@ struct FileCellFeature {
 
       case let .downloadProgressUpdated(progress):
         state.downloadProgress = progress
-        return .none
+        let percent = Int(progress * 100)
+        return .send(.delegate(.downloadProgressUpdated(fileId: state.file.fileId, percent: percent)))
 
       case .downloadCompleted:
         state.isDownloading = false
         state.downloadProgress = 1.0
         state.isDownloaded = true  // Update cached state
         let fileId = state.file.fileId
-        return .run { [coreDataClient] _ in
-          try? await coreDataClient.markFileDownloaded(fileId)
-        }
+        return .merge(
+          .send(.delegate(.downloadCompleted(fileId: fileId))),
+          .run { [coreDataClient] _ in
+            try? await coreDataClient.markFileDownloaded(fileId)
+          }
+        )
 
       case let .downloadFailed(message):
         logger.error(.download, "Download failed", metadata: ["file": state.file.key, "error": message])
         state.isDownloading = false
         state.downloadProgress = 0
+        let fileId = state.file.fileId
         let fileName = state.file.title ?? state.file.key
         state.alert = AlertState {
           TextState("Download Failed")
@@ -131,7 +145,7 @@ struct FileCellFeature {
         } message: {
           TextState("Failed to download \"\(fileName)\": \(message)")
         }
-        return .none
+        return .send(.delegate(.downloadFailed(fileId: fileId, error: message)))
 
       case .alert(.presented(.retryDownload)):
         return .send(.downloadButtonTapped)

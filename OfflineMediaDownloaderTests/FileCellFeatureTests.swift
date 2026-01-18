@@ -80,13 +80,18 @@ struct FileCellFeatureTests {
       $0.downloadProgress = 0
     }
 
+    await store.receive(\.delegate.downloadStarted)
     await store.receive(\.downloadProgressUpdated) { $0.downloadProgress = 0.25 }
+    await store.receive(\.delegate.downloadProgressUpdated)
     await store.receive(\.downloadProgressUpdated) { $0.downloadProgress = 0.5 }
+    await store.receive(\.delegate.downloadProgressUpdated)
     await store.receive(\.downloadProgressUpdated) { $0.downloadProgress = 1.0 }
+    await store.receive(\.delegate.downloadProgressUpdated)
     await store.receive(\.downloadCompleted) {
       $0.isDownloading = false
       $0.isDownloaded = true
     }
+    await store.receive(\.delegate.downloadCompleted)
   }
 
   @MainActor
@@ -110,7 +115,9 @@ struct FileCellFeatureTests {
       $0.downloadProgress = 0
     }
 
+    await store.receive(\.delegate.downloadStarted)
     await store.receive(\.downloadProgressUpdated) { $0.downloadProgress = 0.25 }
+    await store.receive(\.delegate.downloadProgressUpdated)
     await store.receive(\.downloadFailed) {
       $0.isDownloading = false
       $0.downloadProgress = 0
@@ -127,6 +134,7 @@ struct FileCellFeatureTests {
         TextState("Failed to download \"Test Video.mp4\": Network timeout")
       }
     }
+    await store.receive(\.delegate.downloadFailed)
   }
 
   @MainActor
@@ -161,11 +169,13 @@ struct FileCellFeatureTests {
       $0.downloadProgress = 0
     }
 
+    await store.receive(\.delegate.downloadStarted)
     await store.receive(\.downloadCompleted) {
       $0.isDownloading = false
       $0.downloadProgress = 1.0
       $0.isDownloaded = true
     }
+    await store.receive(\.delegate.downloadCompleted)
   }
 
   @MainActor
@@ -214,6 +224,7 @@ struct FileCellFeatureTests {
       $0.downloadProgress = 1.0
       $0.isDownloaded = true
     }
+    await store.receive(\.delegate.downloadCompleted)
   }
 
   // MARK: - Delete Tests
@@ -329,9 +340,11 @@ struct FileCellFeatureTests {
     await store.send(.downloadProgressUpdated(0.5)) {
       $0.downloadProgress = 0.5
     }
+    await store.receive(\.delegate.downloadProgressUpdated)
 
     await store.send(.downloadProgressUpdated(0.75)) {
       $0.downloadProgress = 0.75
     }
+    await store.receive(\.delegate.downloadProgressUpdated)
   }
 }
