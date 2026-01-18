@@ -44,6 +44,7 @@ enum KeychainKeys: String {
   case identifier
   case lastName
   case jwtToken
+  case jwtTokenExpiresAt
   case endpointArn
 }
 
@@ -51,13 +52,16 @@ enum KeychainKeys: String {
 struct KeychainClient {
   var getUserData: @Sendable () async throws -> User
   var getJwtToken: @Sendable () async throws -> String?
+  var getTokenExpiresAt: @Sendable () async throws -> Date?
   var getDeviceData: @Sendable () async throws -> Device?
   var getUserIdentifier: @Sendable () async throws -> String?
   var setUserData: @Sendable (_ userData: User) async throws -> Void
   var setJwtToken: @Sendable (_ token: String) async throws -> Void
+  var setTokenExpiresAt: @Sendable (_ expiresAt: Date) async throws -> Void
   var setDeviceData: @Sendable (_ deviceData: Device) async throws -> Void
   var deleteUserData: @Sendable () async throws -> Void
   var deleteJwtToken: @Sendable () async throws -> Void
+  var deleteTokenExpiresAt: @Sendable () async throws -> Void
   var deleteDeviceData: @Sendable () async throws -> Void
 }
 
@@ -111,6 +115,25 @@ extension KeychainClient: DependencyKey {
         return nil
       }
     },
+    getTokenExpiresAt: {
+      do {
+        let timestamp = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+        guard let timeInterval = Double(timestamp) else {
+          print("⚠️ KeychainClient.getTokenExpiresAt: invalid timestamp format")
+          return nil
+        }
+        let date = Date(timeIntervalSince1970: timeInterval)
+        print("🔑 KeychainClient.getTokenExpiresAt: found expiration \(date)")
+        return date
+      } catch {
+        if isItemNotFoundError(error) {
+          print("🔑 KeychainClient.getTokenExpiresAt: no expiration found (itemNotFound)")
+        } else {
+          print("⚠️ KeychainClient.getTokenExpiresAt unexpected error: \(error)")
+        }
+        return nil
+      }
+    },
     getDeviceData: {
       do {
         let endpointArn = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.endpointArn.rawValue)
@@ -156,6 +179,12 @@ extension KeychainClient: DependencyKey {
         throw error
       }
     },
+    setTokenExpiresAt: { expiresAt in
+      let timestamp = String(expiresAt.timeIntervalSince1970)
+      print("🔑 KeychainClient.setTokenExpiresAt: storing expiration \(expiresAt)")
+      try ValetUtil.shared.keychain.setString(timestamp, forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+      print("🔑 KeychainClient.setTokenExpiresAt: succeeded")
+    },
     setDeviceData: { deviceData in
       try ValetUtil.shared.keychain.setString(deviceData.endpointArn, forKey: KeychainKeys.endpointArn.rawValue)
     },
@@ -170,6 +199,11 @@ extension KeychainClient: DependencyKey {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtToken.rawValue)
       print("🔑 KeychainClient.deleteJwtToken: token removed")
     },
+    deleteTokenExpiresAt: {
+      print("🔑 KeychainClient.deleteTokenExpiresAt: removing expiration from keychain")
+      try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+      print("🔑 KeychainClient.deleteTokenExpiresAt: expiration removed")
+    },
     deleteDeviceData: {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.endpointArn.rawValue)
     }
@@ -178,13 +212,16 @@ extension KeychainClient: DependencyKey {
   static let testValue = KeychainClient(
     getUserData: { User(email: "test@example.com", firstName: "Test", identifier: "test-id", lastName: "User") },
     getJwtToken: { "test-jwt-token" },
+    getTokenExpiresAt: { Date().addingTimeInterval(3600) },
     getDeviceData: { Device(endpointArn: "test-endpoint-arn") },
     getUserIdentifier: { "test-user-id" },
     setUserData: { _ in },
     setJwtToken: { _ in },
+    setTokenExpiresAt: { _ in },
     setDeviceData: { _ in },
     deleteUserData: { },
     deleteJwtToken: { },
+    deleteTokenExpiresAt: { },
     deleteDeviceData: { }
   )
 }

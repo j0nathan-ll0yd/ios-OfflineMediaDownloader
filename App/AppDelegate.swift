@@ -23,13 +23,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         $0.keychainClient = KeychainClient(
           getUserData: { throw KeychainError.unableToStore },
           getJwtToken: { nil },
+          getTokenExpiresAt: { nil },
           getDeviceData: { nil },
           getUserIdentifier: { nil },
           setUserData: { _ in },
           setJwtToken: { _ in },
+          setTokenExpiresAt: { _ in },
           setDeviceData: { _ in },
           deleteUserData: { },
           deleteJwtToken: { },
+          deleteTokenExpiresAt: { },
           deleteDeviceData: { }
         )
         $0.serverClient = .testValue
