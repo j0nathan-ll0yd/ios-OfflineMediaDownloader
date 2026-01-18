@@ -61,6 +61,17 @@ struct RootFeature {
     var isAuthenticated: Bool = false
     var login: LoginFeature.State = LoginFeature.State()
     var main: MainFeature.State = MainFeature.State()
+
+    // Download initiation tracking - blocks UI until first progress received
+    var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
+    var isBlockingForDownloadInitiation: Bool { !initiatingDownloads.isEmpty }
+
+    struct DownloadInitiation: Equatable, Identifiable {
+      var id: String { fileId }
+      let fileId: String
+      let title: String
+    }
+
     #if DEBUG
     @Presents var diagnostic: DiagnosticFeature.State?
     #endif
@@ -79,6 +90,9 @@ struct RootFeature {
     case downloadReadyProcessed(fileId: String, key: String, url: URL, size: Int64)
     case backgroundDownloadCompleted(fileId: String)
     case backgroundDownloadFailed(fileId: String, error: String)
+    // Download initiation tracking
+    case downloadFirstProgressReceived(fileId: String)
+    case downloadInitiationTimeout(fileId: String)
     case login(LoginFeature.Action)
     case main(MainFeature.Action)
     case requestDeviceRegistration
@@ -277,39 +291,83 @@ struct RootFeature {
           }
         )
 
-      case let .downloadReadyProcessed(fileId, _, url, size):
+      case let .downloadReadyProcessed(fileId, key, url, size):
+        // Get title from files list or use key as fallback
+        let title = state.main.fileList.files[id: fileId]?.file.title ?? key
+        // Track download initiation - shows blocking overlay
+        state.initiatingDownloads.append(State.DownloadInitiation(fileId: fileId, title: title))
         // Start background download and update Live Activity
-        return .run { [logger, downloadClient] send in
-          logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
-          await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
-          let stream = downloadClient.downloadFile(url, size)
-          for await progress in stream {
-            switch progress {
-            case .completed:
-              await send(.backgroundDownloadCompleted(fileId: fileId))
-            case let .failed(message):
-              await send(.backgroundDownloadFailed(fileId: fileId, error: message))
-            case let .progress(percent):
-              await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
+        return .merge(
+          .send(.main(.activeDownloads(.downloadStarted(fileId: fileId, title: title, isBackground: true)))),
+          .run { [logger, downloadClient] send in
+            logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
+            await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
+            let stream = downloadClient.downloadFile(url, size)
+            var firstProgressReceived = false
+            for await progress in stream {
+              switch progress {
+              case .completed:
+                await send(.backgroundDownloadCompleted(fileId: fileId))
+              case let .failed(message):
+                await send(.backgroundDownloadFailed(fileId: fileId, error: message))
+              case let .progress(percent):
+                // Dismiss overlay on first progress event
+                if !firstProgressReceived {
+                  firstProgressReceived = true
+                  await send(.downloadFirstProgressReceived(fileId: fileId))
+                }
+                await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
+                // Forward progress to in-app tracking
+                await send(.main(.activeDownloads(.downloadProgressUpdated(fileId: fileId, percent: percent))))
+              }
             }
+          },
+          // Safety timeout - dismiss overlay after 10 seconds even if no progress
+          .run { send in
+            try? await Task.sleep(for: .seconds(10))
+            await send(.downloadInitiationTimeout(fileId: fileId))
           }
-        }
+        )
 
       case let .backgroundDownloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
+        // Remove from initiating downloads (in case overlay is still showing)
+        state.initiatingDownloads.remove(id: fileId)
         // Mark file as downloaded for metrics tracking, end Live Activity, then refresh UI state
-        return .run { [coreDataClient] send in
-          await LiveActivityManager.shared.endActivity(fileId: fileId, status: .downloaded)
-          try? await coreDataClient.markFileDownloaded(fileId)
-          await send(.main(.fileList(.refreshFileState(fileId))))
-        }
+        return .merge(
+          .run { [coreDataClient] send in
+            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .downloaded)
+            try? await coreDataClient.markFileDownloaded(fileId)
+            await send(.main(.fileList(.refreshFileState(fileId))))
+          },
+          .send(.main(.activeDownloads(.downloadCompleted(fileId: fileId))))
+        )
 
       case let .backgroundDownloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
+        // Remove from initiating downloads (in case overlay is still showing)
+        state.initiatingDownloads.remove(id: fileId)
         // End Live Activity with failed status
-        return .run { _ in
-          await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: error)
+        return .merge(
+          .run { _ in
+            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: error)
+          },
+          .send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: error))))
+        )
+
+      case let .downloadFirstProgressReceived(fileId):
+        // Dismiss the blocking overlay - download has started
+        state.initiatingDownloads.remove(id: fileId)
+        return .none
+
+      case let .downloadInitiationTimeout(fileId):
+        // Safety timeout - dismiss overlay even if no progress received
+        // This prevents the overlay from blocking indefinitely
+        if state.initiatingDownloads[id: fileId] != nil {
+          logger.warning(.download, "Download initiation timed out", metadata: ["fileId": fileId])
+          state.initiatingDownloads.remove(id: fileId)
         }
+        return .none
 
       case .main:
         return .none
@@ -357,6 +415,15 @@ struct RootView: View {
       } else {
         // Always show MainView - auth state is handled within MainFeature
         MainView(store: store.scope(state: \.main, action: \.main))
+      }
+    }
+    .overlay {
+      // Blocking overlay while waiting for download to start
+      if store.isBlockingForDownloadInitiation,
+         let initiation = store.initiatingDownloads.first {
+        DownloadInitiatingOverlay(title: initiation.title)
+          .transition(.opacity)
+          .animation(.easeInOut(duration: 0.3), value: store.isBlockingForDownloadInitiation)
       }
     }
     #if DEBUG
