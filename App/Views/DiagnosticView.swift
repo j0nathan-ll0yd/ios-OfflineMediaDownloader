@@ -287,8 +287,15 @@ struct DiagnosticView: View {
             .padding(.leading, 52)
         }
 
-        // Token expiration row
-        tokenExpirationRow
+        // Token expiration row (tappable for debug actions)
+        NavigationLink(destination: TokenExpirationDetailView(
+          expiresAt: store.tokenExpiresAt,
+          onDelete: { store.send(.deleteTokenExpiration) },
+          onExpireSoon: { store.send(.setTokenExpiringSoon) }
+        )) {
+          tokenExpirationRow
+        }
+        .buttonStyle(.plain)
 
         // Divider before Truncate button
         Divider()
@@ -387,9 +394,14 @@ struct DiagnosticView: View {
       }
 
       Spacer()
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 14, weight: .medium))
+        .foregroundStyle(theme.textSecondary.opacity(0.5))
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 10)
+    .contentShape(Rectangle())
   }
 
   private func formattedExpiration(_ date: Date) -> String {
@@ -552,6 +564,163 @@ struct KeychainDetailView: View {
       return "User Data"
     case .deviceData:
       return "Device Data"
+    }
+  }
+}
+
+struct TokenExpirationDetailView: View {
+  let expiresAt: Date?
+  var onDelete: (() -> Void)?
+  var onExpireSoon: (() -> Void)?
+
+  @SwiftUI.Environment(\.dismiss) private var dismiss
+  private let theme = DarkProfessionalTheme()
+
+  var body: some View {
+    ZStack {
+      theme.backgroundColor
+        .ignoresSafeArea()
+
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          // Header card
+          VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+              ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                  .fill(theme.warningColor.opacity(0.15))
+                  .frame(width: 44, height: 44)
+
+                Image(systemName: "clock.fill")
+                  .font(.system(size: 20))
+                  .foregroundStyle(theme.warningColor)
+              }
+
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Token Expiration")
+                  .font(.headline)
+                  .foregroundStyle(.white)
+
+                Text("Debug Controls")
+                  .font(.subheadline)
+                  .foregroundStyle(theme.textSecondary)
+              }
+            }
+          }
+          .padding(16)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(DarkProfessionalTheme.cardBackground)
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+
+          // Current value section
+          VStack(alignment: .leading, spacing: 8) {
+            Text("CURRENT VALUE")
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.textSecondary)
+
+            Text(formattedValue)
+              .font(.system(.body, design: .monospaced))
+              .foregroundStyle(statusColor)
+              .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
+              .padding(16)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .background(DarkProfessionalTheme.cardBackground)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+
+          // Action buttons
+          VStack(spacing: 12) {
+            // Expire Soon button
+            if let onExpireSoon = onExpireSoon {
+              Button(action: {
+                onExpireSoon()
+                dismiss()
+              }) {
+                HStack {
+                  Image(systemName: "clock.badge.exclamationmark")
+                  Text("Set Expiring Soon (2 min)")
+                }
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(theme.warningColor)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+              }
+            }
+
+            // Delete button
+            if let onDelete = onDelete, expiresAt != nil {
+              Button(action: {
+                onDelete()
+                dismiss()
+              }) {
+                HStack {
+                  Image(systemName: "trash")
+                  Text("Delete Expiration")
+                }
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(theme.errorColor)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+              }
+            }
+          }
+          .padding(.top, 8)
+
+          // Instructions
+          VStack(alignment: .leading, spacing: 8) {
+            Text("TESTING INSTRUCTIONS")
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.textSecondary)
+
+            Text("1. Tap \"Set Expiring Soon\" to set expiration to 2 minutes from now\n2. Close the app completely (swipe up from app switcher)\n3. Relaunch the app\n4. The app will detect the token expires within 5 minutes and automatically refresh it")
+              .font(.caption)
+              .foregroundStyle(theme.textSecondary)
+              .padding(16)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .background(DarkProfessionalTheme.cardBackground)
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+          .padding(.top, 8)
+        }
+        .padding(16)
+      }
+    }
+    .navigationTitle("Token Expiration")
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbarColorScheme(.dark, for: .navigationBar)
+    .preferredColorScheme(.dark)
+  }
+
+  private var formattedValue: String {
+    guard let expiresAt = expiresAt else {
+      return "Not set"
+    }
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .medium
+    return formatter.string(from: expiresAt)
+  }
+
+  private var statusColor: Color {
+    guard let expiresAt = expiresAt else {
+      return theme.textSecondary
+    }
+    let timeUntil = expiresAt.timeIntervalSinceNow
+    if timeUntil < 0 {
+      return theme.errorColor
+    } else if timeUntil < 300 {
+      return theme.warningColor
+    } else {
+      return theme.successColor
     }
   }
 }

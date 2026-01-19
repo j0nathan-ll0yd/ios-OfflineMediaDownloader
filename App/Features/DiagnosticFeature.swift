@@ -47,6 +47,9 @@ struct DiagnosticFeature {
     case metricsLoaded(FileMetrics)
     // Token expiration
     case tokenExpirationLoaded(Date?)
+    case deleteTokenExpiration
+    case setTokenExpiringSoon
+    case tokenExpirationUpdated
     // Sign-out
     case signOutButtonTapped
     case signOutCompleted
@@ -204,6 +207,27 @@ struct DiagnosticFeature {
       case let .tokenExpirationLoaded(expiresAt):
         state.tokenExpiresAt = expiresAt
         return .none
+
+      case .deleteTokenExpiration:
+        return .run { send in
+          try await keychainClient.deleteTokenExpiresAt()
+          await send(.tokenExpirationUpdated)
+        }
+
+      case .setTokenExpiringSoon:
+        // Set expiration to 2 minutes from now (within 5-minute refresh threshold)
+        let expiringSoon = Date().addingTimeInterval(2 * 60)
+        return .run { [expiringSoon] send in
+          try await keychainClient.setTokenExpiresAt(expiringSoon)
+          await send(.tokenExpirationUpdated)
+        }
+
+      case .tokenExpirationUpdated:
+        // Reload to reflect changes
+        return .run { send in
+          let expiresAt = try? await keychainClient.getTokenExpiresAt()
+          await send(.tokenExpirationLoaded(expiresAt))
+        }
 
       case .signOutButtonTapped:
         state.isLoading = true
