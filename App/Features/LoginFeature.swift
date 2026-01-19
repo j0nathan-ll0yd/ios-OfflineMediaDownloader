@@ -111,9 +111,16 @@ struct LoginFeature {
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
         print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
         state.loginStatus = .authenticated
+        let expirationDate = response.body?.expirationDate
         return .run { send in
           debugPrint("LoginFeature: storing token in keychain")
           try await keychainClient.setJwtToken(token)
+
+          // Store expiration if provided
+          if let expirationDate = expirationDate {
+            try await keychainClient.setTokenExpiresAt(expirationDate)
+            debugPrint("LoginFeature: expiration stored: \(expirationDate)")
+          }
 
           // Verify token was actually stored
           let storedToken = try await keychainClient.getJwtToken()
@@ -139,9 +146,16 @@ struct LoginFeature {
         state.registrationStatus = .registered
         state.loginStatus = .authenticated
         let userData = state.pendingUserData
+        let expirationDate = response.body?.expirationDate
         return .run { send in
           debugPrint("LoginFeature: storing token in keychain")
           try await keychainClient.setJwtToken(token)
+
+          // Store expiration if provided
+          if let expirationDate = expirationDate {
+            try await keychainClient.setTokenExpiresAt(expirationDate)
+            debugPrint("LoginFeature: expiration stored: \(expirationDate)")
+          }
 
           // Verify token was actually stored
           let storedToken = try await keychainClient.getJwtToken()

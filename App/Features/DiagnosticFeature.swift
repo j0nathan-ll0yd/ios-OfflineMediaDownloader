@@ -27,6 +27,8 @@ struct DiagnosticFeature {
     var downloadCount: Int = 0
     var totalStorageBytes: Int64 = 0
     var playCount: Int = 0
+    // Token expiration
+    var tokenExpiresAt: Date?
   }
 
   enum Action {
@@ -43,6 +45,11 @@ struct DiagnosticFeature {
     // Metrics
     case loadMetrics
     case metricsLoaded(FileMetrics)
+    // Token expiration
+    case tokenExpirationLoaded(Date?)
+    case deleteTokenExpiration
+    case setTokenExpiringSoon
+    case tokenExpirationUpdated
     // Sign-out
     case signOutButtonTapped
     case signOutCompleted
@@ -100,6 +107,10 @@ struct DiagnosticFeature {
                 itemType: .deviceData
               ))
             }
+
+            // Load token expiration
+            let expiresAt = try? await keychainClient.getTokenExpiresAt()
+            await send(.tokenExpirationLoaded(expiresAt))
 
             await send(.keychainItemsLoaded(items))
           }
@@ -193,13 +204,39 @@ struct DiagnosticFeature {
         state.playCount = metrics.playCount
         return .none
 
+      case let .tokenExpirationLoaded(expiresAt):
+        state.tokenExpiresAt = expiresAt
+        return .none
+
+      case .deleteTokenExpiration:
+        return .run { send in
+          try await keychainClient.deleteTokenExpiresAt()
+          await send(.tokenExpirationUpdated)
+        }
+
+      case .setTokenExpiringSoon:
+        // Set expiration to 2 minutes from now (within 5-minute refresh threshold)
+        let expiringSoon = Date().addingTimeInterval(2 * 60)
+        return .run { [expiringSoon] send in
+          try await keychainClient.setTokenExpiresAt(expiringSoon)
+          await send(.tokenExpirationUpdated)
+        }
+
+      case .tokenExpirationUpdated:
+        // Reload to reflect changes
+        return .run { send in
+          let expiresAt = try? await keychainClient.getTokenExpiresAt()
+          await send(.tokenExpirationLoaded(expiresAt))
+        }
+
       case .signOutButtonTapped:
         state.isLoading = true
         return .run { send in
           // 1. Call logout API (best-effort - ignore errors)
           try? await serverClient.logoutUser()
-          // 2. Always delete local JWT token
+          // 2. Always delete local JWT token and expiration
           try? await keychainClient.deleteJwtToken()
+          try? await keychainClient.deleteTokenExpiresAt()
           await send(.signOutCompleted)
         }
 

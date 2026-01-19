@@ -14,6 +14,7 @@ struct ServerClient {
   var registerDevice: @Sendable (_ token: String) async throws -> RegisterDeviceResponse
   var registerUser: @Sendable (_ userData: User, _ authorizationCode: String) async throws -> LoginResponse
   var loginUser: @Sendable (_ authorizationCode: String) async throws -> LoginResponse
+  var refreshToken: @Sendable () async throws -> LoginResponse
   var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
   var logoutUser: @Sendable () async throws -> Void
@@ -256,7 +257,12 @@ extension ServerClient: DependencyKey {
         },
         transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
           LoginResponse(
-            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(
+              token: response.token,
+              expiresAt: response.expiresAt,
+              sessionId: response.sessionId,
+              userId: response.userId
+            ),
             error: nil,
             requestId: "generated"
           )
@@ -302,7 +308,51 @@ extension ServerClient: DependencyKey {
         },
         transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
           LoginResponse(
-            body: TokenResponse(token: response.token, expiresAt: nil, sessionId: nil, userId: nil),
+            body: TokenResponse(
+              token: response.token,
+              expiresAt: response.expiresAt,
+              sessionId: response.sessionId,
+              userId: response.userId
+            ),
+            error: nil,
+            requestId: "generated"
+          )
+        }
+      )
+    },
+
+    refreshToken: {
+      print("📡 ServerClient.refreshToken called")
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.Authentication_refreshToken(
+        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
+      )
+
+      return try handleAPIResponse(
+        endpoint: "refreshToken",
+        successExtractor: {
+          switch response {
+          case .ok(let r): return try? r.body.json.body.value1
+          default: return nil
+          }
+        },
+        errorExtractor: {
+          switch response {
+          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
+          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          default: return nil
+          }
+        },
+        transform: { (response: Components.Schemas.Models_period_TokenRefreshResponse) in
+          LoginResponse(
+            body: TokenResponse(
+              token: response.token,
+              expiresAt: response.expiresAt,
+              sessionId: response.sessionId,
+              userId: response.userId
+            ),
             error: nil,
             requestId: "generated"
           )
@@ -477,6 +527,18 @@ extension ServerClient {
     loginUser: { _ in
       LoginResponse(
         body: TokenResponse(token: "test-jwt-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "test-request-id"
+      )
+    },
+    refreshToken: {
+      LoginResponse(
+        body: TokenResponse(
+          token: "refreshed-test-jwt-token",
+          expiresAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600)),
+          sessionId: "test-session",
+          userId: "test-user"
+        ),
         error: nil,
         requestId: "test-request-id"
       )

@@ -32,7 +32,7 @@ struct RootFeatureTests {
   }
 
   @MainActor
-  @Test("Authenticated user sees main view on launch")
+  @Test("Authenticated user sees main view on launch and triggers token expiration check")
   func didFinishLaunchingAuthenticated() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
@@ -40,6 +40,7 @@ struct RootFeatureTests {
       $0.authenticationClient.determineAuthState = {
         AuthState(loginStatus: .authenticated, registrationStatus: .registered)
       }
+      $0.keychainClient.getTokenExpiresAt = { nil }  // No expiration stored
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -56,6 +57,9 @@ struct RootFeatureTests {
       $0.main.isRegistered = true
       $0.main.fileList.isRegistered = true
     }
+
+    // Authenticated user triggers token expiration check
+    await store.receive(\.checkTokenExpiration)
   }
 
   @MainActor
@@ -123,8 +127,10 @@ struct RootFeatureTests {
   // MARK: - Login Completion Tests
 
   @MainActor
-  @Test("Login completion from child sets authenticated state and triggers device registration")
+  @Test("Login completion from child sets authenticated state without device registration")
   func loginCompletionSetsAuthenticated() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -138,8 +144,7 @@ struct RootFeatureTests {
       $0.main.isRegistered = true
       $0.main.fileList.isRegistered = true
     }
-
-    await store.receive(\.requestDeviceRegistration)
+    // No device registration triggered for login (only for first registration)
   }
 
   @MainActor
@@ -163,8 +168,10 @@ struct RootFeatureTests {
   }
 
   @MainActor
-  @Test("Login completion from MainFeature sheet triggers device registration")
+  @Test("Login completion from MainFeature sheet sets authenticated state without device registration")
   func loginCompletionFromSheetTriggersDeviceRegistration() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -178,8 +185,7 @@ struct RootFeatureTests {
       $0.main.isRegistered = true
       $0.main.fileList.isRegistered = true
     }
-
-    await store.receive(\.requestDeviceRegistration)
+    // No device registration triggered for login (only for first registration)
   }
 
   @MainActor
@@ -230,6 +236,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
       $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
     }
 
     await store.send(.didRegisterForRemoteNotificationsWithDeviceToken("test-token"))
@@ -285,6 +292,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.keychainClient.getUserIdentifier = { "user-123" }
       $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -403,5 +411,150 @@ struct RootFeatureTests {
 
     await store.send(.processedPushNotification(.unknown))
     // No state changes expected
+  }
+
+  // MARK: - Token Refresh Tests
+
+  @MainActor
+  @Test("Token expiration check skipped when no expiration stored")
+  func tokenExpirationCheckNoExpirationStored() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.getTokenExpiresAt = { nil }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    // No further actions - expiration check skipped
+  }
+
+  @MainActor
+  @Test("Token expiration check skipped when token is valid")
+  func tokenExpirationCheckValidToken() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      // Token expires in 1 hour (well beyond 5-minute threshold)
+      $0.keychainClient.getTokenExpiresAt = { Date().addingTimeInterval(3600) }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    // No further actions - token is valid
+  }
+
+  @MainActor
+  @Test("Token expiration check triggers refresh when token expires soon")
+  func tokenExpirationCheckTriggersRefresh() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+
+    let refreshedExpiration = Date().addingTimeInterval(3600)
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      // Token expires in 2 minutes (within 5-minute threshold)
+      $0.keychainClient.getTokenExpiresAt = { Date().addingTimeInterval(120) }
+      $0.serverClient.refreshToken = {
+        LoginResponse(
+          body: TokenResponse(
+            token: "refreshed-token",
+            expiresAt: ISO8601DateFormatter().string(from: refreshedExpiration),
+            sessionId: "session-123",
+            userId: "user-123"
+          ),
+          error: nil,
+          requestId: "request-123"
+        )
+      }
+      $0.keychainClient.setJwtToken = { _ in }
+      $0.keychainClient.setTokenExpiresAt = { _ in }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    await store.receive(\.tokenRefreshResponse.success)
+  }
+
+  @MainActor
+  @Test("Token refresh failure with 401 triggers re-authentication")
+  func tokenRefreshFailureTriggersReauth() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil))))
+
+    await store.receive(\.main.delegate.authenticationRequired) {
+      $0.isAuthenticated = false
+      $0.main.isAuthenticated = false
+      $0.main.fileList.isAuthenticated = false
+      $0.login.loginStatus = .unauthenticated
+      $0.main.loginSheet = LoginFeature.State()
+    }
+  }
+
+  @MainActor
+  @Test("Token refresh failure with network error does not interrupt user")
+  func tokenRefreshNetworkErrorContinues() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.failure(TestData.TestNetworkError.notConnected)))
+    // No state changes - user can continue using the app
+  }
+
+  @MainActor
+  @Test("Token refresh success updates keychain")
+  func tokenRefreshSuccessUpdatesKeychain() async throws {
+    var state = RootFeature.State()
+    state.isAuthenticated = true
+
+    var storedToken: String?
+    var storedExpiration: Date?
+
+    let newExpiration = Date().addingTimeInterval(3600)
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.setJwtToken = { storedToken = $0 }
+      $0.keychainClient.setTokenExpiresAt = { storedExpiration = $0 }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.success(LoginResponse(
+      body: TokenResponse(
+        token: "new-refreshed-token",
+        expiresAt: ISO8601DateFormatter().string(from: newExpiration),
+        sessionId: "session-123",
+        userId: "user-123"
+      ),
+      error: nil,
+      requestId: "request-123"
+    ))))
+
+    #expect(storedToken == "new-refreshed-token")
+    #expect(storedExpiration != nil)
   }
 }
