@@ -13,7 +13,10 @@ struct TokenResponse: Codable, Sendable {
       return Date(timeIntervalSince1970: timestamp)
     }
     if let dateString = expiresAtString {
-      return ISO8601DateFormatter().date(from: dateString)
+      // Server returns ISO 8601 with fractional seconds (e.g., "2026-02-18T16:14:58.812Z")
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      return formatter.date(from: dateString)
     }
     return nil
   }
