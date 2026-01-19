@@ -466,7 +466,7 @@ struct RootFeatureTests {
         LoginResponse(
           body: TokenResponse(
             token: "refreshed-token",
-            expiresAt: refreshedExpiration.timeIntervalSince1970,
+            expiresAt: ISO8601DateFormatter().string(from: refreshedExpiration),
             sessionId: "session-123",
             userId: "user-123"
           ),
@@ -546,7 +546,7 @@ struct RootFeatureTests {
     await store.send(.tokenRefreshResponse(.success(LoginResponse(
       body: TokenResponse(
         token: "new-refreshed-token",
-        expiresAt: newExpiration.timeIntervalSince1970,
+        expiresAt: ISO8601DateFormatter().string(from: newExpiration),
         sessionId: "session-123",
         userId: "user-123"
       ),

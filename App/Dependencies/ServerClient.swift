@@ -259,8 +259,7 @@ extension ServerClient: DependencyKey {
           LoginResponse(
             body: TokenResponse(
               token: response.token,
-              expiresAt: nil,
-              expiresAtString: response.expiresAt,
+              expiresAt: response.expiresAt,
               sessionId: response.sessionId,
               userId: response.userId
             ),
@@ -311,8 +310,7 @@ extension ServerClient: DependencyKey {
           LoginResponse(
             body: TokenResponse(
               token: response.token,
-              expiresAt: nil,
-              expiresAtString: response.expiresAt,
+              expiresAt: response.expiresAt,
               sessionId: response.sessionId,
               userId: response.userId
             ),
@@ -351,8 +349,7 @@ extension ServerClient: DependencyKey {
           LoginResponse(
             body: TokenResponse(
               token: response.token,
-              expiresAt: nil,
-              expiresAtString: response.expiresAt,
+              expiresAt: response.expiresAt,
               sessionId: response.sessionId,
               userId: response.userId
             ),
@@ -538,7 +535,7 @@ extension ServerClient {
       LoginResponse(
         body: TokenResponse(
           token: "refreshed-test-jwt-token",
-          expiresAt: Date().addingTimeInterval(3600).timeIntervalSince1970,
+          expiresAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600)),
           sessionId: "test-session",
           userId: "test-user"
         ),

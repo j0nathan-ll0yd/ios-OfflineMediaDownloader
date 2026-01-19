@@ -1,3 +1,4 @@
+import CustomDump
 import Foundation
 
 struct File: Equatable, Identifiable, Codable, Sendable {
@@ -69,6 +70,27 @@ struct File: Equatable, Identifiable, Codable, Sendable {
     try container.encodeIfPresent(description, forKey: .description)
     try container.encodeIfPresent(status, forKey: .status)
     try container.encodeIfPresent(title, forKey: .title)
+  }
+}
+
+// MARK: - CustomDumpReflectable
+
+extension File: CustomDumpReflectable {
+  var customDumpMirror: Mirror {
+    // Exclude description from debug output to reduce log noise
+    Mirror(
+      self,
+      children: [
+        "fileId": fileId,
+        "key": key,
+        "title": title as Any,
+        "status": status as Any,
+        "size": size as Any,
+        "publishDate": publishDate as Any,
+        "url": url as Any,
+      ],
+      displayStyle: .struct
+    )
   }
 }
 
