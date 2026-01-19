@@ -98,7 +98,11 @@ struct FileListFeature {
       case let .localFilesLoaded(files):
         // Preserve existing UI state (download status) when reloading
         let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
-        state.files = IdentifiedArray(uniqueElements: files.map { file in
+        // For unregistered users, filter out the "default" file from the main list
+        let filesToShow = state.isRegistered
+          ? files
+          : files.filter { $0.fileId != "default" }
+        state.files = IdentifiedArray(uniqueElements: filesToShow.map { file in
           var newState = FileCellFeature.State(file: file)
           if let existing = existingStates[file.fileId] {
             newState.isDownloaded = existing.isDownloaded
@@ -134,7 +138,12 @@ struct FileListFeature {
         if let fileList = response.body {
           // Preserve existing UI state (download status) when refreshing
           let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
-          state.files = IdentifiedArray(uniqueElements: fileList.contents.map { file in
+          // For unregistered users, filter out the "default" file from the main list
+          // (it's shown separately in DefaultFilesView)
+          let filesToShow = state.isRegistered
+            ? fileList.contents
+            : fileList.contents.filter { $0.fileId != "default" }
+          state.files = IdentifiedArray(uniqueElements: filesToShow.map { file in
             var newState = FileCellFeature.State(file: file)
             if let existing = existingStates[file.fileId] {
               newState.isDownloaded = existing.isDownloaded
