@@ -94,19 +94,19 @@ struct MiddlewareTests {
     func addsBearerTokenWhenExists() async throws {
       let testToken = "jwt-token-abc123"
       let keychainClient = KeychainClient(
-        setJwtToken: { _ in },
+        getUserData: { throw KeychainError.itemNotFound },
         getJwtToken: { testToken },
-        deleteJwtToken: { },
-        setUserData: { _ in },
-        getUserData: { nil },
-        deleteUserData: { },
-        setDeviceData: { _ in },
-        getDeviceData: { nil },
-        deleteDeviceData: { },
-        getUserIdentifier: { nil },
-        setTokenExpiresAt: { _ in },
         getTokenExpiresAt: { nil },
-        deleteTokenExpiresAt: { }
+        getDeviceData: { nil },
+        getUserIdentifier: { nil },
+        setUserData: { _ in },
+        setJwtToken: { _ in },
+        setTokenExpiresAt: { _ in },
+        setDeviceData: { _ in },
+        deleteUserData: { },
+        deleteJwtToken: { },
+        deleteTokenExpiresAt: { },
+        deleteDeviceData: { }
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -120,19 +120,19 @@ struct MiddlewareTests {
     @Test("Does not add header when no token in keychain")
     func noHeaderWhenNoToken() async throws {
       let keychainClient = KeychainClient(
-        setJwtToken: { _ in },
+        getUserData: { throw KeychainError.itemNotFound },
         getJwtToken: { nil },
-        deleteJwtToken: { },
-        setUserData: { _ in },
-        getUserData: { nil },
-        deleteUserData: { },
-        setDeviceData: { _ in },
-        getDeviceData: { nil },
-        deleteDeviceData: { },
-        getUserIdentifier: { nil },
-        setTokenExpiresAt: { _ in },
         getTokenExpiresAt: { nil },
-        deleteTokenExpiresAt: { }
+        getDeviceData: { nil },
+        getUserIdentifier: { nil },
+        setUserData: { _ in },
+        setJwtToken: { _ in },
+        setTokenExpiresAt: { _ in },
+        setDeviceData: { _ in },
+        deleteUserData: { },
+        deleteJwtToken: { },
+        deleteTokenExpiresAt: { },
+        deleteDeviceData: { }
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -146,19 +146,19 @@ struct MiddlewareTests {
     @Test("Handles keychain error gracefully")
     func handlesKeychainError() async throws {
       let keychainClient = KeychainClient(
-        setJwtToken: { _ in },
+        getUserData: { throw KeychainError.itemNotFound },
         getJwtToken: { throw KeychainError.unableToStore },
-        deleteJwtToken: { },
-        setUserData: { _ in },
-        getUserData: { nil },
-        deleteUserData: { },
-        setDeviceData: { _ in },
-        getDeviceData: { nil },
-        deleteDeviceData: { },
-        getUserIdentifier: { nil },
-        setTokenExpiresAt: { _ in },
         getTokenExpiresAt: { nil },
-        deleteTokenExpiresAt: { }
+        getDeviceData: { nil },
+        getUserIdentifier: { nil },
+        setUserData: { _ in },
+        setJwtToken: { _ in },
+        setTokenExpiresAt: { _ in },
+        setDeviceData: { _ in },
+        deleteUserData: { },
+        deleteJwtToken: { },
+        deleteTokenExpiresAt: { },
+        deleteDeviceData: { }
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -204,11 +204,17 @@ struct MiddlewareTests {
         startRequest: { _, _ in testCorrelationId },
         completeRequest: { _, _, _, _ in },
         failRequest: { _, _, _ in },
-        getActiveRequests: { [] }
+        getMostRecent: { nil },
+        getRecentRequests: { _ in [] },
+        clearHistory: { }
       )
 
       let loggerClient = LoggerClient(
-        log: { _, _, _, _, _, _ in }
+        log: { _, _, _, _, _, _ in },
+        getRecentLogs: { _ in [] },
+        clearLogs: { },
+        exportLogs: { Data() },
+        setMinLevel: { _ in }
       )
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
@@ -232,11 +238,17 @@ struct MiddlewareTests {
           completedStatusCode = statusCode
         },
         failRequest: { _, _, _ in },
-        getActiveRequests: { [] }
+        getMostRecent: { nil },
+        getRecentRequests: { _ in [] },
+        clearHistory: { }
       )
 
       let loggerClient = LoggerClient(
-        log: { _, _, _, _, _, _ in }
+        log: { _, _, _, _, _, _ in },
+        getRecentLogs: { _ in [] },
+        clearLogs: { },
+        exportLogs: { Data() },
+        setMinLevel: { _ in }
       )
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
@@ -273,11 +285,17 @@ struct MiddlewareTests {
           failedCorrelationId = correlationId
           failedErrorMessage = errorMessage
         },
-        getActiveRequests: { [] }
+        getMostRecent: { nil },
+        getRecentRequests: { _ in [] },
+        clearHistory: { }
       )
 
       let loggerClient = LoggerClient(
-        log: { _, _, _, _, _, _ in }
+        log: { _, _, _, _, _, _ in },
+        getRecentLogs: { _ in [] },
+        clearLogs: { },
+        exportLogs: { Data() },
+        setMinLevel: { _ in }
       )
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
