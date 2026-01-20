@@ -51,10 +51,7 @@ struct DiagnosticView: View {
               SettingsItem(icon: "bell", title: "Notifications", color: theme.warningColor),
             ])
 
-            settingsSection(title: "Preferences", items: [
-              SettingsItem(icon: "arrow.down.circle", title: "Download Quality", color: theme.primaryColor),
-              SettingsItem(icon: "wifi", title: "Cellular Downloads", color: theme.successColor),
-            ])
+            preferencesSection
 
             settingsSection(title: "Support", items: [
               SettingsItem(icon: "questionmark.circle", title: "Help Center", color: theme.textSecondary),
@@ -191,6 +188,90 @@ struct DiagnosticView: View {
       return String(format: "%.1f MB", Double(bytes) / 1_000_000)
     } else {
       return String(format: "%.2f GB", Double(bytes) / 1_000_000_000)
+    }
+  }
+
+  // MARK: - Preferences Section
+
+  private var preferencesSection: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Preferences")
+        .font(.caption)
+        .fontWeight(.semibold)
+        .foregroundStyle(theme.textSecondary)
+        .textCase(.uppercase)
+        .padding(.leading, 4)
+
+      VStack(spacing: 0) {
+        // Download Quality - navigates to DownloadSettingsView
+        NavigationLink(destination: DownloadSettingsView(store: store.scope(state: \.downloadSettings, action: \.downloadSettings))) {
+          HStack(spacing: 12) {
+            ZStack {
+              RoundedRectangle(cornerRadius: 8)
+                .fill(theme.primaryColor.opacity(0.15))
+                .frame(width: 36, height: 36)
+
+              Image(systemName: "arrow.down.circle")
+                .font(.system(size: 16))
+                .foregroundStyle(theme.primaryColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text("Download Quality")
+                .font(.body)
+                .foregroundStyle(.white)
+
+              Text(store.downloadSettings.downloadQuality.displayName)
+                .font(.caption)
+                .foregroundStyle(theme.textSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundStyle(theme.textSecondary.opacity(0.5))
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 10)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+
+        Divider()
+          .background(DarkProfessionalTheme.divider)
+          .padding(.leading, 52)
+
+        // Cellular Downloads toggle - inline
+        HStack(spacing: 12) {
+          ZStack {
+            RoundedRectangle(cornerRadius: 8)
+              .fill(theme.successColor.opacity(0.15))
+              .frame(width: 36, height: 36)
+
+            Image(systemName: "wifi")
+              .font(.system(size: 16))
+              .foregroundStyle(theme.successColor)
+          }
+
+          Text("Cellular Downloads")
+            .font(.body)
+            .foregroundStyle(.white)
+
+          Spacer()
+
+          Toggle("", isOn: Binding(
+            get: { store.downloadSettings.cellularDownloadsEnabled },
+            set: { store.send(.downloadSettings(.cellularToggled($0))) }
+          ))
+          .labelsHidden()
+          .tint(theme.primaryColor)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+      }
+      .background(DarkProfessionalTheme.cardBackground)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
     }
   }
 

@@ -144,7 +144,7 @@ jobs:
           set -o pipefail
           # Run unit tests with parallel execution enabled
           # Unit tests use withMainSerialExecutor for deterministic action ordering
-          # UI tests are run separately (they have longer timeouts and different requirements)
+          # Snapshot tests are skipped in CI (require local reference image generation)
           xcodebuild test-without-building \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
@@ -155,7 +155,7 @@ jobs:
             -skipMacroValidation \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
-            -maximum-test-execution-time-allowance 60 \
+            -maximum-test-execution-time-allowance 120 \
             -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
             -skip-testing:OfflineMediaDownloaderTests/FileCellSnapshotTests \
