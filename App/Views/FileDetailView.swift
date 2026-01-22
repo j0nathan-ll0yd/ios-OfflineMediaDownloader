@@ -88,6 +88,7 @@ struct FileDetailView: View {
       // Thumbnail or placeholder
       if thumbnailURL != nil {
         ThumbnailImage(
+          fileId: store.file.fileId,
           url: thumbnailURL,
           size: CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width * 9 / 16),
           cornerRadius: 0

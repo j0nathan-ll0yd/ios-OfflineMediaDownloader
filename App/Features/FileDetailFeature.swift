@@ -44,6 +44,7 @@ struct FileDetailFeature {
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
+  @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
   @Dependency(\.logger) var logger
 
   private enum CancelID { case download }
@@ -157,11 +158,13 @@ struct FileDetailFeature {
 
       case .alert(.presented(.confirmDelete)):
         let file = state.file
-        return .run { send in
+        return .run { [thumbnailCacheClient] send in
           try await coreDataClient.deleteFile(file)
           if let url = file.url, fileClient.fileExists(url) {
             try await fileClient.deleteFile(url)
           }
+          // Also delete cached thumbnail
+          await thumbnailCacheClient.deleteThumbnail(file.fileId)
           await send(.delegate(.fileDeleted(file)))
         }
 

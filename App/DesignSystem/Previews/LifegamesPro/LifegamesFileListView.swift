@@ -134,7 +134,7 @@ struct LifegamesFileCard: View {
         HStack(spacing: 14) {
             // Thumbnail with duration badge
             ZStack(alignment: .bottomTrailing) {
-                ThumbnailImage(url: file.thumbnailUrl, size: thumbnailSize)
+                ThumbnailImage(fileId: file.id, url: file.thumbnailUrl, size: thumbnailSize)
 
                 if let duration = file.duration {
                     DurationBadge(seconds: duration)

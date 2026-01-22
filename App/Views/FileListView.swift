@@ -30,7 +30,7 @@ struct FileCellView: View {
     HStack(spacing: 14) {
       // Thumbnail with duration badge
       ZStack(alignment: .bottomTrailing) {
-        ThumbnailImage(url: thumbnailURL, size: thumbnailSize)
+        ThumbnailImage(fileId: store.file.fileId, url: thumbnailURL, size: thumbnailSize)
 
         if let duration = store.file.duration {
           DurationBadge(seconds: duration)
