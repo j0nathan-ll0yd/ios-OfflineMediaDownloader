@@ -9,6 +9,7 @@ struct FileCellView: View {
   @Bindable var store: StoreOf<FileCellFeature>
 
   private let theme = DarkProfessionalTheme()
+  private let thumbnailSize = CGSize(width: 120, height: 68)
 
   /// Thumbnail action based on current state
   private var thumbnailAction: (() -> Void)? {
@@ -19,16 +20,25 @@ struct FileCellView: View {
     return { store.send(.downloadButtonTapped) }
   }
 
+  /// Parse thumbnailUrl string to URL
+  private var thumbnailURL: URL? {
+    guard let urlString = store.file.thumbnailUrl else { return nil }
+    return URL(string: urlString)
+  }
+
   var body: some View {
     HStack(spacing: 14) {
-      // Thumbnail
-      ZStack {
-        RoundedRectangle(cornerRadius: 10)
-          .fill(DarkProfessionalTheme.cardBackground)
-          .frame(width: 70, height: 50)
+      // Thumbnail with duration badge
+      ZStack(alignment: .bottomTrailing) {
+        ThumbnailImage(url: thumbnailURL, size: thumbnailSize)
 
-        stateOverlay
+        if let duration = store.file.duration {
+          DurationBadge(seconds: duration)
+            .padding(4)
+        }
       }
+      .frame(width: thumbnailSize.width, height: thumbnailSize.height)
+      .overlay { stateOverlay }
       .contentShape(Rectangle())
       .onTapGesture {
         thumbnailAction?()
@@ -42,12 +52,22 @@ struct FileCellView: View {
           .foregroundStyle(.white)
           .lineLimit(2)
 
+        // Author with accent color
+        if let author = store.file.authorName {
+          Text(author)
+            .font(.caption)
+            .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4))
+        }
+
+        // Views + Size
         HStack(spacing: 6) {
-          if let author = store.file.authorName {
-            Text(author)
+          if let viewCount = store.file.viewCount {
+            Text(MetadataFormatters.formatViewCount(viewCount))
+          }
+          if store.file.viewCount != nil && store.file.size != nil {
+            Text("•")
           }
           if store.file.size != nil {
-            Text("•")
             Text(formatFileSize(store.file.size))
           }
         }
@@ -83,29 +103,30 @@ struct FileCellView: View {
   private var stateOverlay: some View {
     if store.state.isPending {
       Image(systemName: "clock")
-        .font(.system(size: 18))
+        .font(.system(size: 22))
         .foregroundStyle(theme.warningColor)
+        .shadow(color: .black.opacity(0.5), radius: 2)
     } else if store.isDownloading {
+      // Show mini progress in thumbnail during download
       ZStack {
         Circle()
           .stroke(theme.primaryColor.opacity(0.3), lineWidth: 2)
-          .frame(width: 24, height: 24)
+          .frame(width: 28, height: 28)
 
         Circle()
           .trim(from: 0, to: store.downloadProgress)
           .stroke(theme.primaryColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-          .frame(width: 24, height: 24)
+          .frame(width: 28, height: 28)
           .rotationEffect(.degrees(-90))
       }
+      .shadow(color: .black.opacity(0.5), radius: 2)
     } else if store.isDownloaded {
       Image(systemName: "play.fill")
-        .font(.system(size: 18))
-        .foregroundStyle(theme.primaryColor)
-    } else {
-      Image(systemName: "arrow.down.to.line")
-        .font(.system(size: 16))
-        .foregroundStyle(theme.textSecondary)
+        .font(.system(size: 22))
+        .foregroundStyle(.white)
+        .shadow(color: .black.opacity(0.5), radius: 2)
     }
+    // No overlay for available (not downloaded) state - thumbnail speaks for itself
   }
 
   @ViewBuilder
