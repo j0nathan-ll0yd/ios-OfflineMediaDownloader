@@ -22,7 +22,8 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
         let picker = app.segmentedControls.firstMatch
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "Preview catalog picker should appear")
 
-        let screenNames = ["Launch", "Login", "Default Files", "Files", "Account"]
+        // Screen names must match ScreenType.rawValue in RedesignPreviewCatalog.swift
+        let screenNames = ["Launch", "Login", "Default", "Files", "Detail", "Account"]
 
         for screenName in screenNames {
             // Find the segment button within the segmented control
