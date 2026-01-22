@@ -31,10 +31,12 @@ echo ""
 # Build the project to verify it compiles
 # Use generic iOS Simulator destination to work with any available simulator
 # -skipMacroValidation bypasses Xcode's interactive macro approval requirement
+# -skipPackagePluginValidation bypasses Swift package plugin approval
 xcodebuild -project OfflineMediaDownloader.xcodeproj \
   -scheme OfflineMediaDownloader \
   -destination 'generic/platform=iOS Simulator' \
   -skipMacroValidation \
+  -skipPackagePluginValidation \
   -quiet \
   build
 
@@ -49,5 +51,5 @@ if [ $BUILD_RESULT -ne 0 ]; then
 fi
 
 echo ""
-echo "✅ Build successful. Proceeding with push."
+echo "Build successful. Proceeding with push."
 exit 0

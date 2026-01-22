@@ -88,11 +88,19 @@ jobs:
           echo "Available iPhone devices:"
           xcrun simctl list devices available | grep iPhone || true
 
-          # Find an iPhone simulator with a compatible iOS runtime
-          # The jq filter specifically looks for iOS 18.x runtimes
+          # Find an iPhone simulator preferring iOS 18 runtimes (compatible with Xcode 16)
+          # First try iOS 18, then fall back to any iOS version
           DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+            jq -r '.devices | to_entries[] | select(.key | test("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
             head -1)
+          
+          # Fallback to any iOS runtime if no iOS 18 devices found
+          if [ -z "$DEVICE_INFO" ]; then
+            echo "No iOS 18 simulators found, trying any iOS version..."
+            DEVICE_INFO=$(xcrun simctl list devices available -j | \
+              jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+              sort -V | tail -1)
+          fi
 
           if [ -n "$DEVICE_INFO" ]; then
             DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
@@ -180,13 +188,13 @@ jobs:
             if [ -z "$FAILURES" ]; then FAILURES="0"; fi
 
             if [ "$FAILURES" = "0" ]; then
-              echo "✅ All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
+              echo "All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
             else
-              echo "❌ $FAILURES of $TESTS tests failed" >> $GITHUB_STEP_SUMMARY
+              echo "$FAILURES of $TESTS tests failed" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "### Test Results" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ No test results file found" >> $GITHUB_STEP_SUMMARY
+            echo "No test results file found" >> $GITHUB_STEP_SUMMARY
           fi
 
   build-check:
@@ -236,10 +244,18 @@ jobs:
       - name: Find Simulator
         id: simulator
         run: |
-          # Find an iPhone simulator with a compatible iOS runtime
+          # Find an iPhone simulator preferring iOS 18 runtimes (compatible with Xcode 16)
           DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+            jq -r '.devices | to_entries[] | select(.key | test("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
             head -1)
+          
+          # Fallback to any iOS runtime if no iOS 18 devices found
+          if [ -z "$DEVICE_INFO" ]; then
+            echo "No iOS 18 simulators found, trying any iOS version..."
+            DEVICE_INFO=$(xcrun simctl list devices available -j | \
+              jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
+              sort -V | tail -1)
+          fi
 
           if [ -n "$DEVICE_INFO" ]; then
             DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
