@@ -641,6 +641,113 @@ This is a recommended convention, not enforced.
 
 ---
 
+## Design System & UI Previews
+
+### Design System Components
+
+When building UI features, **ALWAYS** use the existing design system components in `App/DesignSystem/`:
+
+| Component | Location | Usage |
+|-----------|----------|-------|
+| `MetadataFormatters` | `DesignSystem/MetadataFormatters.swift` | Format duration, view counts, dates, file sizes |
+| `ThumbnailImage` | `DesignSystem/Components/ThumbnailImage.swift` | Async thumbnail with loading/error states |
+| `DurationBadge` | `DesignSystem/Components/DurationBadge.swift` | Video duration overlay badge |
+| `ExpandableText` | `DesignSystem/Components/ExpandableText.swift` | Collapsible text with clickable URLs |
+| `StatItem` | `DesignSystem/Components/StatItem.swift` | Label/value pair for statistics |
+| `Theme` | `DesignSystem/Theme.swift` | Colors, fonts, spacing constants |
+
+```swift
+// ✅ CORRECT - Use design system components
+import SwiftUI
+
+struct MyFileCell: View {
+  let file: File
+
+  var body: some View {
+    HStack {
+      ThumbnailImage(url: file.thumbnailUrl, size: CGSize(width: 120, height: 68))
+        .overlay(alignment: .bottomTrailing) {
+          if let duration = file.duration {
+            DurationBadge(seconds: duration)
+          }
+        }
+
+      VStack(alignment: .leading) {
+        Text(file.title)
+        Text(file.author)
+          .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4)) // Accent color for author
+        Text(MetadataFormatters.formatViewCount(file.viewCount ?? 0))
+      }
+    }
+  }
+}
+
+// ❌ FORBIDDEN - Duplicating formatter logic
+func formatDuration(_ seconds: Int) -> String {
+  // Don't duplicate - use MetadataFormatters.formatDuration()
+}
+```
+
+### RedesignPreviewCatalog
+
+When adding new UI components or screens, **ALWAYS** add them to `App/DesignSystem/Previews/RedesignPreviewCatalog.swift`:
+
+1. **Add a new case** to `ScreenType` enum
+2. **Create a simple preview view** that shows the final design
+3. **Show only the current/final state** - no before/after comparisons
+
+```swift
+// ✅ CORRECT - Simple preview showing final state
+struct FileCellsPreview: View {
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                FileCellView(file: MockFileData.sample)
+                FileCellView(file: MockFileData.shortVideo)
+                FileCellView(file: MockFileData.longVideo)
+            }
+        }
+        .background(Color(white: 0.08))
+    }
+}
+
+// ❌ FORBIDDEN - Before/after comparisons
+struct FileCellComparison: View {
+    var body: some View {
+        VStack {
+            Text("BEFORE")
+            OldFileCellView(file: sample)
+            Text("AFTER")
+            NewFileCellView(file: sample)  // Don't do this
+        }
+    }
+}
+```
+
+### MockFileData
+
+Use `MockFileData` from `Issue151Previews.swift` for preview sample data:
+
+```swift
+// Available mock data
+MockFileData.sample      // Standard video with all metadata
+MockFileData.shortVideo  // Short video (< 1 min)
+MockFileData.longVideo   // Long video (> 1 hour), no thumbnail
+```
+
+### Design System Checklist
+
+When implementing a new feature with UI:
+
+- [ ] Check if design system components exist for your needs
+- [ ] Create new components in `App/DesignSystem/Components/` if needed
+- [ ] Add formatters to `MetadataFormatters` if needed
+- [ ] Add preview to `RedesignPreviewCatalog` showing final state
+- [ ] Use `MockFileData` for preview sample data
+- [ ] Follow accent color convention: `Color(red: 1.0, green: 0.4, blue: 0.4)` for author names
+
+---
+
 ## Support Resources
 
 - **TCA Documentation**: https://pointfreeco.github.io/swift-composable-architecture/

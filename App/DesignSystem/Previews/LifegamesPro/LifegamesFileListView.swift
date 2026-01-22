@@ -122,22 +122,33 @@ struct LifegamesFileListView: View {
     }
 }
 
-// MARK: - File Card
+// MARK: - File Card (Rich Metadata - Issue #151)
 
 struct LifegamesFileCard: View {
     let file: LifegamesFileItem
 
     private let theme = DarkProfessionalTheme()
+    private let thumbnailSize = CGSize(width: 120, height: 68)
 
     var body: some View {
         HStack(spacing: 14) {
-            // Thumbnail
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(DarkProfessionalTheme.cardBackground)
-                    .frame(width: 70, height: 50)
+            // Thumbnail with duration badge
+            ZStack(alignment: .bottomTrailing) {
+                ThumbnailImage(url: file.thumbnailUrl, size: thumbnailSize)
 
-                stateOverlay
+                if let duration = file.duration {
+                    DurationBadge(seconds: duration)
+                        .padding(4)
+                }
+            }
+            .frame(width: thumbnailSize.width, height: thumbnailSize.height)
+            .overlay {
+                if file.state == .downloaded {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.5), radius: 2)
+                }
             }
 
             // File info
@@ -146,14 +157,24 @@ struct LifegamesFileCard: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.white)
-                    .lineLimit(1)
+                    .lineLimit(2)
 
+                // Author with accent color
+                if let author = file.author {
+                    Text(author)
+                        .font(.caption)
+                        .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4))
+                }
+
+                // Views + Size
                 HStack(spacing: 6) {
-                    if let author = file.author {
-                        Text(author)
+                    if let viewCount = file.viewCount {
+                        Text(MetadataFormatters.formatViewCount(viewCount))
+                    }
+                    if file.viewCount != nil && file.size != nil {
+                        Text("•")
                     }
                     if file.size != nil {
-                        Text("•")
                         Text(file.formattedSize)
                     }
                 }
@@ -179,39 +200,6 @@ struct LifegamesFileCard: View {
                 .frame(height: 0.5),
             alignment: .bottom
         )
-    }
-
-    @ViewBuilder
-    private var stateOverlay: some View {
-        switch file.state {
-        case .pending:
-            Image(systemName: "clock")
-                .font(.system(size: 18))
-                .foregroundStyle(theme.warningColor)
-
-        case .downloading:
-            ZStack {
-                Circle()
-                    .stroke(theme.primaryColor.opacity(0.3), lineWidth: 2)
-                    .frame(width: 24, height: 24)
-
-                Circle()
-                    .trim(from: 0, to: file.downloadProgress)
-                    .stroke(theme.primaryColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .frame(width: 24, height: 24)
-                    .rotationEffect(.degrees(-90))
-            }
-
-        case .downloaded:
-            Image(systemName: "play.fill")
-                .font(.system(size: 18))
-                .foregroundStyle(theme.primaryColor)
-
-        case .available:
-            Image(systemName: "arrow.down.to.line")
-                .font(.system(size: 16))
-                .foregroundStyle(theme.textSecondary)
-        }
     }
 
     @ViewBuilder
@@ -270,7 +258,7 @@ struct LifegamesFileCard: View {
     }
 }
 
-// MARK: - File Item Model
+// MARK: - File Item Model (Rich Metadata - Issue #151)
 
 struct LifegamesFileItem: Identifiable {
     let id: String
@@ -278,6 +266,9 @@ struct LifegamesFileItem: Identifiable {
     let author: String?
     let size: Int?
     let state: FileState
+    let thumbnailUrl: URL?
+    let duration: Int?
+    let viewCount: Int?
 
     var downloadProgress: Double = 0
 
@@ -295,10 +286,47 @@ struct LifegamesFileItem: Identifiable {
     }
 
     static let samples: [LifegamesFileItem] = [
-        LifegamesFileItem(id: "1", title: "Introduction to SwiftUI", author: "Apple", size: 150_000_000, state: .downloaded),
-        LifegamesFileItem(id: "2", title: "Building Modern Apps with TCA", author: "Point-Free", size: 280_000_000, state: .downloading, downloadProgress: 0.65),
-        LifegamesFileItem(id: "3", title: "Advanced Animations", author: nil, size: 95_000_000, state: .available),
-        LifegamesFileItem(id: "4", title: "Processing Video", author: "Upload", size: nil, state: .pending),
+        LifegamesFileItem(
+            id: "1",
+            title: "Introduction to SwiftUI",
+            author: "Apple",
+            size: 150_000_000,
+            state: .downloaded,
+            thumbnailUrl: URL(string: "https://i.ytimg.com/vi/Tn6-PIqc4UM/maxresdefault.jpg"),
+            duration: 765,
+            viewCount: 2_300_000
+        ),
+        LifegamesFileItem(
+            id: "2",
+            title: "Building Modern Apps with TCA",
+            author: "Point-Free",
+            size: 280_000_000,
+            state: .downloading,
+            thumbnailUrl: URL(string: "https://i.ytimg.com/vi/HXoVSbwWUIk/maxresdefault.jpg"),
+            duration: 3922,
+            viewCount: 890_000,
+            downloadProgress: 0.65
+        ),
+        LifegamesFileItem(
+            id: "3",
+            title: "Advanced Animations",
+            author: "Kavsoft",
+            size: 95_000_000,
+            state: .available,
+            thumbnailUrl: nil,
+            duration: 58,
+            viewCount: 45_000
+        ),
+        LifegamesFileItem(
+            id: "4",
+            title: "Processing Video",
+            author: "Upload",
+            size: nil,
+            state: .pending,
+            thumbnailUrl: nil,
+            duration: nil,
+            viewCount: nil
+        ),
     ]
 }
 
