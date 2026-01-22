@@ -200,7 +200,7 @@ jobs:
   build-check:
     name: Build Check (Release)
     runs-on: macos-14
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
