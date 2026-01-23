@@ -230,10 +230,11 @@ struct FileCellFeatureTests {
   // MARK: - Delete Tests
 
   @MainActor
-  @Test("Delete button triggers file deletion from CoreData and filesystem")
+  @Test("Delete button triggers file deletion from CoreData, filesystem, and thumbnail cache")
   func deleteRemovesFiles() async throws {
     let coreDataDeleteCalled = LockIsolated(false)
     let fileDeleteCalled = LockIsolated(false)
+    let thumbnailDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
@@ -241,6 +242,7 @@ struct FileCellFeatureTests {
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in true }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in thumbnailDeleteCalled.setValue(true) }
     }
 
     await store.send(.deleteButtonTapped)
@@ -248,12 +250,14 @@ struct FileCellFeatureTests {
 
     #expect(coreDataDeleteCalled.value == true)
     #expect(fileDeleteCalled.value == true)
+    #expect(thumbnailDeleteCalled.value == true)
   }
 
   @MainActor
-  @Test("Delete skips local file removal if not exists")
+  @Test("Delete skips local file removal if not exists but still deletes thumbnail")
   func deleteSkipsIfNotExists() async throws {
     let fileDeleteCalled = LockIsolated(false)
+    let thumbnailDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
@@ -261,30 +265,35 @@ struct FileCellFeatureTests {
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in thumbnailDeleteCalled.setValue(true) }
     }
 
     await store.send(.deleteButtonTapped)
     await store.receive(\.delegate.fileDeleted)
 
     #expect(fileDeleteCalled.value == false)
+    #expect(thumbnailDeleteCalled.value == true)
   }
 
   @MainActor
-  @Test("Delete with nil URL still removes from CoreData")
+  @Test("Delete with nil URL still removes from CoreData and thumbnail cache")
   func deleteWithNilUrl() async throws {
     let coreDataDeleteCalled = LockIsolated(false)
+    let thumbnailDeleteCalled = LockIsolated(false)
 
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
     } withDependencies: {
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in false }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in thumbnailDeleteCalled.setValue(true) }
     }
 
     await store.send(.deleteButtonTapped)
     await store.receive(\.delegate.fileDeleted)
 
     #expect(coreDataDeleteCalled.value == true)
+    #expect(thumbnailDeleteCalled.value == true)
   }
 
   // MARK: - Play Tests

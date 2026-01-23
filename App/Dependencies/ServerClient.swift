@@ -502,6 +502,11 @@ private func mapAPIFileToDomainFile(_ apiFile: Components.Schemas.Models_period_
   file.description = apiFile.description
   file.status = fileStatus
   file.title = apiFile.title
+  // Rich metadata fields (Issue #151)
+  file.duration = apiFile.duration.map { Int($0) }
+  file.uploadDate = apiFile.uploadDate
+  file.viewCount = apiFile.viewCount.map { Int($0) }
+  file.thumbnailUrl = apiFile.thumbnailUrl
 
   return file
 }

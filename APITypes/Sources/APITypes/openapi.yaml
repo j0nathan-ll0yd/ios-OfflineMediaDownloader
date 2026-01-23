@@ -906,6 +906,20 @@ components:
           type: string
           format: uri
           description: CloudFront URL for downloading the file
+        duration:
+          type: integer
+          format: int64
+          description: Video duration in seconds
+        uploadDate:
+          type: string
+          description: Original upload date (YYYYMMDD format)
+        viewCount:
+          type: integer
+          format: int64
+          description: View count at download time
+        thumbnailUrl:
+          type: string
+          description: URL to video thumbnail
       description: A media file available for download
     Models.FileListResponse:
       type: object

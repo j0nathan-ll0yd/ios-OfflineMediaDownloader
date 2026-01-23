@@ -14,20 +14,46 @@ struct File: Equatable, Identifiable, Codable, Sendable {
   var description: String?
   var status: FileStatus?
   var title: String?
+  // Rich metadata fields (Issue #151)
+  var duration: Int?        // Video duration in seconds
+  var uploadDate: String?   // Upload date in YYYYMMDD format
+  var viewCount: Int?       // Number of views
+  var thumbnailUrl: String? // URL to video thumbnail
 
   var id: String { fileId }
 
   enum CodingKeys: String, CodingKey {
     case fileId, key, publishDate, size, url
     case authorName, authorUser, contentType, description, status, title
+    case duration, uploadDate, viewCount, thumbnailUrl
   }
 
-  init(fileId: String, key: String, publishDate: Date? = nil, size: Int? = nil, url: URL? = nil) {
+  init(
+    fileId: String,
+    key: String,
+    publishDate: Date? = nil,
+    size: Int? = nil,
+    url: URL? = nil,
+    title: String? = nil,
+    description: String? = nil,
+    authorName: String? = nil,
+    duration: Int? = nil,
+    uploadDate: String? = nil,
+    viewCount: Int? = nil,
+    thumbnailUrl: String? = nil
+  ) {
     self.fileId = fileId
     self.key = key
     self.publishDate = publishDate
     self.size = size
     self.url = url
+    self.title = title
+    self.description = description
+    self.authorName = authorName
+    self.duration = duration
+    self.uploadDate = uploadDate
+    self.viewCount = viewCount
+    self.thumbnailUrl = thumbnailUrl
   }
 
   init(from decoder: Decoder) throws {
@@ -53,6 +79,12 @@ struct File: Equatable, Identifiable, Codable, Sendable {
     description = try values.decodeIfPresent(String.self, forKey: .description)
     status = try values.decodeIfPresent(FileStatus.self, forKey: .status)
     title = try values.decodeIfPresent(String.self, forKey: .title)
+
+    // Rich metadata fields (Issue #151)
+    duration = try values.decodeIfPresent(Int.self, forKey: .duration)
+    uploadDate = try values.decodeIfPresent(String.self, forKey: .uploadDate)
+    viewCount = try values.decodeIfPresent(Int.self, forKey: .viewCount)
+    thumbnailUrl = try values.decodeIfPresent(String.self, forKey: .thumbnailUrl)
   }
 
   func encode(to encoder: Encoder) throws {
@@ -70,6 +102,11 @@ struct File: Equatable, Identifiable, Codable, Sendable {
     try container.encodeIfPresent(description, forKey: .description)
     try container.encodeIfPresent(status, forKey: .status)
     try container.encodeIfPresent(title, forKey: .title)
+    // Rich metadata fields (Issue #151)
+    try container.encodeIfPresent(duration, forKey: .duration)
+    try container.encodeIfPresent(uploadDate, forKey: .uploadDate)
+    try container.encodeIfPresent(viewCount, forKey: .viewCount)
+    try container.encodeIfPresent(thumbnailUrl, forKey: .thumbnailUrl)
   }
 }
 

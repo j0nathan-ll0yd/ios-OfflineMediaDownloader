@@ -18,21 +18,35 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
         app.launchArguments = ["-showPreviewCatalog"]
         app.launch()
 
-        // Wait for the app to launch and the picker to appear
-        let picker = app.segmentedControls.firstMatch
-        XCTAssertTrue(picker.waitForExistence(timeout: 10), "Preview catalog picker should appear")
+        // Wait for the app to fully launch
+        sleep(2)
 
-        let screenNames = ["Launch", "Login", "Default Files", "Files", "Account"]
+        // Wait for the picker to appear using accessibility identifier
+        let picker = app.segmentedControls["ScreenPicker"]
+        let pickerExists = picker.waitForExistence(timeout: 15)
+        
+        // Fallback to first segmented control if accessibility identifier not found
+        let actualPicker: XCUIElement
+        if pickerExists {
+            actualPicker = picker
+        } else {
+            actualPicker = app.segmentedControls.firstMatch
+            XCTAssertTrue(actualPicker.waitForExistence(timeout: 10), "Preview catalog picker should appear")
+        }
+
+        // Screen names must match ScreenType.rawValue in RedesignPreviewCatalog.swift
+        let screenNames = ["Launch", "Login", "Default", "Files", "Detail", "Account"]
 
         for screenName in screenNames {
             // Find the segment button within the segmented control
-            let segmentButton = picker.buttons[screenName]
+            let segmentButton = actualPicker.buttons[screenName]
 
-            if segmentButton.waitForExistence(timeout: 5) {
+            // Wait longer for the button to appear (CI can be slow)
+            if segmentButton.waitForExistence(timeout: 10) {
                 segmentButton.tap()
 
-                // Give it a moment to settle/animate
-                sleep(1)
+                // Give it more time to settle/animate in CI
+                sleep(2)
 
                 // Take screenshot
                 let screenshot = app.screenshot()
@@ -41,7 +55,9 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
                 attachment.lifetime = .keepAlways
                 add(attachment)
             } else {
-                XCTFail("Could not find picker button for \(screenName)")
+                // Log available buttons for debugging
+                let availableButtons = actualPicker.buttons.allElementsBoundByIndex.map { $0.label }
+                XCTFail("Could not find picker button for '\(screenName)'. Available buttons: \(availableButtons)")
             }
         }
     }

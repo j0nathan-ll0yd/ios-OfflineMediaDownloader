@@ -4,24 +4,64 @@ import ComposableArchitecture
 struct FileDetailView: View {
   @Bindable var store: StoreOf<FileDetailFeature>
 
+  private let theme = DarkProfessionalTheme()
+
+  /// Parse thumbnailUrl string to URL
+  private var thumbnailURL: URL? {
+    guard let urlString = store.file.thumbnailUrl else { return nil }
+    return URL(string: urlString)
+  }
+
   var body: some View {
     ScrollView {
-      VStack(spacing: 24) {
-        // Thumbnail/Preview
+      VStack(spacing: 0) {
+        // Thumbnail/Preview (16:9 aspect ratio)
         thumbnailSection
 
         // File Info
-        infoSection
+        VStack(alignment: .leading, spacing: 20) {
+          // Title
+          if let title = store.file.title {
+            Text(title)
+              .font(.title2)
+              .fontWeight(.semibold)
+              .foregroundStyle(.white)
+          }
 
-        // Action Buttons
-        actionSection
+          // Author with accent color
+          if let author = store.file.authorName {
+            Text(author)
+              .font(.body)
+              .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4))
+          }
 
-        Spacer()
+          // Statistics row: Views | Uploaded | Duration
+          statsRow
+
+          // Description (expandable with clickable links)
+          if let description = store.file.description, !description.isEmpty {
+            ExpandableText(description, lineLimit: 3)
+          }
+
+          Divider()
+            .background(theme.textSecondary.opacity(0.3))
+
+          // File details: Size | Published date
+          fileDetailsRow
+
+          // Status
+          statusSection
+
+          // Action Buttons
+          actionSection
+        }
+        .padding(20)
       }
-      .padding()
     }
-    .navigationTitle(store.file.title ?? store.file.key)
+    .background(theme.backgroundColor)
+    .navigationTitle("")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbarColorScheme(.dark, for: .navigationBar)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         if store.isDownloaded {
@@ -29,6 +69,7 @@ struct FileDetailView: View {
             store.send(.shareButtonTapped)
           } label: {
             Image(systemName: "square.and.arrow.up")
+              .foregroundStyle(theme.primaryColor)
           }
         }
       }
@@ -37,126 +78,153 @@ struct FileDetailView: View {
       store.send(.onAppear)
     }
     .alert($store.scope(state: \.alert, action: \.alert))
+    .preferredColorScheme(.dark)
   }
 
   // MARK: - Thumbnail Section
 
   private var thumbnailSection: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 16)
-        .fill(Color.gray.opacity(0.1))
-        .frame(height: 200)
+    ZStack(alignment: .bottomTrailing) {
+      // Thumbnail or placeholder
+      if thumbnailURL != nil {
+        ThumbnailImage(
+          fileId: store.file.fileId,
+          url: thumbnailURL,
+          size: CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width * 9 / 16),
+          cornerRadius: 0
+        )
+      } else {
+        Rectangle()
+          .fill(Color(white: 0.15))
+          .aspectRatio(16/9, contentMode: .fit)
+          .overlay {
+            Image(systemName: "film")
+              .font(.system(size: 48))
+              .foregroundStyle(.secondary)
+          }
+      }
 
+      // Duration badge
+      if let duration = store.file.duration {
+        DurationBadge(seconds: duration)
+          .padding(12)
+      }
+
+      // State overlay (centered)
+      stateOverlay
+    }
+    .aspectRatio(16/9, contentMode: .fit)
+  }
+
+  @ViewBuilder
+  private var stateOverlay: some View {
+    ZStack {
       if store.isDownloaded {
-        Image(systemName: "play.circle.fill")
-          .font(.system(size: 64))
-          .foregroundColor(.blue)
+        // Play button
+        Circle()
+          .fill(.black.opacity(0.5))
+          .frame(width: 72, height: 72)
+          .overlay {
+            Image(systemName: "play.fill")
+              .font(.system(size: 28))
+              .foregroundStyle(.white)
+              .offset(x: 2) // Optical centering
+          }
           .onTapGesture {
             store.send(.playButtonTapped)
           }
       } else if store.isDownloading {
-        VStack(spacing: 12) {
-          ProgressView()
-            .scaleEffect(1.5)
-          Text("\(Int(store.downloadProgress * 100))%")
-            .font(.headline)
-            .monospacedDigit()
-        }
+        // Download progress
+        Circle()
+          .fill(.black.opacity(0.6))
+          .frame(width: 80, height: 80)
+          .overlay {
+            VStack(spacing: 4) {
+              ProgressView()
+                .scaleEffect(1.2)
+                .tint(.white)
+              Text("\(Int(store.downloadProgress * 100))%")
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .monospacedDigit()
+            }
+          }
       } else if store.file.url != nil {
-        Image(systemName: "arrow.down.circle.fill")
-          .font(.system(size: 64))
-          .foregroundColor(.blue)
+        // Download available
+        Circle()
+          .fill(.black.opacity(0.5))
+          .frame(width: 72, height: 72)
+          .overlay {
+            Image(systemName: "arrow.down")
+              .font(.system(size: 28, weight: .semibold))
+              .foregroundStyle(.white)
+          }
           .onTapGesture {
             store.send(.downloadButtonTapped)
           }
       } else {
-        VStack(spacing: 8) {
-          Image(systemName: "clock.fill")
-            .font(.system(size: 48))
-            .foregroundColor(.orange)
-          Text("Processing...")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
+        // Pending
+        Circle()
+          .fill(.black.opacity(0.5))
+          .frame(width: 72, height: 72)
+          .overlay {
+            VStack(spacing: 4) {
+              Image(systemName: "clock.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(.orange)
+              Text("Processing")
+                .font(.caption2)
+                .foregroundStyle(.white)
+            }
+          }
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  // MARK: - Stats Row
+
+  private var statsRow: some View {
+    HStack(spacing: 20) {
+      if let viewCount = store.file.viewCount {
+        StatItem(label: "Views", value: MetadataFormatters.formatViewCount(viewCount).replacingOccurrences(of: " views", with: ""))
+      }
+
+      if let uploadDate = store.file.uploadDate {
+        StatItem(label: "Uploaded", value: formatUploadDate(uploadDate))
+      }
+
+      if let duration = store.file.duration {
+        StatItem(label: "Duration", value: MetadataFormatters.formatDuration(duration))
       }
     }
   }
 
-  // MARK: - Info Section
+  // MARK: - File Details Row
 
-  private var infoSection: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      // Title
-      if let title = store.file.title {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Title")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Text(title)
-            .font(.headline)
-        }
+  private var fileDetailsRow: some View {
+    HStack(spacing: 20) {
+      if let size = store.file.size {
+        StatItem(label: "File Size", value: formatFileSize(size))
       }
 
-      // Author
-      if let author = store.file.authorName {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Author")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Text(author)
-            .font(.body)
-        }
-      }
-
-      // Description
-      if let description = store.file.description {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Description")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Text(description)
-            .font(.body)
-        }
-      }
-
-      // File Details
-      HStack(spacing: 24) {
-        if let size = store.file.size {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Size")
-              .font(.caption)
-              .foregroundColor(.secondary)
-            Text(formatFileSize(size))
-              .font(.body)
-              .monospacedDigit()
-          }
-        }
-
-        if let date = store.file.publishDate {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Date")
-              .font(.caption)
-              .foregroundColor(.secondary)
-            Text(date, style: .date)
-              .font(.body)
-          }
-        }
-      }
-
-      // Status
-      VStack(alignment: .leading, spacing: 4) {
-        Text("Status")
-          .font(.caption)
-          .foregroundColor(.secondary)
-        HStack {
-          Image(systemName: statusIcon)
-            .foregroundColor(statusColor)
-          Text(statusText)
-            .font(.body)
-        }
+      if let date = store.file.publishDate {
+        StatItem(label: "Downloaded", value: formatDate(date))
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  // MARK: - Status Section
+
+  private var statusSection: some View {
+    HStack(spacing: 8) {
+      Image(systemName: statusIcon)
+        .foregroundStyle(statusColor)
+      Text(statusText)
+        .font(.subheadline)
+        .foregroundStyle(theme.textSecondary)
+    }
+    .padding(.vertical, 8)
   }
 
   // MARK: - Action Section
@@ -171,22 +239,27 @@ struct FileDetailView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
+        .tint(.red)
 
         ProgressView(value: store.downloadProgress)
           .progressViewStyle(.linear)
+          .tint(theme.primaryColor)
       } else if store.isDownloaded {
         Button {
           store.send(.playButtonTapped)
         } label: {
-          Label("Play", systemImage: "play.fill")
+          Label("Play Video", systemImage: "play.fill")
+            .font(.headline)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
         }
         .buttonStyle(.borderedProminent)
+        .tint(theme.primaryColor)
 
         Button(role: .destructive) {
           store.send(.deleteButtonTapped)
         } label: {
-          Label("Delete", systemImage: "trash")
+          Label("Delete from Device", systemImage: "trash")
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
@@ -195,9 +268,12 @@ struct FileDetailView: View {
           store.send(.downloadButtonTapped)
         } label: {
           Label("Download", systemImage: "arrow.down.circle")
+            .font(.headline)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
         }
         .buttonStyle(.borderedProminent)
+        .tint(theme.primaryColor)
       }
     }
   }
@@ -218,13 +294,13 @@ struct FileDetailView: View {
 
   private var statusColor: Color {
     if store.isDownloaded {
-      return .green
+      return theme.successColor
     } else if store.isDownloading {
-      return .blue
+      return theme.primaryColor
     } else if store.file.url == nil {
-      return .orange
+      return theme.warningColor
     } else {
-      return .secondary
+      return theme.textSecondary
     }
   }
 
@@ -245,9 +321,25 @@ struct FileDetailView: View {
     formatter.countStyle = .file
     return formatter.string(fromByteCount: Int64(bytes))
   }
+
+  private func formatDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    return formatter.string(from: date)
+  }
+
+  /// Format upload date from YYYYMMDD string
+  private func formatUploadDate(_ dateString: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyyMMdd"
+    guard let date = formatter.date(from: dateString) else {
+      return dateString
+    }
+    return MetadataFormatters.formatRelativeDate(date)
+  }
 }
 
-#Preview("Downloaded") {
+#Preview("Downloaded with Metadata") {
   NavigationStack {
     FileDetailView(store: Store(
       initialState: FileDetailFeature.State(
@@ -256,7 +348,14 @@ struct FileDetailView: View {
           key: "Sample Video.mp4",
           publishDate: Date(),
           size: 1024 * 1024 * 150,
-          url: URL(string: "https://example.com/video.mp4")
+          url: URL(string: "https://example.com/video.mp4"),
+          title: "Introduction to SwiftUI - WWDC 2024",
+          description: "Learn how to build amazing apps with SwiftUI. This video covers the basics of declarative UI programming and shows you how to create beautiful interfaces.\n\nFor more information, visit https://developer.apple.com/swiftui",
+          authorName: "Apple",
+          duration: 765,
+          uploadDate: "20240610",
+          viewCount: 2_300_000,
+          thumbnailUrl: "https://i.ytimg.com/vi/Tn6-PIqc4UM/maxresdefault.jpg"
         ),
         isDownloaded: true
       )
@@ -275,7 +374,11 @@ struct FileDetailView: View {
           key: "Another Video.mp4",
           publishDate: Date(),
           size: 1024 * 1024 * 80,
-          url: URL(string: "https://example.com/video2.mp4")
+          url: URL(string: "https://example.com/video2.mp4"),
+          title: "Building Modern Apps",
+          authorName: "Point-Free",
+          duration: 1845,
+          viewCount: 450_000
         )
       )
     ) {
@@ -293,7 +396,8 @@ struct FileDetailView: View {
           key: "Processing Video.mp4",
           publishDate: nil,
           size: nil,
-          url: nil
+          url: nil,
+          title: "Video Being Processed"
         )
       )
     ) {
