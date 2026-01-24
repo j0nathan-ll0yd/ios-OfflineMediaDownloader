@@ -30,7 +30,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -121,8 +121,8 @@ jobs:
           if [ -n "$DEVICE_ID" ]; then
             echo "Booting simulator $DEVICE_ID..."
             xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-            # Wait for simulator to be ready
-            sleep 10
+            # Wait briefly for simulator to initialize
+            sleep 5
           fi
 
       - name: Build for Testing
@@ -141,14 +141,8 @@ jobs:
       - name: Run Tests
         run: |
           set -o pipefail
-          # Run UI tests only for now
-          # Unit tests pass locally but fail in CI with timeouts (2s per test)
-          # Root cause: TCA TestStore expects specific action ordering but CI timing differs
-          # Tests fail waiting to receive .keychainItemsLoaded when .loadMetrics is received first
-          # TODO: Fix unit tests by either:
-          #   1. Update tests to receive all actions (including metrics)
-          #   2. Use store.exhaustivity = .off for non-critical action paths
-          #   3. Investigate CI-specific timing issues with TestStore
+          # Run all tests (unit + UI) with parallel execution enabled
+          # Unit tests use withMainSerialExecutor for deterministic action ordering
           xcodebuild test-without-building \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
@@ -159,7 +153,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 300 \
-            -only-testing:OfflineMediaDownloaderUITests \
+            -parallel-testing-enabled YES \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
 
@@ -200,7 +194,7 @@ jobs:
   build-check:
     name: Build Check (Release)
     runs-on: macos-14
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
