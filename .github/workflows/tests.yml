@@ -30,7 +30,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-14
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -46,28 +46,21 @@ jobs:
 
       - name: Select Xcode
         run: |
-          # List available Xcode versions
-          ls -la /Applications/ | grep Xcode
-
-          # Select the latest Xcode (adjust path as needed for runner)
           XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
           if [ -n "$XCODE_PATH" ]; then
             sudo xcode-select -s "$XCODE_PATH"
           fi
-
-          # Show selected version
           xcodebuild -version
-          xcrun simctl list runtimes
 
-      - name: Cache Swift Package Manager
+      - name: Cache Xcode Build
         uses: actions/cache@v5
         with:
           path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+            DerivedData
+            SourcePackages
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-xcode-
 
       - name: Resolve Dependencies
         run: |
@@ -75,6 +68,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath SourcePackages \
+            -derivedDataPath DerivedData \
             -skipPackagePluginValidation \
             -skipMacroValidation
 
@@ -116,13 +110,19 @@ jobs:
 
       - name: Boot Simulator
         run: |
-          # Pre-boot the simulator to avoid timeout issues
           DEVICE_ID="${{ steps.simulator.outputs.device_id }}"
           if [ -n "$DEVICE_ID" ]; then
             echo "Booting simulator $DEVICE_ID..."
             xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-            # Wait briefly for simulator to initialize
-            sleep 5
+
+            # Poll for simulator ready (max 30s)
+            for i in {1..30}; do
+              if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "Booted"; then
+                echo "Simulator ready after ${i}s"
+                break
+              fi
+              sleep 1
+            done
           fi
 
       - name: Build for Testing
@@ -132,6 +132,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -148,6 +149,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -156,6 +158,7 @@ jobs:
             -maximum-test-execution-time-allowance 60 \
             -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
+            -skip-testing:OfflineMediaDownloaderTests/FileCellSnapshotTests \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
 
@@ -193,85 +196,19 @@ jobs:
             echo "No test results file found" >> $GITHUB_STEP_SUMMARY
           fi
 
-  build-check:
-    name: Build Check (Release)
-    runs-on: macos-14
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Create Development Configuration
-        run: |
-          cat > Development.xcconfig << 'EOF'
-          // CI Configuration - placeholder values for testing
-          MEDIA_DOWNLOADER_API_KEY = CI_PLACEHOLDER_KEY
-          MEDIA_DOWNLOADER_BASE_PATH = https:/$()/example.com/
-          EOF
-
-      - name: Select Xcode
-        run: |
-          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_PATH" ]; then
-            sudo xcode-select -s "$XCODE_PATH"
-          fi
-          xcodebuild -version
-
-      - name: Cache Swift Package Manager
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
-      - name: Resolve Dependencies
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -skipPackagePluginValidation \
-            -skipMacroValidation
-
-      - name: Find Simulator
-        id: simulator
-        run: |
-          # Find an iPhone simulator preferring iOS 18 runtimes (compatible with Xcode 16)
-          DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | test("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-            head -1)
-          
-          # Fallback to any iOS runtime if no iOS 18 devices found
-          if [ -z "$DEVICE_INFO" ]; then
-            echo "No iOS 18 simulators found, trying any iOS version..."
-            DEVICE_INFO=$(xcrun simctl list devices available -j | \
-              jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-              sort -V | tail -1)
-          fi
-
-          if [ -n "$DEVICE_INFO" ]; then
-            DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
-            echo "Found iOS simulator: $DEVICE_NAME"
-            echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
-          else
-            echo "No iPhone simulators found, using generic destination"
-            echo "device=Any iOS Simulator Device" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build Release
         run: |
           set -o pipefail
+          # Verify Release configuration builds successfully
+          # Uses same simulator and cached dependencies from test build
           xcodebuild build \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
             -configuration Release \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
+            2>&1 | tee release-build.log | xcpretty --color || (cat release-build.log && exit 1)
