@@ -46,18 +46,11 @@ jobs:
 
       - name: Select Xcode
         run: |
-          # List available Xcode versions
-          ls -la /Applications/ | grep Xcode
-
-          # Select the latest Xcode (adjust path as needed for runner)
           XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
           if [ -n "$XCODE_PATH" ]; then
             sudo xcode-select -s "$XCODE_PATH"
           fi
-
-          # Show selected version
           xcodebuild -version
-          xcrun simctl list runtimes
 
       - name: Cache Swift Package Manager
         uses: actions/cache@v5
@@ -116,13 +109,19 @@ jobs:
 
       - name: Boot Simulator
         run: |
-          # Pre-boot the simulator to avoid timeout issues
           DEVICE_ID="${{ steps.simulator.outputs.device_id }}"
           if [ -n "$DEVICE_ID" ]; then
             echo "Booting simulator $DEVICE_ID..."
             xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-            # Wait briefly for simulator to initialize
-            sleep 5
+
+            # Poll for simulator ready (max 30s)
+            for i in {1..30}; do
+              if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "Booted"; then
+                echo "Simulator ready after ${i}s"
+                break
+              fi
+              sleep 1
+            done
           fi
 
       - name: Build for Testing
@@ -196,7 +195,8 @@ jobs:
   build-check:
     name: Build Check (Release)
     runs-on: macos-14
-    timeout-minutes: 15
+    timeout-minutes: 10
+    needs: test  # Only run if tests pass
 
     steps:
       - name: Checkout
