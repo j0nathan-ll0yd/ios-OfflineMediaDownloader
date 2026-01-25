@@ -14,6 +14,7 @@
 		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
 		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +128,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

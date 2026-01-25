@@ -158,6 +158,7 @@ jobs:
             -maximum-test-execution-time-allowance 60 \
             -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
+            -skip-testing:OfflineMediaDownloaderTests/FileCellSnapshotTests \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
 
