@@ -254,15 +254,19 @@ struct DownloadClientTests {
 }
 
 // MARK: - URLProtocol Based Integration Tests
-// Note: These tests are disabled because Swift Testing's parallel execution
-// and test isolation don't work well with URLProtocol's static handler pattern.
-// The MockURLProtocol class is still used by other tests that properly isolate it.
+// Note: These tests use .serialized to ensure they run sequentially,
+// avoiding conflicts with URLProtocol's static handler pattern.
 
-@Suite("DownloadManager Integration Tests", .disabled("URLProtocol static handlers conflict with Swift Testing parallel execution"))
+@Suite("DownloadManager Integration Tests", .serialized)
 struct DownloadManagerIntegrationTests {
 
   @Test("MockURLProtocol can intercept requests")
   func mockURLProtocolIntercepts() async throws {
+    defer {
+      MockURLProtocol.requestHandler = nil
+      MockURLProtocol.progressHandler = nil
+    }
+
     // Configure mock handler
     MockURLProtocol.requestHandler = { request in
       let response = HTTPURLResponse(
@@ -291,6 +295,11 @@ struct DownloadManagerIntegrationTests {
 
   @Test("MockURLProtocol can simulate errors")
   func mockURLProtocolSimulatesError() async {
+    defer {
+      MockURLProtocol.requestHandler = nil
+      MockURLProtocol.progressHandler = nil
+    }
+
     // Configure mock to return error
     MockURLProtocol.requestHandler = { _ in
       throw MockDownloadError.networkFailure
