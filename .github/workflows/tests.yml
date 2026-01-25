@@ -52,15 +52,15 @@ jobs:
           fi
           xcodebuild -version
 
-      - name: Cache Swift Package Manager
+      - name: Cache Xcode Build
         uses: actions/cache@v5
         with:
           path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+            DerivedData
+            SourcePackages
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-xcode-
 
       - name: Resolve Dependencies
         run: |
@@ -68,6 +68,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath SourcePackages \
+            -derivedDataPath DerivedData \
             -skipPackagePluginValidation \
             -skipMacroValidation
 
@@ -131,6 +132,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -147,6 +149,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -218,15 +221,15 @@ jobs:
           fi
           xcodebuild -version
 
-      - name: Cache Swift Package Manager
+      - name: Cache Xcode Build
         uses: actions/cache@v5
         with:
           path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+            DerivedData
+            SourcePackages
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-xcode-
 
       - name: Resolve Dependencies
         run: |
@@ -234,6 +237,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath SourcePackages \
+            -derivedDataPath DerivedData \
             -skipPackagePluginValidation \
             -skipMacroValidation
 
@@ -270,6 +274,7 @@ jobs:
             -scheme "$SCHEME" \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
             -configuration Release \
+            -derivedDataPath DerivedData \
             -clonedSourcePackagesDirPath SourcePackages \
             -skipPackagePluginValidation \
             -skipMacroValidation \
