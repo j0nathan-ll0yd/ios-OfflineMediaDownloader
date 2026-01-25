@@ -1,12 +1,3 @@
-// NOTE: This file requires swift-snapshot-testing dependency to be added to the project:
-// 1. Open Xcode: open OfflineMediaDownloader.xcodeproj
-// 2. Go to Project > Package Dependencies
-// 3. Add: https://github.com/pointfreeco/swift-snapshot-testing (version 1.17.0+)
-// 4. Link SnapshotTesting to OfflineMediaDownloaderTests target
-
-// Uncomment the following tests once swift-snapshot-testing is added:
-
-/*
 import Foundation
 import Testing
 import ComposableArchitecture
@@ -206,50 +197,5 @@ struct FileCellSnapshotTests {
       as: .image(layout: .fixed(width: 375, height: 100)),
       named: "large_file"
     )
-  }
-}
-*/
-
-// MARK: - Placeholder Tests (remove once swift-snapshot-testing is added)
-
-import Foundation
-import Testing
-@testable import OfflineMediaDownloader
-
-@Suite("FileCellView Tests (Placeholder)")
-struct FileCellViewPlaceholderTests {
-
-  @Test("FileCellView test placeholder - swift-snapshot-testing dependency required")
-  func placeholderTest() {
-    // This test serves as a reminder to add swift-snapshot-testing dependency
-    // Once added, uncomment the snapshot tests above and remove this file section
-
-    // Basic assertions to ensure the test file compiles
-    let file = File(fileId: "test", key: "test.mp4")
-    #expect(file.fileId == "test")
-    #expect(file.id == "test")
-  }
-
-  @Test("FileCellFeature.State initializes correctly")
-  func stateInitialization() {
-    let file = File(fileId: "test-id", key: "test.mp4")
-    let state = FileCellFeature.State(file: file)
-
-    #expect(state.file.fileId == "test-id")
-    #expect(state.isDownloading == false)
-    #expect(state.downloadProgress == 0)
-    #expect(state.isDownloaded == false)
-  }
-
-  @Test("FileCellFeature.State isPending when URL is nil")
-  func stateIsPending() {
-    let fileWithoutURL = File(fileId: "test", key: "test.mp4", url: nil)
-    let state = FileCellFeature.State(file: fileWithoutURL)
-    #expect(state.isPending == true)
-
-    var fileWithURL = File(fileId: "test", key: "test.mp4")
-    fileWithURL.url = URL(string: "https://example.com/video.mp4")
-    let stateWithURL = FileCellFeature.State(file: fileWithURL)
-    #expect(stateWithURL.isPending == false)
   }
 }

@@ -234,6 +234,7 @@
 			);
 			name = OfflineMediaDownloaderTests;
 			packageProductDependencies = (
+				C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */,
 			);
 			productName = OfflineMediaDownloaderTests;
 			productReference = C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */;
@@ -323,6 +324,7 @@
 				C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
 				C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */,
+				C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
@@ -828,6 +830,14 @@
 				minimumVersion = 4.3.0;
 			};
 		};
+		C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -844,6 +854,11 @@
 		C41DD9412D12ABC100F041C6 /* APITypes */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = APITypes;
+		};
+		C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
