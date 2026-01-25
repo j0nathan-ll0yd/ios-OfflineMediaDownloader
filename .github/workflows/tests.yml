@@ -196,80 +196,11 @@ jobs:
             echo "No test results file found" >> $GITHUB_STEP_SUMMARY
           fi
 
-  build-check:
-    name: Build Check (Release)
-    runs-on: macos-14
-    timeout-minutes: 10
-    needs: test  # Only run if tests pass
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Create Development Configuration
-        run: |
-          cat > Development.xcconfig << 'EOF'
-          // CI Configuration - placeholder values for testing
-          MEDIA_DOWNLOADER_API_KEY = CI_PLACEHOLDER_KEY
-          MEDIA_DOWNLOADER_BASE_PATH = https:/$()/example.com/
-          EOF
-
-      - name: Select Xcode
-        run: |
-          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_PATH" ]; then
-            sudo xcode-select -s "$XCODE_PATH"
-          fi
-          xcodebuild -version
-
-      - name: Cache Xcode Build
-        uses: actions/cache@v5
-        with:
-          path: |
-            DerivedData
-            SourcePackages
-          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
-      - name: Resolve Dependencies
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -derivedDataPath DerivedData \
-            -skipPackagePluginValidation \
-            -skipMacroValidation
-
-      - name: Find Simulator
-        id: simulator
-        run: |
-          # Find an iPhone simulator preferring iOS 18 runtimes (compatible with Xcode 16)
-          DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | test("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-            head -1)
-          
-          # Fallback to any iOS runtime if no iOS 18 devices found
-          if [ -z "$DEVICE_INFO" ]; then
-            echo "No iOS 18 simulators found, trying any iOS version..."
-            DEVICE_INFO=$(xcrun simctl list devices available -j | \
-              jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-              sort -V | tail -1)
-          fi
-
-          if [ -n "$DEVICE_INFO" ]; then
-            DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
-            echo "Found iOS simulator: $DEVICE_NAME"
-            echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
-          else
-            echo "No iPhone simulators found, using generic destination"
-            echo "device=Any iOS Simulator Device" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build Release
         run: |
           set -o pipefail
+          # Verify Release configuration builds successfully
+          # Uses same simulator and cached dependencies from test build
           xcodebuild build \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
@@ -280,4 +211,4 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
+            2>&1 | tee release-build.log | xcpretty --color || (cat release-build.log && exit 1)
