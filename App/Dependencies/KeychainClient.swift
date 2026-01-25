@@ -7,12 +7,18 @@ class ValetUtil {
   var secureEnclave: SecureEnclaveValet?
   var keychain: Valet
 
-  // Use a safe identifier that works in both app and test environments
-  static let identifier: String = {
+  // App Group identifier for sharing keychain between app and extensions
+  // Team ID: P328YB6M54
+  static let sharedGroupIdentifier = SharedGroupIdentifier(
+    appIDPrefix: "P328YB6M54",
+    nonEmptyGroup: "group.lifegames.OfflineMediaDownloader"
+  )!
+
+  // Legacy identifier for migration purposes (kept for reference)
+  static let legacyIdentifier: String = {
     if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
       return "\(bundleId).Valet"
     }
-    // Fallback for test environments where bundleIdentifier may not be available
     return "com.test.OfflineMediaDownloader.Valet"
   }()
 
@@ -22,16 +28,16 @@ class ValetUtil {
     #if targetEnvironment(simulator)
     secureEnclave = nil
     #else
-    // Try to create SecureEnclaveValet, but it may fail on older devices
-    // or in certain CI environments
-    secureEnclave = SecureEnclaveValet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+    // Try to create SecureEnclaveValet with shared group for extension access
+    secureEnclave = SecureEnclaveValet.sharedGroupValet(
+      with: ValetUtil.sharedGroupIdentifier,
       accessControl: .userPresence
     )
     #endif
 
-    keychain = Valet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+    // Use shared group valet so Share Extension can access the keychain
+    keychain = Valet.sharedGroupValet(
+      with: ValetUtil.sharedGroupIdentifier,
       accessibility: .whenUnlocked
     )
   }
