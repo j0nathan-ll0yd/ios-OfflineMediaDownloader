@@ -12,7 +12,11 @@ struct DefaultFilesFeatureTests {
   @MainActor
   @Test("onAppear sets loading state when file is nil")
   func onAppearSetsLoading() async throws {
-    let store = TestStore(initialState: DefaultFilesFeature.State()) {
+    // Start with isLoadingFile = false to verify onAppear sets it to true
+    var state = DefaultFilesFeature.State()
+    state.isLoadingFile = false
+
+    let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     }
 
