@@ -29,6 +29,8 @@ struct DiagnosticFeature {
     var playCount: Int = 0
     // Token expiration
     var tokenExpiresAt: Date?
+    // Download settings
+    var downloadSettings: DownloadSettingsFeature.State = DownloadSettingsFeature.State()
   }
 
   enum Action {
@@ -53,6 +55,8 @@ struct DiagnosticFeature {
     // Sign-out
     case signOutButtonTapped
     case signOutCompleted
+    // Download settings
+    case downloadSettings(DownloadSettingsFeature.Action)
 
     @CasePathable
     enum Alert: Equatable {
@@ -73,6 +77,10 @@ struct DiagnosticFeature {
   private enum CancelID { case loadData }
 
   var body: some ReducerOf<Self> {
+    Scope(state: \.downloadSettings, action: \.downloadSettings) {
+      DownloadSettingsFeature()
+    }
+
     Reduce { state, action in
       switch action {
       case .onAppear:
@@ -243,6 +251,9 @@ struct DiagnosticFeature {
       case .signOutCompleted:
         state.isLoading = false
         return .send(.delegate(.signedOut))
+
+      case .downloadSettings:
+        return .none
       }
     }
     .ifLet(\.$alert, action: \.alert)
