@@ -30,7 +30,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
