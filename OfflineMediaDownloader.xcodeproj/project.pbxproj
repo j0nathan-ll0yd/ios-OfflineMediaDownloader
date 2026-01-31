@@ -15,6 +15,8 @@
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
 		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */; };
+		SHARE00000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = SHARE00000000000000002 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		SHARE00000000000000003 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = SHARE00000000000000004 /* Valet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +41,13 @@
 			remoteGlobalIDString = C44108242F1487B2007EAB48;
 			remoteInfo = DownloadActivityWidgetExtension;
 		};
+		SHARE00000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = SHARE00000000000000006;
+			remoteInfo = ShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,6 +58,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */,
+				SHARE00000000000000001 /* ShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,6 +75,7 @@
 		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		C44108282F1487B2007EAB48 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
+		SHARE00000000000000002 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -81,6 +92,13 @@
 				Info.plist,
 			);
 			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
+		};
+		SHARE00000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = SHARE00000000000000006 /* ShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -109,6 +127,14 @@
 				C441083C2F1487B3007EAB48 /* Exceptions for "DownloadActivityWidget" folder in "DownloadActivityWidgetExtension" target */,
 			);
 			path = DownloadActivityWidget;
+			sourceTree = "<group>";
+		};
+		SHARE00000000000000008 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				SHARE00000000000000007 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -148,6 +174,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		SHARE00000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				SHARE00000000000000003 /* Valet in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -158,6 +192,7 @@
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
 				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
 				C41DD8862CC6C52600F041C6 /* App */,
+				SHARE00000000000000008 /* ShareExtension */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 				C441082A2F1487B2007EAB48 /* DownloadActivityWidget */,
@@ -175,6 +210,7 @@
 				C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */,
 				C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */,
 				C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */,
+				SHARE00000000000000002 /* ShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -204,6 +240,7 @@
 			);
 			dependencies = (
 				C44108372F1487B3007EAB48 /* PBXTargetDependency */,
+				SHARE0000000000000000D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C41DD8862CC6C52600F041C6 /* App */,
@@ -287,6 +324,29 @@
 			productReference = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		SHARE00000000000000006 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = SHARE0000000000000000A /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				SHARE0000000000000000B /* Sources */,
+				SHARE00000000000000009 /* Frameworks */,
+				SHARE0000000000000000C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				SHARE00000000000000008 /* ShareExtension */,
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+				SHARE00000000000000004 /* Valet */,
+			);
+			productName = ShareExtension;
+			productReference = SHARE00000000000000002 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -310,6 +370,9 @@
 					};
 					C44108242F1487B2007EAB48 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					SHARE00000000000000006 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -337,6 +400,7 @@
 				C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 				C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */,
+				SHARE00000000000000006 /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -364,6 +428,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C44108232F1487B2007EAB48 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		SHARE0000000000000000C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -402,6 +473,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		SHARE0000000000000000B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -419,6 +497,11 @@
 			isa = PBXTargetDependency;
 			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
 			targetProxy = C44108362F1487B3007EAB48 /* PBXContainerItemProxy */;
+		};
+		SHARE0000000000000000D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = SHARE00000000000000006 /* ShareExtension */;
+			targetProxy = SHARE00000000000000005 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -758,6 +841,62 @@
 			};
 			name = Release;
 		};
+		SHARE0000000000000000F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		SHARE00000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -802,6 +941,15 @@
 			buildConfigurations = (
 				C441083A2F1487B3007EAB48 /* Debug */,
 				C441083B2F1487B3007EAB48 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		SHARE0000000000000000A /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				SHARE0000000000000000F /* Debug */,
+				SHARE00000000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -861,6 +1009,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
 			productName = SnapshotTesting;
+		};
+		SHARE00000000000000004 /* Valet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */;
+			productName = Valet;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
