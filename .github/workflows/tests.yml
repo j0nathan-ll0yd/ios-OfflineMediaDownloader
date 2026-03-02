@@ -163,7 +163,7 @@ jobs:
             2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
