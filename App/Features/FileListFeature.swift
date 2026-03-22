@@ -19,6 +19,8 @@ struct FileListFeature {
     var isPreparingToPlay: Bool = false
     /// Stores the pending URL for retry actions
     var pendingAddUrl: URL?
+    /// Stores the youtube ID between add-file request and response (for deferred LiveActivity)
+    var pendingYoutubeId: String?
     /// URL to share via activity sheet
     var sharingFileURL: URL?
     /// Child feature for unauthenticated users to preview default files
@@ -30,6 +32,7 @@ struct FileListFeature {
     case refreshButtonTapped
     case addButtonTapped
     case addFromClipboard
+    case prepareAddFile(url: URL, youtubeId: String?)
     case confirmationDismissed
     case showError(AppError)
     case addPendingFileId(String)
@@ -235,6 +238,11 @@ struct FileListFeature {
           }))
         }
 
+      case .alert(.presented(.dismiss)):
+        state.pendingYoutubeId = nil
+        state.pendingAddUrl = nil
+        return .none
+
       case .alert:
         return .none
 
@@ -244,6 +252,11 @@ struct FileListFeature {
         return .run { _ in
           await LiveActivityManager.shared.startActivityWithId(fileId: fileId)
         }
+
+      case let .prepareAddFile(url, youtubeId):
+        state.pendingAddUrl = url
+        state.pendingYoutubeId = youtubeId
+        return .none
 
       case .addFromClipboard:
         state.showAddConfirmation = false
@@ -264,9 +277,7 @@ struct FileListFeature {
             return
           }
 
-          if let youtubeId = youtubeId {
-            await send(.addPendingFileId(youtubeId))
-          }
+          await send(.prepareAddFile(url: url, youtubeId: youtubeId))
 
           await send(.addFileResponse(Result {
             try await serverClient.addFile(url: url)
@@ -274,16 +285,48 @@ struct FileListFeature {
         }
 
       case .addFileResponse(.success):
+        let youtubeId = state.pendingYoutubeId
         state.pendingAddUrl = nil
+        state.pendingYoutubeId = nil
+        if let youtubeId {
+          return .send(.addPendingFileId(youtubeId))
+        }
         return .none
 
       case let .addFileResponse(.failure(error)):
         let appError = AppError.from(error)
         // Check if this is an auth error - redirect to login
         if appError.requiresReauth {
+          state.pendingAddUrl = nil
+          state.pendingYoutubeId = nil
           return .send(.delegate(.authenticationRequired))
         }
-        return .send(.showError(appError))
+        // Build alert inline to wire retry to .retryAddFile (not .retryRefresh)
+        if appError.isRetryable {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(action: .retryAddFile) {
+              TextState("Retry")
+            }
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        } else {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        }
+        return .none
 
       case .delegate:
         return .none

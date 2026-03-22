@@ -273,9 +273,11 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Alert dismiss clears alert state")
-  func alertDismissClearsState() async {
+  @Test("Alert dismiss clears alert and pending state")
+  func alertDismissClearsState() async throws {
     var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
     state.alert = AlertState {
       TextState("Test")
     } actions: {
@@ -288,8 +290,10 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
-    await store.send(.alert(.dismiss)) {
+    await store.send(.alert(.presented(.dismiss))) {
       $0.alert = nil
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
     }
   }
 
@@ -357,52 +361,75 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Add file success adds pending file ID")
-  func addFileAddsPendingId() async {
+  @Test("Add file success starts LiveActivity when youtubeId is pending")
+  func addFileSuccessStartsLiveActivity() async throws {
     var state = FileListFeature.State()
     state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "youtube-video-id"
 
     let store = TestStore(initialState: state) {
       FileListFeature()
-    } withDependencies: {
-      $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
     }
 
-    // Simulate having a pending ID added
-    await store.send(.addPendingFileId("youtube-video-id")) {
+    await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
+
+    // LiveActivity starts only after successful response
+    await store.receive(\.addPendingFileId) {
       $0.pendingFileIds = ["youtube-video-id"]
+    }
+  }
+
+  @MainActor
+  @Test("Add file success without youtubeId does not start LiveActivity")
+  func addFileSuccessNoLiveActivity() async throws {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://example.com/file.mp4")
+    // No pendingYoutubeId
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
       $0.pendingAddUrl = nil
     }
+    // No addPendingFileId received - no LiveActivity
   }
 
   @MainActor
-  @Test("Add file auth error triggers delegate")
-  func addFileAuthError() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+  @Test("Add file auth error triggers delegate and clears pending state")
+  func addFileAuthError() async throws {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id")))) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
     await store.receive(\.delegate.authenticationRequired)
   }
 
   @MainActor
-  @Test("Add file server error shows alert")
-  func addFileServerError() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+  @Test("Add file server error shows inline alert (non-retryable)")
+  func addFileServerError() async throws {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(
-      message: "Invalid URL",
-      requestId: "test-request-id",
-      correlationId: "test-correlation-id"
-    ))))
-
-    await store.receive(\.showError) {
+    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL", requestId: "test-request-id", correlationId: "test-correlation-id")))) {
+      // Inline alert wired to retryAddFile (server errors are non-retryable, so OK-only)
       $0.alert = AlertState {
         TextState("Server Error")
       } actions: {
@@ -412,6 +439,87 @@ struct FileListFeatureTests {
       } message: {
         TextState("Invalid URL\n\nCorrelation ID: test-correlation-id\nRequest ID: test-request-id")
       }
+      // Pending state preserved for potential future retry
+    }
+  }
+
+  @MainActor
+  @Test("Add file network error shows alert with retryAddFile action")
+  func addFileNetworkErrorShowsRetryAlert() async throws {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    await store.send(.addFileResponse(.failure(TestData.TestNetworkError.notConnected))) {
+      $0.alert = AlertState {
+        TextState("No Connection")
+      } actions: {
+        ButtonState(action: .retryAddFile) {
+          TextState("Retry")
+        }
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Please check your internet connection and try again.")
+      }
+      // Pending state preserved for retry
+    }
+  }
+
+  @MainActor
+  @Test("Retry add file after failure succeeds and starts LiveActivity")
+  func retryAddFileSucceedsWithLiveActivity() async throws {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+    state.alert = AlertState {
+      TextState("No Connection")
+    } actions: {
+      ButtonState(action: .retryAddFile) {
+        TextState("Retry")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
+    }
+
+    await store.send(.alert(.presented(.retryAddFile))) {
+      $0.alert = nil
+    }
+
+    await store.receive(\.addFileResponse.success) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
+
+    // LiveActivity starts after successful retry
+    await store.receive(\.addPendingFileId) {
+      $0.pendingFileIds = ["test-id"]
+    }
+  }
+
+  @MainActor
+  @Test("prepareAddFile sets pending URL and youtubeId")
+  func prepareAddFileSetsState() async throws {
+    let store = TestStore(initialState: FileListFeature.State()) {
+      FileListFeature()
+    }
+
+    let url = URL(string: "https://youtube.com/watch?v=abc123")!
+    await store.send(.prepareAddFile(url: url, youtubeId: "abc123")) {
+      $0.pendingAddUrl = url
+      $0.pendingYoutubeId = "abc123"
     }
   }
 
