@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import OrderedCollections
 @testable import OfflineMediaDownloader
 import Testing
 
@@ -702,6 +703,73 @@ struct FileListFeatureTests {
 
     await store.send(.dismissPlayer) {
       $0.playingFile = nil
+    }
+  }
+
+  // MARK: - Pending File ID Deduplication Tests
+
+  @MainActor
+  @Test("addPendingFileId is idempotent — duplicate ID is not appended")
+  func addPendingFileIdIdempotent() async throws {
+    var state = FileListFeature.State()
+    state.pendingFileIds = ["existing-id"]
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    await store.send(.addPendingFileId("existing-id"))
+    // pendingFileIds should still contain exactly one entry (OrderedSet no-ops on duplicate)
+    #expect(store.state.pendingFileIds == OrderedSet(["existing-id"]))
+    #expect(store.state.pendingFileIds.count == 1)
+  }
+
+  @MainActor
+  @Test("fileFailed removes fileId from pendingFileIds")
+  func fileFailedRemovesPendingId() async throws {
+    var state = FileListFeature.State()
+    state.pendingFileIds = ["failing-id", "other-id"]
+    state.files = [FileCellFeature.State(file: TestData.sampleFile)]
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    await store.send(.fileFailed(fileId: "failing-id", error: "Server error")) {
+      $0.pendingFileIds = ["other-id"]
+      $0.alert = AlertState {
+        TextState("Download Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Server error")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("fileFailed for unknown pending ID is safe no-op on pendingFileIds")
+  func fileFailedUnknownPendingId() async throws {
+    let state = FileListFeature.State()
+    // pendingFileIds is empty
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    await store.send(.fileFailed(fileId: "unknown-id", error: "Error")) {
+      // pendingFileIds remains empty (remove is a no-op)
+      $0.alert = AlertState {
+        TextState("Download Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Error")
+      }
     }
   }
 }

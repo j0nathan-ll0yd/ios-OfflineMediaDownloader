@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import OrderedCollections
 import UIKit
 
 @Reducer
@@ -7,7 +8,7 @@ struct FileListFeature {
   @ObservableState
   struct State: Equatable {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
-    var pendingFileIds: [String] = []
+    var pendingFileIds: OrderedSet<String> = []
     var isLoading: Bool = false
     var isAuthenticated: Bool = false
     var isRegistered: Bool = false
@@ -380,7 +381,7 @@ struct FileListFeature {
         // Sort by publishDate descending (newest first)
         state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
         // Remove from pending if it was there
-        state.pendingFileIds.removeAll { $0 == file.fileId }
+        state.pendingFileIds.remove(file.fileId)
         // For new files, trigger onAppear to check download status
         // (handles case where metadata notification was missed but file was downloaded)
         if isNewFile {
@@ -409,6 +410,8 @@ struct FileListFeature {
         }
 
       case let .fileFailed(fileId, error):
+        // Remove from pending if it was there (mirrors .fileAddedFromPush cleanup)
+        state.pendingFileIds.remove(fileId)
         // Update file state to show error
         if var fileState = state.files[id: fileId] {
           fileState.file.status = .failed

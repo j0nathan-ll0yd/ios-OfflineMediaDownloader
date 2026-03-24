@@ -1,5 +1,6 @@
 import AVKit
 import ComposableArchitecture
+import OrderedCollections
 import SwiftUI
 import UIKit
 
@@ -424,7 +425,7 @@ struct FileListView: View {
 }
 
 struct PendingFilesView: View {
-  let fileIds: [String]
+  let fileIds: OrderedSet<String>
 
   private let theme = DarkProfessionalTheme()
 
