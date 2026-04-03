@@ -589,4 +589,50 @@ extension ServerClient {
     },
     logoutUser: {}
   )
+
+  static let previewValue = ServerClient(
+    registerDevice: { _ in
+      RegisterDeviceResponse(
+        body: EndpointResponse(endpointArn: "preview-endpoint"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    registerUser: { _, _ in
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    loginUser: { _ in
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    refreshToken: {
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    getFiles: { _ in
+      FileResponse(
+        body: FileList(contents: [], keyCount: 0),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    addFile: { _ in
+      DownloadFileResponse(
+        body: DownloadFileResponseDetail(status: "queued"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    logoutUser: { }
+  )
 }

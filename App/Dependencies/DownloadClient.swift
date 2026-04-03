@@ -261,4 +261,15 @@ extension DownloadClient {
     },
     cancelDownload: { _ in }
   )
+
+  static let previewValue = DownloadClient(
+    downloadFile: { _, _ in
+      AsyncStream { continuation in
+        continuation.yield(.progress(percent: 100))
+        continuation.yield(.completed(localURL: URL(fileURLWithPath: "/tmp/preview.mp4")))
+        continuation.finish()
+      }
+    },
+    cancelDownload: { _ in }
+  )
 }
