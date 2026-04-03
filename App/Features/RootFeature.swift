@@ -32,7 +32,8 @@ struct RootFeature {
     init() {}
     var isLaunching: Bool = true
     var launchStatus: String = "Starting..."
-    var isAuthenticated: Bool = false
+    @Shared(.inMemory("isAuthenticated")) var isAuthenticated = false
+    @Shared(.inMemory("isRegistered")) var isRegistered = false
     var login: LoginFeature.State = .init()
     var main: MainFeature.State = .init()
 
@@ -119,12 +120,7 @@ struct RootFeature {
         state.isLaunching = false // Now safe to show main view
         state.login.registrationStatus = authState.registrationStatus
         state.isAuthenticated = authState.isAuthenticated
-        // Propagate auth state to MainFeature
-        state.main.isAuthenticated = authState.isAuthenticated
-        state.main.fileList.isAuthenticated = authState.isAuthenticated
-        // Propagate registration status to MainFeature
-        state.main.isRegistered = authState.isRegistered
-        state.main.fileList.isRegistered = authState.isRegistered
+        state.isRegistered = authState.isRegistered
 
         if authState.isAuthenticated {
           logger.info(.auth, "User is authenticated - checking token expiration")
@@ -158,8 +154,6 @@ struct RootFeature {
            case .unauthorized = serverError
         {
           state.isAuthenticated = false
-          state.main.isAuthenticated = false
-          state.main.fileList.isAuthenticated = false
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
             try? await keychainClient.deleteTokenExpiresAt()
@@ -223,24 +217,14 @@ struct RootFeature {
       case .login(.delegate(.loginCompleted)),
            .main(.delegate(.loginCompleted)):
         state.isAuthenticated = true
-        state.main.isAuthenticated = true
-        state.main.fileList.isAuthenticated = true
-        // User is already registered, just needs authentication state updated
-        state.main.isRegistered = true
-        state.main.fileList.isRegistered = true
-        // Don't trigger device registration - user already registered their device
+        state.isRegistered = true
         return .none
 
       // Handle registration completion - first time registration
       case .login(.delegate(.registrationCompleted)),
            .main(.delegate(.registrationCompleted)):
         state.isAuthenticated = true
-        state.main.isAuthenticated = true
-        state.main.fileList.isAuthenticated = true
-        // User is now registered for the first time
-        state.main.isRegistered = true
-        state.main.fileList.isRegistered = true
-        // Only trigger device registration on first registration
+        state.isRegistered = true
         return .send(.requestDeviceRegistration)
 
       case .login:
@@ -249,9 +233,6 @@ struct RootFeature {
       // Handle auth required from MainFeature - force user to re-login
       case .main(.delegate(.authenticationRequired)):
         state.isAuthenticated = false
-        state.main.isAuthenticated = false
-        state.main.fileList.isAuthenticated = false
-        // Keep registration status - user is still registered, just needs to re-authenticate
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         // Present login sheet to force re-authentication
@@ -265,8 +246,6 @@ struct RootFeature {
 
       case .main(.delegate(.signedOut)):
         state.isAuthenticated = false
-        state.main.isAuthenticated = false
-        // Keep login.registrationStatus = .registered so user can log back in
         return .none
 
       // MARK: - Push Notification Handling
@@ -414,8 +393,6 @@ struct RootFeature {
 
         case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
           state.isAuthenticated = false
-          state.main.isAuthenticated = false
-          state.main.fileList.isAuthenticated = false
           state.login.loginStatus = .unauthenticated
           state.diagnostic = nil // Dismiss the diagnostic sheet
           return .send(.main(.fileList(.clearAllFiles)))

@@ -10,8 +10,8 @@ struct FileListFeature {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
     var pendingFileIds: OrderedSet<String> = []
     var isLoading: Bool = false
-    var isAuthenticated: Bool = false
-    var isRegistered: Bool = false
+    @Shared(.inMemory("isAuthenticated")) var isAuthenticated = false
+    @Shared(.inMemory("isRegistered")) var isRegistered = false
     @Presents var alert: AlertState<Action.Alert>?
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
