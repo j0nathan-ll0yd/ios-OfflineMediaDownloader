@@ -250,10 +250,6 @@ struct FileListView: View {
     }
     .task {
       store.send(.onAppear)
-      // Pre-warm pasteboard access (triggers permission dialog if needed)
-      Task.detached(priority: .background) {
-        _ = UIPasteboard.general.hasStrings
-      }
     }
     .fullScreenCover(
       item: Binding(

@@ -5,13 +5,14 @@ import UserNotifications
 // MARK: - Notification Setup Helper
 
 func setupNotifications() {
+  @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
   let center = UNUserNotificationCenter.current()
   center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
     guard granted else { return }
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       guard settings.authorizationStatus == .authorized else { return }
-      DispatchQueue.main.async {
-        UIApplication.shared.registerForRemoteNotifications()
+      Task {
+        await notificationRegistrationClient.registerForRemoteNotifications()
       }
     }
   }
@@ -90,6 +91,8 @@ struct RootFeature {
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.logger) var logger
+  @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
+  @Dependency(\.liveActivityClient) var liveActivityClient
 
   var body: some ReducerOf<Self> {
     Scope(state: \.login, action: \.login) {
@@ -166,10 +169,8 @@ struct RootFeature {
 
       case .requestDeviceRegistration:
         logger.info(.push, "Re-requesting device registration with authentication")
-        return .run { _ in
-          await MainActor.run {
-            UIApplication.shared.registerForRemoteNotifications()
-          }
+        return .run { [notificationRegistrationClient] _ in
+          await notificationRegistrationClient.registerForRemoteNotifications()
         }
 
       // MARK: - Token Refresh
@@ -305,8 +306,8 @@ struct RootFeature {
 
         case let .failure(fileId, _, _, errorMessage):
           // Update file status to failed in CoreData and UI, end Live Activity
-          return .run { [coreDataClient] send in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
+          return .run { [coreDataClient, liveActivityClient] send in
+            await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
             try await coreDataClient.updateFileStatus(fileId, .failed)
             await send(.main(.fileList(.fileFailed(fileId: fileId, error: errorMessage))))
           }
@@ -320,8 +321,8 @@ struct RootFeature {
         // Forward to MainFeature to update FileList and start Live Activity
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
-          .run { _ in
-            await LiveActivityManager.shared.startActivity(for: file)
+          .run { [liveActivityClient] _ in
+            await liveActivityClient.startActivity(for: file)
           }
         )
 
@@ -333,9 +334,9 @@ struct RootFeature {
         // Start background download and update Live Activity
         return .merge(
           .send(.main(.activeDownloads(.downloadStarted(fileId: fileId, title: title, isBackground: true)))),
-          .run { [logger, downloadClient] send in
+          .run { [logger, downloadClient, liveActivityClient] send in
             logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
-            await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
+            await liveActivityClient.updateProgress(fileId: fileId, percent: 0, status: .downloading)
             let stream = downloadClient.downloadFile(url, size)
             var firstProgressReceived = false
             for await progress in stream {
@@ -350,7 +351,7 @@ struct RootFeature {
                   firstProgressReceived = true
                   await send(.downloadFirstProgressReceived(fileId: fileId))
                 }
-                await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
+                await liveActivityClient.updateProgress(fileId: fileId, percent: percent, status: .downloading)
                 // Forward progress to in-app tracking
                 await send(.main(.activeDownloads(.downloadProgressUpdated(fileId: fileId, percent: percent))))
               }
@@ -369,8 +370,8 @@ struct RootFeature {
         state.initiatingDownloads.remove(id: fileId)
         // Mark file as downloaded for metrics tracking, end Live Activity, then refresh UI state
         return .merge(
-          .run { [coreDataClient] send in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .downloaded)
+          .run { [coreDataClient, liveActivityClient] send in
+            await liveActivityClient.endActivity(fileId: fileId, status: .downloaded)
             try? await coreDataClient.markFileDownloaded(fileId)
             await send(.main(.fileList(.refreshFileState(fileId))))
           },
@@ -383,8 +384,8 @@ struct RootFeature {
         state.initiatingDownloads.remove(id: fileId)
         // End Live Activity with failed status
         return .merge(
-          .run { _ in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: error)
+          .run { [liveActivityClient] _ in
+            await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: error)
           },
           .send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: error))))
         )

@@ -80,6 +80,8 @@ struct FileListFeature {
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
+  @Dependency(\.liveActivityClient) var liveActivityClient
+  @Dependency(\.pasteboardClient) var pasteboardClient
 
   var body: some ReducerOf<Self> {
     Reduce { state, action in
@@ -89,16 +91,23 @@ struct FileListFeature {
         let isAuthenticated = state.isAuthenticated
         let isRegistered = state.isRegistered
         logger.debug(.lifecycle, "FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
-        return .run { send in
-          let files = try await coreDataClient.getFiles()
-          await send(.localFilesLoaded(files))
-          // Only auto-refresh for UNREGISTERED users (to show default files for demo)
-          // Registered users (authenticated or not) should pull-to-refresh manually
-          if !isRegistered {
-            logger.debug(.lifecycle, "FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
-            await send(.refreshButtonTapped)
+        let pasteboard = pasteboardClient
+        return .merge(
+          .run { send in
+            let files = try await coreDataClient.getFiles()
+            await send(.localFilesLoaded(files))
+            // Only auto-refresh for UNREGISTERED users (to show default files for demo)
+            // Registered users (authenticated or not) should pull-to-refresh manually
+            if !isRegistered {
+              logger.debug(.lifecycle, "FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
+              await send(.refreshButtonTapped)
+            }
+          },
+          // Pre-warm pasteboard access (triggers permission dialog if needed)
+          .run { _ in
+            _ = await Task.detached(priority: .background) { pasteboard.hasStrings() }.value
           }
-        }
+        )
 
       case let .localFilesLoaded(files):
         // Preserve existing UI state (download status) when reloading
@@ -251,8 +260,8 @@ struct FileListFeature {
       case let .addPendingFileId(fileId):
         state.pendingFileIds.append(fileId)
         // Start Live Activity immediately while app is in foreground
-        return .run { _ in
-          await LiveActivityManager.shared.startActivityWithId(fileId: fileId)
+        return .run { [liveActivityClient] _ in
+          await liveActivityClient.startActivityWithId(fileId: fileId)
         }
 
       case let .prepareAddFile(url, youtubeId):
@@ -263,10 +272,11 @@ struct FileListFeature {
       case .addFromClipboard:
         state.showAddConfirmation = false
         // Move pasteboard access to background thread to avoid blocking main thread (1-3s)
+        let pasteboard = pasteboardClient
         return .run { send in
           let result = await Task.detached {
-            guard UIPasteboard.general.hasStrings,
-                  let urlString = UIPasteboard.general.string,
+            guard pasteboard.hasStrings(),
+                  let urlString = pasteboard.string(),
                   let url = URL(string: urlString)
             else {
               return nil as (URL, String?)?
