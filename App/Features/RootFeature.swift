@@ -85,6 +85,11 @@ struct RootFeature {
     #endif
   }
 
+  private enum CancelID {
+    case tokenRefresh
+    case deviceRegistration
+  }
+
   @Dependency(\.authenticationClient) var authenticationClient
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
@@ -138,6 +143,7 @@ struct RootFeature {
             try await serverClient.registerDevice(token: token)
           }))
         }
+        .cancellable(id: CancelID.deviceRegistration, cancelInFlight: true)
 
       case .didFailToRegisterForRemoteNotificationsWithError:
         return .none
@@ -186,6 +192,7 @@ struct RootFeature {
             logger.info(.auth, "Token valid for \(Int(timeUntilExpiration))s - no refresh needed")
           }
         }
+        .cancellable(id: CancelID.tokenRefresh, cancelInFlight: true)
 
       case let .tokenRefreshResponse(.success(response)):
         guard let token = response.body?.token else {

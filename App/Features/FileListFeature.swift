@@ -83,6 +83,11 @@ struct FileListFeature {
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.pasteboardClient) var pasteboardClient
 
+  private enum CancelID {
+    case loadFiles
+    case addFile
+  }
+
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
@@ -147,6 +152,7 @@ struct FileListFeature {
             try await serverClient.getFiles(.all)
           }))
         }
+        .cancellable(id: CancelID.loadFiles, cancelInFlight: true)
 
       case let .remoteFilesResponse(.success(response)):
         if let fileList = response.body {
@@ -295,6 +301,7 @@ struct FileListFeature {
             try await serverClient.addFile(url: url)
           }))
         }
+        .cancellable(id: CancelID.addFile, cancelInFlight: true)
 
       case .addFileResponse(.success):
         let youtubeId = state.pendingYoutubeId
