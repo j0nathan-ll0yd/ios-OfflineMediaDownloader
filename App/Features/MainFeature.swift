@@ -76,10 +76,10 @@ struct MainFeature {
         // Clear default files (including CoreData) and switch to Files tab
         // No need to refresh - new user has no files yet
         state.selectedTab = .files
-        return .concatenate(
-          .send(.delegate(.registrationCompleted)),
-          .send(.fileList(.clearAllFiles))
-        )
+        return .run { send in
+          await send(.delegate(.registrationCompleted))
+          await send(.fileList(.clearAllFiles))
+        }
 
       case .loginSheet:
         return .none
@@ -92,10 +92,10 @@ struct MainFeature {
         // Clear default files (including CoreData) and switch to Files tab
         // No need to refresh - new user has no files yet
         state.selectedTab = .files
-        return .concatenate(
-          .send(.delegate(.registrationCompleted)),
-          .send(.fileList(.clearAllFiles))
-        )
+        return .run { send in
+          await send(.delegate(.registrationCompleted))
+          await send(.fileList(.clearAllFiles))
+        }
 
       case .accountLogin:
         return .none
@@ -127,14 +127,14 @@ struct MainFeature {
         return .none
 
       case .diagnostic(.delegate(.authenticationInvalidated)):
-        state.isAuthenticated = false
-        return .concatenate(
-          .send(.fileList(.clearAllFiles)),
-          .send(.delegate(.authenticationRequired))
-        )
+        state.$isAuthenticated.withLock { $0 = false }
+        return .run { send in
+          await send(.fileList(.clearAllFiles))
+          await send(.delegate(.authenticationRequired))
+        }
 
       case .diagnostic(.delegate(.signedOut)):
-        state.isAuthenticated = false
+        state.$isAuthenticated.withLock { $0 = false }
         // Do NOT clear files - user keeps local content
         return .send(.delegate(.signedOut))
 

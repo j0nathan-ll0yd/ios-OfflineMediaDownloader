@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 
 @Reducer
 struct DownloadTrackingFeature {
@@ -76,7 +77,7 @@ struct DownloadTrackingFeature {
         state.initiatingDownloads.remove(id: fileId)
         return .merge(
           .run { [coreDataClient, liveActivityClient] send in
-            await liveActivityClient.endActivity(fileId: fileId, status: .downloaded)
+            await liveActivityClient.endActivity(fileId: fileId, status: .downloaded, errorMessage: nil)
             try? await coreDataClient.markFileDownloaded(fileId)
             await send(.delegate(.refreshFileState(fileId: fileId)))
           },

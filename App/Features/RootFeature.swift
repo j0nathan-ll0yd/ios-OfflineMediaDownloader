@@ -117,8 +117,8 @@ struct RootFeature {
         ])
         state.isLaunching = false // Now safe to show main view
         state.login.registrationStatus = authState.registrationStatus
-        state.isAuthenticated = authState.isAuthenticated
-        state.isRegistered = authState.isRegistered
+        state.$isAuthenticated.withLock { $0 = authState.isAuthenticated }
+        state.$isRegistered.withLock { $0 = authState.isRegistered }
 
         if authState.isAuthenticated {
           logger.info(.auth, "User is authenticated - checking token expiration")
@@ -152,7 +152,7 @@ struct RootFeature {
         if let serverError = error as? ServerClientError,
            case .unauthorized = serverError
         {
-          state.isAuthenticated = false
+          state.$isAuthenticated.withLock { $0 = false }
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
             try? await keychainClient.deleteTokenExpiresAt()
@@ -216,15 +216,15 @@ struct RootFeature {
       // Handle login completion - user already registered, just re-authenticated
       case .login(.delegate(.loginCompleted)),
            .main(.delegate(.loginCompleted)):
-        state.isAuthenticated = true
-        state.isRegistered = true
+        state.$isAuthenticated.withLock { $0 = true }
+        state.$isRegistered.withLock { $0 = true }
         return .none
 
       // Handle registration completion - first time registration
       case .login(.delegate(.registrationCompleted)),
            .main(.delegate(.registrationCompleted)):
-        state.isAuthenticated = true
-        state.isRegistered = true
+        state.$isAuthenticated.withLock { $0 = true }
+        state.$isRegistered.withLock { $0 = true }
         return .send(.requestDeviceRegistration)
 
       case .login:
@@ -232,7 +232,7 @@ struct RootFeature {
 
       // Handle auth required from MainFeature - force user to re-login
       case .main(.delegate(.authenticationRequired)):
-        state.isAuthenticated = false
+        state.$isAuthenticated.withLock { $0 = false }
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         // Present login sheet to force re-authentication
@@ -245,7 +245,7 @@ struct RootFeature {
         }
 
       case .main(.delegate(.signedOut)):
-        state.isAuthenticated = false
+        state.$isAuthenticated.withLock { $0 = false }
         return .none
 
       // MARK: - Push Notification Handling
@@ -301,7 +301,7 @@ struct RootFeature {
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
           .run { [liveActivityClient] _ in
-            await liveActivityClient.startActivity(for: file)
+            await liveActivityClient.startActivity(file)
           }
         )
 
@@ -339,7 +339,7 @@ struct RootFeature {
           return .none
 
         case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
-          state.isAuthenticated = false
+          state.$isAuthenticated.withLock { $0 = false }
           state.login.loginStatus = .unauthenticated
           state.diagnostic = nil // Dismiss the diagnostic sheet
           return .send(.main(.fileList(.clearAllFiles)))

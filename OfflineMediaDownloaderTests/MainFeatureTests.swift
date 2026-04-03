@@ -52,8 +52,8 @@ struct MainFeatureTests {
   @Test("FileList actions pass through without state change")
   func fileListActionsPassThrough() async {
     var state = MainFeature.State()
-    state.isAuthenticated = true
-    state.fileList.isAuthenticated = true
+    state.$isAuthenticated.withLock { $0 = true }
+    state.fileList.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
       MainFeature()
