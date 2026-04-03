@@ -79,6 +79,7 @@ struct FileListFeature {
 
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
+  @Dependency(\.logger) var logger
 
   var body: some ReducerOf<Self> {
     Reduce { state, action in
@@ -87,14 +88,14 @@ struct FileListFeature {
         // Load cached files immediately for instant display
         let isAuthenticated = state.isAuthenticated
         let isRegistered = state.isRegistered
-        print("📋 FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
+        logger.debug(.lifecycle, "FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
         return .run { send in
           let files = try await coreDataClient.getFiles()
           await send(.localFilesLoaded(files))
           // Only auto-refresh for UNREGISTERED users (to show default files for demo)
           // Registered users (authenticated or not) should pull-to-refresh manually
           if !isRegistered {
-            print("📋 FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
+            logger.debug(.lifecycle, "FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
             await send(.refreshButtonTapped)
           }
         }

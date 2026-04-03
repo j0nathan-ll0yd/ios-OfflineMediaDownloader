@@ -76,6 +76,7 @@ struct DiagnosticFeature {
   @Dependency(\.keychainClient) var keychainClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.serverClient) var serverClient
+  @Dependency(\.logger) var logger
 
   private enum CancelID { case loadData }
 
@@ -205,7 +206,7 @@ struct DiagnosticFeature {
             let metrics = try await coreDataClient.getMetrics()
             await send(.metricsLoaded(metrics))
           } catch {
-            print("📊 Failed to load metrics: \(error)")
+            logger.warning(.performance, "Failed to load metrics: \(error)")
           }
         }
 

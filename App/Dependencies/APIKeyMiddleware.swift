@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import Foundation
 import HTTPTypes
 import OpenAPIRuntime
@@ -42,7 +43,8 @@ struct APIKeyMiddleware: ClientMiddleware {
       request.path = "\(currentPath)\(separator)ApiKey=\(apiKey)"
     }
 
-    print("🔑 APIKeyMiddleware: Added API key as query parameter to path: \(request.path ?? "nil")")
+    @Dependency(\.logger) var logger
+    logger.debug(.network, "APIKeyMiddleware: Added API key as query parameter to path: \(request.path ?? "nil")")
 
     return try await next(request, body, baseURL)
   }

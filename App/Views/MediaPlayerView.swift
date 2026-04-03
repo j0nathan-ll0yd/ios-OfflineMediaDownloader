@@ -67,12 +67,16 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
       try AVAudioSession.sharedInstance().setActive(true)
     } catch {
+      #if DEBUG
       print("🎬 MediaPlayerView: Audio session error: \(error)")
+      #endif
     }
 
     // File validation
     guard FileManager.default.fileExists(atPath: url.path) else {
+      #if DEBUG
       print("🎬 MediaPlayerView: File not found: \(url.path)")
+      #endif
       context.coordinator.showError("File not found", in: controller)
       DispatchQueue.main.async { self.isLoading = false }
       return controller
@@ -80,9 +84,10 @@ struct MediaPlayerView: UIViewControllerRepresentable {
 
     // Quick size check for corrupted files
     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize
-    {
+       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize {
+      #if DEBUG
       print("🎬 MediaPlayerView: File corrupted (\(size) bytes)")
+      #endif
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
       DispatchQueue.main.async { self.isLoading = false }
       return controller
@@ -107,7 +112,9 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       DispatchQueue.main.async { self.isLoading = false }
     }
 
+    #if DEBUG
     print("🎬 MediaPlayerView: Loading: \(url.lastPathComponent)")
+    #endif
 
     return controller
   }
@@ -124,12 +131,16 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     private var statusObservation: NSKeyValueObservation?
     private var bufferObservation: NSKeyValueObservation?
 
-    func playerViewControllerWillStartPictureInPicture(_: AVPlayerViewController) {
+    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      #if DEBUG
       print("🎬 MediaPlayerView: Starting Picture in Picture")
+      #endif
     }
 
-    func playerViewControllerDidStopPictureInPicture(_: AVPlayerViewController) {
+    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      #if DEBUG
       print("🎬 MediaPlayerView: Stopped Picture in Picture")
+      #endif
     }
 
     func waitForReadyThenPlay(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping () -> Void) {
@@ -146,7 +157,9 @@ struct MediaPlayerView: UIViewControllerRepresentable {
             self.waitForBuffer(playerItem: item, player: player, onReady: onReady)
           }
         case .failed:
+          #if DEBUG
           print("🎬 MediaPlayerView: Failed to load: \(item.error?.localizedDescription ?? "unknown")")
+          #endif
           onReady() // Hide loader to show error
         case .unknown:
           break
@@ -174,7 +187,9 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       // Start playback and notify
       DispatchQueue.main.async {
         player.play()
+        #if DEBUG
         print("🎬 MediaPlayerView: Playback started")
+        #endif
         onReady()
       }
     }

@@ -81,13 +81,14 @@ private func handleAPIResponse<SuccessPayload, DomainResponse>(
   errorExtractor: () -> (statusCode: Int, message: String?, requestId: String?)?,
   transform: (SuccessPayload) throws -> DomainResponse
 ) throws -> DomainResponse {
+  @Dependency(\.logger) var logger
   if let payload = successExtractor() {
-    print("📡 ServerClient.\(endpoint) succeeded")
+    logger.info(.network, "ServerClient.\(endpoint) succeeded")
     return try transform(payload)
   }
 
   if let (statusCode, message, requestId) = errorExtractor() {
-    print("📡 ServerClient.\(endpoint) failed: HTTP \(statusCode)")
+    logger.warning(.network, "ServerClient.\(endpoint) failed: HTTP \(statusCode)")
     throw mapStatusCodeToError(statusCode, message: message, requestId: requestId)
   }
 
@@ -182,7 +183,8 @@ private func makeUnauthenticatedAPIClient() -> Client {
 extension ServerClient: DependencyKey {
   static let liveValue = ServerClient(
     registerDevice: { token in
-      print("📡 ServerClient.registerDevice called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.registerDevice called")
       let client = makeAuthenticatedAPIClient()
 
       let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
@@ -199,7 +201,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
+        logger.debug(.network, "Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
       #endif
 
       let response = try await client.Devices_registerDevice(
@@ -237,7 +239,8 @@ extension ServerClient: DependencyKey {
     },
 
     registerUser: { userData, authorizationCode in
-      print("📡 ServerClient.registerUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.registerUser called")
       let client = makeUnauthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_UserRegistrationRequest(
@@ -247,7 +250,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
+        logger.debug(.network, "Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
       #endif
 
       let response = try await client.Authentication_registerUser(
@@ -288,7 +291,8 @@ extension ServerClient: DependencyKey {
     },
 
     loginUser: { authorizationCode in
-      print("📡 ServerClient.loginUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.loginUser called")
       let client = makeUnauthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_UserLoginRequest(
@@ -296,7 +300,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
+        logger.debug(.network, "Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
       #endif
 
       let response = try await client.Authentication_loginUser(
@@ -339,7 +343,8 @@ extension ServerClient: DependencyKey {
     },
 
     refreshToken: {
-      print("📡 ServerClient.refreshToken called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.refreshToken called")
       let client = makeAuthenticatedAPIClient()
 
       let response = try await client.Authentication_refreshToken(
@@ -378,7 +383,8 @@ extension ServerClient: DependencyKey {
     },
 
     getFiles: { statusFilter in
-      print("📡 ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
       // TODO: Add query parameter support when backend API is deployed and OpenAPI types regenerated
@@ -416,7 +422,8 @@ extension ServerClient: DependencyKey {
     },
 
     addFile: { url in
-      print("📡 ServerClient.addFile called with URL: \(url)")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.addFile called with URL: \(url)")
       let client = makeAuthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_FeedlyWebhookRequest(
@@ -425,7 +432,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: articleURL=\(url.absoluteString)")
+        logger.debug(.network, "Request body: articleURL=\(url.absoluteString)")
       #endif
 
       let response = try await client.Webhooks_processFeedlyWebhook(
@@ -462,7 +469,8 @@ extension ServerClient: DependencyKey {
     },
 
     logoutUser: {
-      print("📡 ServerClient.logoutUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.logoutUser called")
       let client = makeAuthenticatedAPIClient()
 
       let response = try await client.Authentication_logoutUser(
@@ -471,7 +479,7 @@ extension ServerClient: DependencyKey {
 
       switch response {
       case .noContent:
-        print("📡 ServerClient.logoutUser succeeded")
+        logger.info(.network, "ServerClient.logoutUser succeeded")
         return
       case let .unauthorized(r):
         throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)

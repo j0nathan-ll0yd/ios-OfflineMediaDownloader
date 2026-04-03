@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import Foundation
 
 /// Represents the type of push notification received for file operations
@@ -13,6 +14,7 @@ enum PushNotificationType: Equatable {
 
   /// Parse push notification userInfo into a typed notification
   static func parse(from userInfo: [AnyHashable: Any]) -> PushNotificationType {
+    @Dependency(\.logger) var logger
     guard let notificationType = userInfo["notificationType"] as? String,
           let fileData = userInfo["file"] as? [String: Any]
     else {
@@ -28,7 +30,7 @@ enum PushNotificationType: Equatable {
         let file = try decoder.decode(File.self, from: jsonData)
         return .metadata(file)
       } catch {
-        print("Failed to decode file from MetadataNotification: \(error)")
+        logger.error(.push, "Failed to decode file from MetadataNotification: \(error)")
         return .unknown
       }
 
@@ -39,7 +41,7 @@ enum PushNotificationType: Equatable {
             let url = URL(string: urlString),
             let size = fileData["size"] as? Int
       else {
-        print("Missing required fields in DownloadReadyNotification")
+        logger.warning(.push, "Missing required fields in DownloadReadyNotification")
         return .unknown
       }
       return .downloadReady(fileId: fileId, key: key, url: url, size: Int64(size))
@@ -49,14 +51,14 @@ enum PushNotificationType: Equatable {
             let errorCategory = fileData["errorCategory"] as? String,
             let errorMessage = fileData["errorMessage"] as? String
       else {
-        print("Missing required fields in FailureNotification")
+        logger.warning(.push, "Missing required fields in FailureNotification")
         return .unknown
       }
       let title = fileData["title"] as? String
       return .failure(fileId: fileId, title: title, errorCategory: errorCategory, errorMessage: errorMessage)
 
     default:
-      print("Unknown notificationType: \(notificationType)")
+      logger.warning(.push, "Unknown notificationType: \(notificationType)")
       return .unknown
     }
   }

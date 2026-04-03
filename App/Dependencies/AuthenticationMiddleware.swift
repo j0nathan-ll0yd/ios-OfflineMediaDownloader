@@ -16,17 +16,18 @@ struct AuthenticationMiddleware: ClientMiddleware {
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
 
+    @Dependency(\.logger) var logger
     // Add JWT token if available
     do {
       if let token = try await keychainClient.getJwtToken() {
         request.headerFields[.authorization] = "Bearer \(token)"
         let preview = String(token.prefix(20)) + "..."
-        print("🔑 AuthenticationMiddleware: Added Bearer token (\(preview)) to request")
+        logger.debug(.auth, "AuthenticationMiddleware: Added Bearer token (\(preview)) to request")
       } else {
-        print("🔑 AuthenticationMiddleware: No token in keychain")
+        logger.debug(.auth, "AuthenticationMiddleware: No token in keychain")
       }
     } catch {
-      print("🔑 AuthenticationMiddleware: Error getting token: \(error)")
+      logger.warning(.auth, "AuthenticationMiddleware: Error getting token: \(error)")
     }
 
     return try await next(request, body, baseURL)

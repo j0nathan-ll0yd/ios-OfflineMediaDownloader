@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import CryptoKit
 import Foundation
 import Security
@@ -24,8 +25,9 @@ enum CertificatePinning {
   /// - Returns: True if the certificate chain contains a trusted pinned key
   static func validate(serverTrust: SecTrust) -> Bool {
     // Get the certificate chain
+    @Dependency(\.logger) var logger
     guard let certificateChain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] else {
-      print("🔒 Certificate pinning: Failed to get certificate chain")
+      logger.warning(.network, "Certificate pinning: Failed to get certificate chain")
       return false
     }
 
@@ -39,13 +41,13 @@ enum CertificatePinning {
         let hashBase64 = Data(hash).base64EncodedString()
 
         if pinnedPublicKeyHashes.contains(hashBase64) {
-          print("🔒 Certificate pinning: Matched trusted public key")
+          logger.debug(.network, "Certificate pinning: Matched trusted public key")
           return true
         }
       }
     }
 
-    print("🔒 Certificate pinning: No matching public key found in chain")
+    logger.warning(.network, "Certificate pinning: No matching public key found in chain")
     return false
   }
 }
@@ -77,8 +79,9 @@ final class PinningURLSessionDelegate: NSObject, URLSessionDelegate {
     var error: CFError?
     let trustValid = SecTrustEvaluateWithError(serverTrust, &error)
 
+    @Dependency(\.logger) var logger
     guard trustValid else {
-      print("🔒 Certificate validation failed: \(error?.localizedDescription ?? "Unknown error")")
+      logger.warning(.network, "Certificate validation failed: \(error?.localizedDescription ?? "Unknown error")")
       completionHandler(.cancelAuthenticationChallenge, nil)
       return
     }
@@ -89,11 +92,11 @@ final class PinningURLSessionDelegate: NSObject, URLSessionDelegate {
     if pinValid {
       completionHandler(.useCredential, URLCredential(trust: serverTrust))
     } else if enforcesPinning {
-      print("🔒 Certificate pinning failed - connection rejected")
+      logger.warning(.network, "Certificate pinning failed - connection rejected")
       completionHandler(.cancelAuthenticationChallenge, nil)
     } else {
       // Development mode: log warning but allow connection
-      print("⚠️ Certificate pinning failed but enforcement is disabled")
+      logger.warning(.network, "Certificate pinning failed but enforcement is disabled")
       completionHandler(.useCredential, URLCredential(trust: serverTrust))
     }
   }

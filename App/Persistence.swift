@@ -1,3 +1,4 @@
+import ComposableArchitecture
 import CoreData
 
 struct PersistenceController {
@@ -29,7 +30,8 @@ struct PersistenceController {
       if let error = error as NSError? {
         // In test environments, log but don't crash
         if PersistenceController.isTestEnvironment {
-          print("⚠️ CoreData error in test environment: \(error)")
+          @Dependency(\.logger) var logger
+          logger.warning(.storage, "CoreData error in test environment: \(error)")
           return
         }
         fatalError("Unresolved error \(error), \(error.userInfo)")

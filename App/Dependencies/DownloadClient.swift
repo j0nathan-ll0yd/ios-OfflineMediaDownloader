@@ -147,7 +147,8 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     let trustValid = SecTrustEvaluateWithError(serverTrust, &error)
 
     guard trustValid else {
-      print("📥 Certificate validation failed: \(error?.localizedDescription ?? "Unknown error")")
+      @Dependency(\.logger) var logger
+      logger.warning(.download, "Certificate validation failed: \(error?.localizedDescription ?? "Unknown error")")
       completionHandler(.cancelAuthenticationChallenge, nil)
       return
     }
@@ -156,10 +157,12 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     let pinValid = CertificatePinning.validate(serverTrust: serverTrust)
 
     if pinValid {
-      print("📥 Certificate pinning validated for download")
+      @Dependency(\.logger) var logger
+      logger.debug(.download, "Certificate pinning validated for download")
       completionHandler(.useCredential, URLCredential(trust: serverTrust))
     } else {
-      print("📥 Certificate pinning failed - download connection rejected")
+      @Dependency(\.logger) var logger
+      logger.warning(.download, "Certificate pinning failed - download connection rejected")
       completionHandler(.cancelAuthenticationChallenge, nil)
     }
   }
@@ -179,9 +182,8 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     let documentsPath = URL.documentsDirectory
     let destinationURL = documentsPath.appendingPathComponent(originalURL.lastPathComponent)
 
-    print("📥 Download complete, moving file:")
-    print("   From: \(location.path)")
-    print("   To: \(destinationURL.path)")
+    @Dependency(\.logger) var logger
+    logger.info(.download, "Download complete, moving file from: \(location.path) to: \(destinationURL.path)")
 
     do {
       // Remove existing file if present
@@ -189,13 +191,13 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
         try fileManager.removeItem(at: destinationURL)
       }
       try fileManager.moveItem(at: location, to: destinationURL)
-      print("📥 File moved successfully")
+      logger.info(.download, "File moved successfully")
 
       Task {
         await self.handleDownloadSuccess(for: originalURL, localURL: destinationURL)
       }
     } catch {
-      print("📥 File move failed: \(error)")
+      logger.error(.download, "File move failed: \(error)")
       Task {
         await self.handleDownloadError(for: originalURL, error: error)
       }
@@ -216,7 +218,8 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   }
 
   nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
-    print("📥 URLSession background events finished")
+    @Dependency(\.logger) var logger
+    logger.info(.download, "URLSession background events finished")
     Task {
       await self.callCompletionHandler()
     }

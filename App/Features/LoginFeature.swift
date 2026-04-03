@@ -78,6 +78,7 @@ struct LoginFeature {
 
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
+  @Dependency(\.logger) var logger
 
   private enum CancelID { case signIn }
 
@@ -109,7 +110,7 @@ struct LoginFeature {
           return .send(.showError(.loginFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
         state.loginStatus = .authenticated
         let expirationDate = response.body?.expirationDate
         return .run { send in
@@ -142,7 +143,7 @@ struct LoginFeature {
           return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
         state.registrationStatus = .registered
         state.loginStatus = .authenticated
         let userData = state.pendingUserData
