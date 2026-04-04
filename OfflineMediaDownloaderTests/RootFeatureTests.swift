@@ -1,14 +1,17 @@
-import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
-@testable import OfflineMediaDownloader
 import Testing
+import ComposableArchitecture
+@testable import OfflineMediaDownloader
 
+@Suite("RootFeature Tests")
 struct RootFeatureTests {
+
   // MARK: - Launch Flow Tests
 
   @MainActor
   @Test("didFinishLaunching sets up app and checks auth state - unregistered user")
-  func didFinishLaunchingUnregistered() async {
+  func didFinishLaunchingUnregistered() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -31,14 +34,14 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Authenticated user sees main view on launch and triggers token expiration check")
-  func didFinishLaunchingAuthenticated() async {
+  func didFinishLaunchingAuthenticated() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
       $0.authenticationClient.determineAuthState = {
         AuthState(loginStatus: .authenticated, registrationStatus: .registered)
       }
-      $0.keychainClient.getTokenExpiresAt = { nil } // No expiration stored
+      $0.keychainClient.getTokenExpiresAt = { nil }  // No expiration stored
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -62,7 +65,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Registered but logged out user shows correct registration status")
-  func registeredUserShowsStatus() async {
+  func registeredUserShowsStatus() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -87,7 +90,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Signed out user with Apple credentials but no JWT token is unauthenticated")
-  func signedOutUserNoJwtTokenIsUnauthenticated() async {
+  func signedOutUserNoJwtTokenIsUnauthenticated() async throws {
     // This test documents the scenario where:
     // 1. User was previously logged in (Apple credentials authorized + JWT token)
     // 2. User signed out (JWT token deleted, but Apple credentials still valid)
@@ -126,7 +129,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Login completion from child sets authenticated state without device registration")
-  func loginCompletionSetsAuthenticated() async {
+  func loginCompletionSetsAuthenticated() async throws {
     // Login is for existing users who already registered their device,
     // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
@@ -147,7 +150,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Registration completion from child sets authenticated state and triggers device registration")
-  func registrationCompletionSetsAuthenticated() async {
+  func registrationCompletionSetsAuthenticated() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -167,7 +170,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Login completion from MainFeature sheet sets authenticated state without device registration")
-  func loginCompletionFromSheetTriggersDeviceRegistration() async {
+  func loginCompletionFromSheetTriggersDeviceRegistration() async throws {
     // Login is for existing users who already registered their device,
     // so no device registration should be triggered
     let store = TestStore(initialState: RootFeature.State()) {
@@ -188,7 +191,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Registration completion from MainFeature sheet triggers device registration")
-  func registrationCompletionFromSheetTriggersDeviceRegistration() async {
+  func registrationCompletionFromSheetTriggersDeviceRegistration() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -210,7 +213,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Device registration stores endpoint ARN")
-  func deviceRegistrationSuccess() async {
+  func deviceRegistrationSuccess() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
@@ -224,7 +227,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Device registration failure with auth error redirects to login")
-  func deviceRegistrationAuthError() async {
+  func deviceRegistrationAuthError() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -233,8 +236,8 @@ struct RootFeatureTests {
       RootFeature()
     } withDependencies: {
       $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
-      $0.keychainClient.deleteJwtToken = {}
-      $0.keychainClient.deleteTokenExpiresAt = {}
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
     }
 
     await store.send(.didRegisterForRemoteNotificationsWithDeviceToken("test-token"))
@@ -248,7 +251,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Device registration network error does not redirect")
-  func deviceRegistrationNetworkError() async {
+  func deviceRegistrationNetworkError() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -267,7 +270,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Failed to register for notifications does nothing")
-  func failedToRegisterNotifications() async {
+  func failedToRegisterNotifications() async throws {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     }
@@ -280,7 +283,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Auth required from main clears session and shows login")
-  func authRequiredClearsSession() async {
+  func authRequiredClearsSession() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -289,8 +292,8 @@ struct RootFeatureTests {
       RootFeature()
     } withDependencies: {
       $0.keychainClient.getUserIdentifier = { "user-123" }
-      $0.keychainClient.deleteJwtToken = {}
-      $0.keychainClient.deleteTokenExpiresAt = {}
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -308,7 +311,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Metadata push notification saves file and updates UI")
-  func metadataPushNotification() async {
+  func metadataPushNotification() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -317,7 +320,7 @@ struct RootFeatureTests {
       fileId: "push-file-123",
       key: "Push Video.mp4",
       publishDate: nil,
-      size: 1_500_000,
+      size: 1500000,
       url: nil
     )
 
@@ -345,58 +348,12 @@ struct RootFeatureTests {
   // that are difficult to test with TCA's strict effect verification.
   // The behavior is covered by integration tests and manual testing.
 
-  @MainActor
-  @Test("Background download completion sends refresh action")
-  func backgroundDownloadCompleted() async {
-    var state = RootFeature.State()
-    state.$isAuthenticated.withLock { $0 = true }
-    state.main = MainFeature.State()
-    state.main.fileList.files = [FileCellFeature.State(file: TestData.sampleFile)]
-
-    let store = TestStore(initialState: state) {
-      RootFeature()
-    } withDependencies: {
-      $0.fileClient.fileExists = { _ in true }
-      $0.logger.log = { _, _, _, _, _, _ in }
-    }
-    store.exhaustivity = .off
-
-    await store.send(.backgroundDownloadCompleted(fileId: TestData.sampleFile.fileId))
-
-    // Expect completion forwarded to active downloads
-    await store.receive(\.main.activeDownloads.downloadCompleted)
-
-    // Expect the refresh action to be forwarded to fileList
-    await store.receive(\.main.fileList.refreshFileState)
-    await store.receive(\.main.fileList.files)
-    await store.receive(\.main.fileList.files) {
-      $0.main.fileList.files[id: TestData.sampleFile.fileId]?.isDownloaded = true
-    }
-  }
-
-  @MainActor
-  @Test("Background download failure is logged but no state change")
-  func backgroundDownloadFailed() async {
-    var state = RootFeature.State()
-    state.$isAuthenticated.withLock { $0 = true }
-    state.main = MainFeature.State()
-
-    let store = TestStore(initialState: state) {
-      RootFeature()
-    } withDependencies: {
-      $0.logger.log = { _, _, _, _, _, _ in }
-    }
-    store.exhaustivity = .off
-
-    await store.send(.backgroundDownloadFailed(fileId: "file-123", error: "Network error"))
-
-    // Expect failure forwarded to active downloads
-    await store.receive(\.main.activeDownloads.downloadFailed)
-  }
+  // Tests for backgroundDownloadCompleted/backgroundDownloadFailed removed —
+  // actions were removed from RootFeature in a prior refactor.
 
   @MainActor
   @Test("Unknown push notification type is ignored")
-  func unknownPushNotification() async {
+  func unknownPushNotification() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -415,7 +372,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token expiration check skipped when no expiration stored")
-  func tokenExpirationCheckNoExpirationStored() async {
+  func tokenExpirationCheckNoExpirationStored() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
@@ -432,7 +389,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token expiration check skipped when token is valid")
-  func tokenExpirationCheckValidToken() async {
+  func tokenExpirationCheckValidToken() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
@@ -450,7 +407,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token expiration check triggers refresh when token expires soon")
-  func tokenExpirationCheckTriggersRefresh() async {
+  func tokenExpirationCheckTriggersRefresh() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
@@ -483,7 +440,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token refresh failure with 401 triggers re-authentication")
-  func tokenRefreshFailureTriggersReauth() async {
+  func tokenRefreshFailureTriggersReauth() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.main = MainFeature.State()
@@ -491,8 +448,8 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
-      $0.keychainClient.deleteJwtToken = {}
-      $0.keychainClient.deleteTokenExpiresAt = {}
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -509,7 +466,7 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token refresh failure with network error does not interrupt user")
-  func tokenRefreshNetworkErrorContinues() async {
+  func tokenRefreshNetworkErrorContinues() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
@@ -525,19 +482,19 @@ struct RootFeatureTests {
 
   @MainActor
   @Test("Token refresh success updates keychain")
-  func tokenRefreshSuccessUpdatesKeychain() async {
+  func tokenRefreshSuccessUpdatesKeychain() async throws {
     var state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
-    var storedToken: String?
-    var storedExpiration: Date?
+    let storedToken = LockIsolated<String?>(nil)
+    let storedExpiration = LockIsolated<Date?>(nil)
 
     let newExpiration = Date().addingTimeInterval(3600)
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
-      $0.keychainClient.setJwtToken = { storedToken = $0 }
-      $0.keychainClient.setTokenExpiresAt = { storedExpiration = $0 }
+      $0.keychainClient.setJwtToken = { storedToken.setValue($0) }
+      $0.keychainClient.setTokenExpiresAt = { storedExpiration.setValue($0) }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -552,7 +509,7 @@ struct RootFeatureTests {
       requestId: "request-123"
     ))))
 
-    #expect(storedToken == "new-refreshed-token")
-    #expect(storedExpiration != nil)
+    #expect(storedToken.value == "new-refreshed-token")
+    #expect(storedExpiration.value != nil)
   }
 }

@@ -19,7 +19,7 @@ struct KeychainItem: Equatable, Identifiable {
 }
 
 @Reducer
-struct DiagnosticFeature {
+struct DiagnosticFeature: Sendable {
   @ObservableState
   struct State: Equatable {
     var keychainItems: [KeychainItem] = []

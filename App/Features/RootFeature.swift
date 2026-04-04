@@ -4,15 +4,17 @@ import UserNotifications
 
 // MARK: - Notification Setup Helper
 
+@MainActor
 func setupNotifications() {
   @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
+  let client = notificationRegistrationClient
   let center = UNUserNotificationCenter.current()
   center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
     guard granted else { return }
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       guard settings.authorizationStatus == .authorized else { return }
       Task {
-        await notificationRegistrationClient.registerForRemoteNotifications()
+        await client.registerForRemoteNotifications()
       }
     }
   }
@@ -24,7 +26,7 @@ private let tokenRefreshThreshold: TimeInterval = 5 * 60 // 5 minutes
 // MARK: - RootFeature
 
 @Reducer
-struct RootFeature {
+struct RootFeature: Sendable {
   init() {}
 
   @ObservableState
@@ -104,8 +106,8 @@ struct RootFeature {
         // Keep isLaunching = true until auth check completes
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
-        setupNotifications()
         return .run { [authenticationClient] send in
+          await MainActor.run { setupNotifications() }
           let authState = await authenticationClient.determineAuthState()
           await send(.authStateResponse(authState))
         }

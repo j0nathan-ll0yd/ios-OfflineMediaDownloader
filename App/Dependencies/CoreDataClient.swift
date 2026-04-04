@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import CoreData
+@preconcurrency import CoreData
 import Foundation
 
 @DependencyClient

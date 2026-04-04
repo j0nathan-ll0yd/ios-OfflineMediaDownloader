@@ -62,7 +62,8 @@ actor LiveActivityManager {
     state.authorName = authorName
     currentStates[fileId] = state
 
-    await activity.update(ActivityContent(state: state, staleDate: nil))
+    nonisolated(unsafe) let unsafeActivity = activity
+    await unsafeActivity.update(ActivityContent(state: state, staleDate: nil))
     logger.info("Live Activity metadata updated for fileId: \(fileId), title: \(title)")
   }
 
@@ -118,7 +119,8 @@ actor LiveActivityManager {
     state.progressPercent = percent
     currentStates[fileId] = state
 
-    await activity.update(ActivityContent(state: state, staleDate: nil))
+    nonisolated(unsafe) let unsafeActivity = activity
+    await unsafeActivity.update(ActivityContent(state: state, staleDate: nil))
     logger.debug("Live Activity updated for fileId: \(fileId), progress: \(percent)%, status: \(status.rawValue)")
   }
 
@@ -134,7 +136,8 @@ actor LiveActivityManager {
     state.progressPercent = status == .downloaded ? 100 : 0
     state.errorMessage = errorMessage
 
-    await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .default)
+    nonisolated(unsafe) let unsafeActivity = activity
+    await unsafeActivity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .default)
     activeActivities[fileId] = nil
     currentStates[fileId] = nil
     logger.info("Live Activity ended for fileId: \(fileId), status: \(status.rawValue)")

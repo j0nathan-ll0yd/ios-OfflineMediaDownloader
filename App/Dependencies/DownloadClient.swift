@@ -64,7 +64,7 @@ actor DownloadManager: NSObject {
     activeTasks[url] = task
 
     // Observe progress
-    let observation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+    let observation = task.progress.observe(\.fractionCompleted) { @Sendable [weak self] progress, _ in
       let percent = Int(progress.fractionCompleted * 100)
       Task {
         await self?.sendProgress(for: url, percent: percent)
@@ -74,7 +74,7 @@ actor DownloadManager: NSObject {
 
     task.resume()
 
-    continuation.onTermination = { [weak self] _ in
+    continuation.onTermination = { @Sendable [weak self] _ in
       Task {
         await self?.cancelDownload(url: url)
       }

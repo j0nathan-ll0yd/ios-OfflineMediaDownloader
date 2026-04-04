@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import CoreData
+@preconcurrency import CoreData
 
 struct PersistenceController {
   /// Check if running in a test environment

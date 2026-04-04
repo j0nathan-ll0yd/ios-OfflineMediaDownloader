@@ -2,8 +2,10 @@ import AVFoundation
 import ComposableArchitecture
 import Foundation
 import SwiftUI
+@preconcurrency import UIKit
 import UserNotifications
 
+@MainActor
 class AppDelegate: NSObject, UIApplicationDelegate {
   /// Check if running as a test host (unit tests hosted by the app)
   private static var isRunningTests: Bool {
@@ -107,8 +109,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     logger.info(.lifecycle, "AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
     // Re-initialize DownloadManager if needed (it's a singleton, so accessing .shared ensures it's initialized)
     // Pass the completion handler to DownloadManager
+    nonisolated(unsafe) let handler = completionHandler
     Task {
-      await DownloadManager.shared.setBackgroundCompletionHandler(completionHandler)
+      await DownloadManager.shared.setBackgroundCompletionHandler(handler)
     }
   }
 }

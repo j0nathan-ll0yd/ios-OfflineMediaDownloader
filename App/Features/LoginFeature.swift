@@ -44,7 +44,7 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
 // MARK: - LoginFeature
 
 @Reducer
-struct LoginFeature {
+struct LoginFeature: Sendable {
   @ObservableState
   struct State: Equatable {
     var registrationStatus: RegistrationStatus = .unregistered

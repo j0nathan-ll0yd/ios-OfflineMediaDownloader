@@ -4,7 +4,7 @@ import OrderedCollections
 import UIKit
 
 @Reducer
-struct FileListFeature {
+struct FileListFeature: Sendable {
   @ObservableState
   struct State: Equatable {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []

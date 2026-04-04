@@ -113,7 +113,7 @@ enum TestData {
 
   // MARK: - Push Notification Payloads
 
-  static let metadataPushPayload: [AnyHashable: Any] = [
+  nonisolated(unsafe) static let metadataPushPayload: [AnyHashable: Any] = [
     "aps": ["content-available": 1],
     "type": "metadata",
     "file": [
@@ -124,7 +124,7 @@ enum TestData {
     ],
   ]
 
-  static let downloadReadyPushPayload: [AnyHashable: Any] = [
+  nonisolated(unsafe) static let downloadReadyPushPayload: [AnyHashable: Any] = [
     "aps": ["content-available": 1],
     "type": "download-ready",
     "fileId": "push-file-123",

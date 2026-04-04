@@ -5,7 +5,7 @@ import Foundation
 /// This feature provides visibility into download progress when Live Activities
 /// are declined or unavailable.
 @Reducer
-struct ActiveDownloadsFeature {
+struct ActiveDownloadsFeature: Sendable {
   @ObservableState
   struct State: Equatable {
     var activeDownloads: IdentifiedArrayOf<ActiveDownload> = []

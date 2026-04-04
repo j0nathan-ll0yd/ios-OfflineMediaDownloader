@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct DownloadTrackingFeature {
+struct DownloadTrackingFeature: Sendable {
   @ObservableState
   struct State: Equatable {
     var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []

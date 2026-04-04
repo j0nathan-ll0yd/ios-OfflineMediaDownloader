@@ -78,7 +78,7 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       print("🎬 MediaPlayerView: File not found: \(url.path)")
       #endif
       context.coordinator.showError("File not found", in: controller)
-      DispatchQueue.main.async { self.isLoading = false }
+      Task { @MainActor in self.isLoading = false }
       return controller
     }
 
@@ -89,7 +89,7 @@ struct MediaPlayerView: UIViewControllerRepresentable {
       print("🎬 MediaPlayerView: File corrupted (\(size) bytes)")
       #endif
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
-      DispatchQueue.main.async { self.isLoading = false }
+      Task { @MainActor in self.isLoading = false }
       return controller
     }
 
@@ -108,8 +108,8 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     controller.delegate = context.coordinator
 
     // Wait for player item to be ready, then play and hide loader
-    context.coordinator.waitForReadyThenPlay(playerItem: playerItem, player: player) {
-      DispatchQueue.main.async { self.isLoading = false }
+    context.coordinator.waitForReadyThenPlay(playerItem: playerItem, player: player) { @Sendable in
+      Task { @MainActor in self.isLoading = false }
     }
 
     #if DEBUG
@@ -127,71 +127,72 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     Coordinator()
   }
 
+  @MainActor
   class Coordinator: NSObject, AVPlayerViewControllerDelegate {
     private var statusObservation: NSKeyValueObservation?
     private var bufferObservation: NSKeyValueObservation?
 
-    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    nonisolated func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
       #if DEBUG
       print("🎬 MediaPlayerView: Starting Picture in Picture")
       #endif
     }
 
-    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    nonisolated func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
       #if DEBUG
       print("🎬 MediaPlayerView: Stopped Picture in Picture")
       #endif
     }
 
-    func waitForReadyThenPlay(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping () -> Void) {
+    func waitForReadyThenPlay(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping @Sendable () -> Void) {
       statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
-        guard let self = self else { return }
+        Task { @MainActor [weak self] in
+          guard let self else { return }
 
-        switch item.status {
-        case .readyToPlay:
-          // Check if we have enough buffer to play smoothly
-          if item.isPlaybackLikelyToKeepUp {
-            self.startPlayback(player: player, onReady: onReady)
-          } else {
-            // Wait for buffer
-            self.waitForBuffer(playerItem: item, player: player, onReady: onReady)
+          switch item.status {
+          case .readyToPlay:
+            if item.isPlaybackLikelyToKeepUp {
+              self.startPlayback(player: player, onReady: onReady)
+            } else {
+              self.waitForBuffer(playerItem: item, player: player, onReady: onReady)
+            }
+          case .failed:
+            #if DEBUG
+            print("🎬 MediaPlayerView: Failed to load: \(item.error?.localizedDescription ?? "unknown")")
+            #endif
+            onReady()
+          case .unknown:
+            break
+          @unknown default:
+            break
           }
-        case .failed:
-          #if DEBUG
-          print("🎬 MediaPlayerView: Failed to load: \(item.error?.localizedDescription ?? "unknown")")
-          #endif
-          onReady() // Hide loader to show error
-        case .unknown:
-          break
-        @unknown default:
-          break
         }
       }
     }
 
-    private func waitForBuffer(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping () -> Void) {
+    private func waitForBuffer(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping @Sendable () -> Void) {
       bufferObservation = playerItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
         if item.isPlaybackLikelyToKeepUp {
-          self?.startPlayback(player: player, onReady: onReady)
+          Task { @MainActor [weak self] in
+            self?.startPlayback(player: player, onReady: onReady)
+          }
         }
       }
     }
 
-    private func startPlayback(player: AVPlayer, onReady: @escaping () -> Void) {
+    private func startPlayback(player: AVPlayer, onReady: @escaping @Sendable () -> Void) {
       // Clean up observers
       statusObservation?.invalidate()
       statusObservation = nil
       bufferObservation?.invalidate()
       bufferObservation = nil
 
-      // Start playback and notify
-      DispatchQueue.main.async {
-        player.play()
-        #if DEBUG
-        print("🎬 MediaPlayerView: Playback started")
-        #endif
-        onReady()
-      }
+      // Already on MainActor — play directly
+      player.play()
+      #if DEBUG
+      print("🎬 MediaPlayerView: Playback started")
+      #endif
+      onReady()
     }
 
     func showError(_ message: String, in controller: AVPlayerViewController) {

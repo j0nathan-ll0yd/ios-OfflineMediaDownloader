@@ -53,7 +53,7 @@ enum CertificatePinning {
 }
 
 /// URLSession delegate that implements certificate pinning
-final class PinningURLSessionDelegate: NSObject, URLSessionDelegate {
+final class PinningURLSessionDelegate: NSObject, URLSessionDelegate, Sendable {
   /// Whether to enforce pinning (reject connections with invalid pins)
   /// Set to false during development if needed
   let enforcesPinning: Bool

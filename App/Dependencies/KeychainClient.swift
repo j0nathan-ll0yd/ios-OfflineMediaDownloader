@@ -2,10 +2,10 @@ import ComposableArchitecture
 import Foundation
 import Valet
 
-class ValetUtil {
-  static var shared: ValetUtil = .init()
-  var secureEnclave: SecureEnclaveValet?
-  var keychain: Valet
+final class ValetUtil: Sendable {
+  static let shared = ValetUtil()
+  let secureEnclave: SecureEnclaveValet?
+  let keychain: Valet
 
   /// Use a safe identifier that works in both app and test environments
   static let identifier: String = {
