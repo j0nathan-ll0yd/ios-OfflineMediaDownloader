@@ -1,0 +1,236 @@
+import SwiftUI
+import ComposableArchitecture
+import DesignSystem
+import MainFeature
+import DiagnosticFeature
+
+// MARK: - RootView
+
+public struct RootView: View {
+  @Bindable var store: StoreOf<RootFeature>
+
+  public init(store: StoreOf<RootFeature>) {
+    self.store = store
+  }
+
+  public var body: some View {
+    Group {
+      if store.isLaunching {
+        LaunchView(status: store.launchStatus)
+      } else {
+        // Always show MainView - auth state is handled within MainFeature
+        MainView(store: store.scope(state: \.main, action: \.main))
+      }
+    }
+    .overlay {
+      // Blocking overlay while waiting for download to start
+      if store.isBlockingForDownloadInitiation,
+         let initiation = store.initiatingDownloads.first {
+        DownloadInitiatingOverlay(title: initiation.title)
+          .transition(.opacity)
+          .animation(.easeInOut(duration: 0.3), value: store.isBlockingForDownloadInitiation)
+      }
+    }
+    #if DEBUG
+    .sheet(item: $store.scope(state: \.diagnostic, action: \.diagnostic)) { diagnosticStore in
+      NavigationStack {
+        DiagnosticView(store: diagnosticStore)
+          .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+              Button("Done") {
+                store.send(.diagnostic(.dismiss))
+              }
+            }
+          }
+      }
+    }
+    #endif
+  }
+}
+
+// MARK: - LaunchView (Pure SwiftUI - not TCA managed)
+
+public struct LaunchView: View {
+  let status: String
+  @State private var dotOffset: CGFloat = 0
+  @State private var showShapes = false
+
+  private let theme = DarkProfessionalTheme()
+
+  public init(status: String) {
+    self.status = status
+  }
+
+  public var body: some View {
+    ZStack {
+      // Dark background
+      theme.backgroundColor
+        .ignoresSafeArea()
+
+      // Floating geometric shapes
+      GeometryReader { geometry in
+        ZStack {
+          // Blue circle
+          Circle()
+            .fill(theme.primaryColor.opacity(0.25))
+            .frame(width: 200, height: 200)
+            .blur(radius: 40)
+            .offset(x: showShapes ? -50 : -80, y: -150)
+            .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: showShapes)
+
+          // Purple circle
+          Circle()
+            .fill(theme.accentColor.opacity(0.2))
+            .frame(width: 180, height: 180)
+            .blur(radius: 35)
+            .offset(x: showShapes ? 100 : 130, y: 50)
+            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: showShapes)
+
+          // Teal circle
+          Circle()
+            .fill(Color(hex: "5AC8FA").opacity(0.15))
+            .frame(width: 150, height: 150)
+            .blur(radius: 30)
+            .offset(x: showShapes ? -80 : -50, y: 200)
+            .animation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true), value: showShapes)
+        }
+        .frame(width: geometry.size.width, height: geometry.size.height)
+      }
+      .ignoresSafeArea()
+
+      VStack(spacing: 40) {
+        Spacer()
+
+        // Logo
+        LifegamesLogo(size: .large, animated: true)
+
+        Spacer()
+
+        // Animated loading dots
+        VStack(spacing: 20) {
+          HStack(spacing: 8) {
+            ForEach(0..<3, id: \.self) { index in
+              Circle()
+                .fill(
+                  LinearGradient(
+                    colors: [theme.primaryColor, theme.accentColor],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                  )
+                )
+                .frame(width: 12, height: 12)
+                .offset(y: dotOffset)
+                .animation(
+                  .easeInOut(duration: 0.4)
+                    .repeatForever(autoreverses: true)
+                    .delay(Double(index) * 0.15),
+                  value: dotOffset
+                )
+            }
+          }
+
+          Text(status)
+            .font(.subheadline)
+            .foregroundStyle(theme.textSecondary)
+        }
+        .padding(.bottom, 60)
+      }
+    }
+    .preferredColorScheme(.dark)
+    .onAppear {
+      showShapes = true
+      dotOffset = -10
+    }
+  }
+}
+
+// MARK: - DownloadInitiatingOverlay
+
+public struct DownloadInitiatingOverlay: View {
+  let title: String
+  @State private var pulseScale: CGFloat = 1.0
+  @State private var iconRotation: Double = 0
+
+  private let theme = DarkProfessionalTheme()
+
+  public init(title: String) {
+    self.title = title
+  }
+
+  public var body: some View {
+    ZStack {
+      // Semi-transparent blocking background
+      Color.black.opacity(0.85)
+        .ignoresSafeArea()
+
+      VStack(spacing: 24) {
+        // Animated download icon
+        ZStack {
+          // Pulsing circle background
+          Circle()
+            .fill(
+              LinearGradient(
+                colors: [theme.primaryColor.opacity(0.3), theme.accentColor.opacity(0.2)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              )
+            )
+            .frame(width: 100, height: 100)
+            .scaleEffect(pulseScale)
+
+          // Download icon
+          Image(systemName: "arrow.down.circle.fill")
+            .font(.system(size: 48))
+            .foregroundStyle(
+              LinearGradient(
+                colors: [theme.primaryColor, theme.accentColor],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              )
+            )
+            .rotationEffect(.degrees(iconRotation))
+        }
+
+        VStack(spacing: 12) {
+          Text("Starting Download")
+            .font(.title2)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.textPrimary)
+
+          Text(title)
+            .font(.subheadline)
+            .foregroundStyle(theme.textSecondary)
+            .lineLimit(2)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 280)
+
+          // Progress spinner
+          ProgressView()
+            .progressViewStyle(CircularProgressViewStyle(tint: theme.primaryColor))
+            .scaleEffect(1.2)
+            .padding(.top, 8)
+
+          Text("Please wait...")
+            .font(.caption)
+            .foregroundStyle(theme.textSecondary.opacity(0.7))
+            .padding(.top, 4)
+        }
+      }
+      .padding(32)
+      .background(
+        RoundedRectangle(cornerRadius: 24)
+          .fill(theme.surfaceColor)
+          .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+      )
+    }
+    .onAppear {
+      withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+        pulseScale = 1.15
+      }
+      withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+        iconRotation = 10
+      }
+    }
+    .preferredColorScheme(.dark)
+  }
+}

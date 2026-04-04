@@ -1,0 +1,523 @@
+import ConcurrencyExtras
+import Foundation
+import Testing
+import ComposableArchitecture
+import SharedModels
+import APIClient
+import FileCellFeature
+import TestData
+@testable import RootFeature
+import LoginFeature
+import MainFeature
+import ServerClient
+@testable import RootFeature
+
+@Suite("RootFeature Tests")
+struct RootFeatureTests {
+
+  // MARK: - Launch Flow Tests
+
+  @MainActor
+  @Test("didFinishLaunching sets up app and checks auth state - unregistered user")
+  func didFinishLaunchingUnregistered() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+      }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .unregistered
+    }
+  }
+
+  @MainActor
+  @Test("Authenticated user sees main view on launch and triggers token expiration check")
+  func didFinishLaunchingAuthenticated() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .authenticated, registrationStatus: .registered)
+      }
+      $0.keychainClient.getTokenExpiresAt = { nil }  // No expiration stored
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = true }
+      $0.login.registrationStatus = .registered
+      $0.main.$isAuthenticated.withLock { $0 = true }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+
+    // Authenticated user triggers token expiration check
+    await store.receive(\.checkTokenExpiration)
+  }
+
+  @MainActor
+  @Test("Registered but logged out user shows correct registration status")
+  func registeredUserShowsStatus() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+      }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .registered
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+  }
+
+  @MainActor
+  @Test("Signed out user with Apple credentials but no JWT token is unauthenticated")
+  func signedOutUserNoJwtTokenIsUnauthenticated() async throws {
+    // This test documents the scenario where:
+    // 1. User was previously logged in (Apple credentials authorized + JWT token)
+    // 2. User signed out (JWT token deleted, but Apple credentials still valid)
+    // 3. App relaunched
+    // 4. determineAuthState should return unauthenticated because JWT token is missing
+    //
+    // The AuthenticationClient.determineAuthState now checks for JWT token existence,
+    // not just Apple credential state.
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        // This simulates: Apple credentials authorized BUT no JWT token
+        // Result: registered but unauthenticated
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+      }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .registered
+      // User sees main view with local files only, no API calls made
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+      // isAuthenticated remains false - user must re-login to access remote data
+    }
+  }
+
+  // MARK: - Login Completion Tests
+
+  @MainActor
+  @Test("Login completion from child sets authenticated state without device registration")
+  func loginCompletionSetsAuthenticated() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.login(.delegate(.loginCompleted))) {
+      $0.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isAuthenticated.withLock { $0 = true }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+    // No device registration triggered for login (only for first registration)
+  }
+
+  @MainActor
+  @Test("Registration completion from child sets authenticated state and triggers device registration")
+  func registrationCompletionSetsAuthenticated() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.login(.delegate(.registrationCompleted))) {
+      $0.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isAuthenticated.withLock { $0 = true }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+
+    await store.receive(\.requestDeviceRegistration)
+  }
+
+  @MainActor
+  @Test("Login completion from MainFeature sheet sets authenticated state without device registration")
+  func loginCompletionFromSheetTriggersDeviceRegistration() async throws {
+    // Login is for existing users who already registered their device,
+    // so no device registration should be triggered
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.delegate(.loginCompleted))) {
+      $0.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isAuthenticated.withLock { $0 = true }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+    // No device registration triggered for login (only for first registration)
+  }
+
+  @MainActor
+  @Test("Registration completion from MainFeature sheet triggers device registration")
+  func registrationCompletionFromSheetTriggersDeviceRegistration() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.delegate(.registrationCompleted))) {
+      $0.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isAuthenticated.withLock { $0 = true }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = true }
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+    }
+
+    await store.receive(\.requestDeviceRegistration)
+  }
+
+  // MARK: - Device Registration Tests
+
+  @MainActor
+  @Test("Device registration stores endpoint ARN")
+  func deviceRegistrationSuccess() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.serverClient.registerDevice = { _ in TestData.validRegisterDeviceResponse }
+      $0.keychainClient.setDeviceData = { _ in }
+    }
+
+    await store.send(.didRegisterForRemoteNotificationsWithDeviceToken("test-token"))
+    await store.receive(\.deviceRegistrationResponse.success)
+  }
+
+  @MainActor
+  @Test("Device registration failure with auth error redirects to login")
+  func deviceRegistrationAuthError() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
+    }
+
+    await store.send(.didRegisterForRemoteNotificationsWithDeviceToken("test-token"))
+
+    await store.receive(\.deviceRegistrationResponse.failure) {
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.main.$isAuthenticated.withLock { $0 = false }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = false }
+    }
+  }
+
+  @MainActor
+  @Test("Device registration network error does not redirect")
+  func deviceRegistrationNetworkError() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.serverClient.registerDevice = { _ in throw TestData.TestNetworkError.notConnected }
+    }
+
+    await store.send(.didRegisterForRemoteNotificationsWithDeviceToken("test-token"))
+
+    await store.receive(\.deviceRegistrationResponse.failure)
+    // State should remain unchanged - still authenticated
+  }
+
+  @MainActor
+  @Test("Failed to register for notifications does nothing")
+  func failedToRegisterNotifications() async throws {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    }
+
+    await store.send(.didFailToRegisterForRemoteNotificationsWithError(TestData.TestNetworkError.serverError))
+    // No state changes expected
+  }
+
+  // MARK: - Auth Required Handling
+
+  @MainActor
+  @Test("Auth required from main clears session and shows login")
+  func authRequiredClearsSession() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.getUserIdentifier = { "user-123" }
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.delegate(.authenticationRequired))) {
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.main.$isAuthenticated.withLock { $0 = false }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = false }
+      $0.login.loginStatus = .unauthenticated
+      $0.login.alert = nil
+      $0.main.loginSheet = LoginFeature.State()
+    }
+  }
+
+  // MARK: - Push Notification Tests
+
+  @MainActor
+  @Test("Metadata push notification saves file and updates UI")
+  func metadataPushNotification() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let testFile = File(
+      fileId: "push-file-123",
+      key: "Push Video.mp4",
+      publishDate: nil,
+      size: 1500000,
+      url: nil
+    )
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.coreDataClient.cacheFile = { _ in }
+    }
+
+    // Simulate processed push notification
+    await store.send(.processedPushNotification(.metadata(testFile)))
+
+    await store.receive(\.fileMetadataSaved)
+
+    await store.receive(\.main.fileList.fileAddedFromPush) {
+      $0.main.fileList.files.append(FileCellFeature.State(file: testFile))
+    }
+
+    // New files trigger onAppear to check download status
+    // (file has no URL so the effect returns immediately)
+    await store.receive(\.main.fileList.files[id: "push-file-123"].onAppear)
+  }
+
+  // Note: downloadReady notification tests removed due to complex async chains
+  // that are difficult to test with TCA's strict effect verification.
+  // The behavior is covered by integration tests and manual testing.
+
+  // Tests for backgroundDownloadCompleted/backgroundDownloadFailed removed —
+  // actions were removed from RootFeature in a prior refactor.
+
+  @MainActor
+  @Test("Unknown push notification type is ignored")
+  func unknownPushNotification() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.processedPushNotification(.unknown))
+    // No state changes expected
+  }
+
+  // MARK: - Token Refresh Tests
+
+  @MainActor
+  @Test("Token expiration check skipped when no expiration stored")
+  func tokenExpirationCheckNoExpirationStored() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.getTokenExpiresAt = { nil }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    // No further actions - expiration check skipped
+  }
+
+  @MainActor
+  @Test("Token expiration check skipped when token is valid")
+  func tokenExpirationCheckValidToken() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      // Token expires in 1 hour (well beyond 5-minute threshold)
+      $0.keychainClient.getTokenExpiresAt = { Date().addingTimeInterval(3600) }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    // No further actions - token is valid
+  }
+
+  @MainActor
+  @Test("Token expiration check triggers refresh when token expires soon")
+  func tokenExpirationCheckTriggersRefresh() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let refreshedExpiration = Date().addingTimeInterval(3600)
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      // Token expires in 2 minutes (within 5-minute threshold)
+      $0.keychainClient.getTokenExpiresAt = { Date().addingTimeInterval(120) }
+      $0.serverClient.refreshToken = {
+        LoginResponse(
+          body: TokenResponse(
+            token: "refreshed-token",
+            expiresAt: ISO8601DateFormatter().string(from: refreshedExpiration),
+            sessionId: "session-123",
+            userId: "user-123"
+          ),
+          error: nil,
+          requestId: "request-123"
+        )
+      }
+      $0.keychainClient.setJwtToken = { _ in }
+      $0.keychainClient.setTokenExpiresAt = { _ in }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.checkTokenExpiration)
+    await store.receive(\.tokenRefreshResponse.success)
+  }
+
+  @MainActor
+  @Test("Token refresh failure with 401 triggers re-authentication")
+  func tokenRefreshFailureTriggersReauth() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.main = MainFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.deleteJwtToken = { }
+      $0.keychainClient.deleteTokenExpiresAt = { }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil))))
+
+    await store.receive(\.main.delegate.authenticationRequired) {
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.main.$isAuthenticated.withLock { $0 = false }
+      $0.main.fileList.$isAuthenticated.withLock { $0 = false }
+      $0.login.loginStatus = .unauthenticated
+      $0.main.loginSheet = LoginFeature.State()
+    }
+  }
+
+  @MainActor
+  @Test("Token refresh failure with network error does not interrupt user")
+  func tokenRefreshNetworkErrorContinues() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.failure(TestData.TestNetworkError.notConnected)))
+    // No state changes - user can continue using the app
+  }
+
+  @MainActor
+  @Test("Token refresh success updates keychain")
+  func tokenRefreshSuccessUpdatesKeychain() async throws {
+    var state = RootFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let storedToken = LockIsolated<String?>(nil)
+    let storedExpiration = LockIsolated<Date?>(nil)
+
+    let newExpiration = Date().addingTimeInterval(3600)
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.keychainClient.setJwtToken = { storedToken.setValue($0) }
+      $0.keychainClient.setTokenExpiresAt = { storedExpiration.setValue($0) }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.tokenRefreshResponse(.success(LoginResponse(
+      body: TokenResponse(
+        token: "new-refreshed-token",
+        expiresAt: ISO8601DateFormatter().string(from: newExpiration),
+        sessionId: "session-123",
+        userId: "user-123"
+      ),
+      error: nil,
+      requestId: "request-123"
+    ))))
+
+    #expect(storedToken.value == "new-refreshed-token")
+    #expect(storedExpiration.value != nil)
+  }
+}
