@@ -15,7 +15,15 @@ if [ $# -eq 0 ]; then
     FILES=()
     while IFS= read -r -d '' file; do
         FILES+=("$file")
-    done < <(find . -name "*.swift" -not -path "*/.*" -not -path "*/DerivedData/*" -print0)
+    done < <(find . -name "*.swift" \
+        -not -path "*/.*" \
+        -not -path "*/DerivedData/*" \
+        -not -path "*/.build/*" \
+        -not -path "*/SourcePackages/*" \
+        -not -path "*/APITypes/.build/*" \
+        -not -path "*/Pods/*" \
+        -not -path "*/Carthage/*" \
+        -print0)
 else
     FILES=("$@")
 fi
