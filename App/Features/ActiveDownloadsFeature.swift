@@ -23,9 +23,12 @@ struct ActiveDownloadsFeature {
 
   struct ActiveDownload: Equatable, Identifiable {
     let fileId: String
-    var id: String { fileId }
+    var id: String {
+      fileId
+    }
+
     var title: String
-    var progress: Int  // 0-100
+    var progress: Int // 0-100
     var status: DownloadStatus
     var isBackgroundInitiated: Bool
 

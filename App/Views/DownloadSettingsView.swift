@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct DownloadSettingsView: View {
   @Bindable var store: StoreOf<DownloadSettingsFeature>
@@ -223,12 +223,14 @@ struct DownloadSettingsView: View {
           .foregroundStyle(theme.textSecondary)
       }
 
-      Text("Quality selection will be applied to future downloads when the backend supports multiple quality options. Current downloads use the available quality from the server.")
-        .font(.caption)
-        .foregroundStyle(theme.textSecondary)
-        .padding(12)
-        .background(theme.backgroundColor.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+      Text(
+        "Quality selection will be applied to future downloads when the backend supports multiple quality options. Current downloads use the available quality from the server."
+      )
+      .font(.caption)
+      .foregroundStyle(theme.textSecondary)
+      .padding(12)
+      .background(theme.backgroundColor.opacity(0.5))
+      .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     .padding(.top, 8)
   }

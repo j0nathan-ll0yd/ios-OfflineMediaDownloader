@@ -1,13 +1,13 @@
-import Foundation
-import ComposableArchitecture
-import UIKit
 import APITypes
+import ComposableArchitecture
+import Foundation
 import HTTPTypes
 import OpenAPIURLSession
+import UIKit
 
 enum FileStatusFilter: String {
-  case all = "all"
-  case downloaded = "downloaded"
+  case all
+  case downloaded
 }
 
 @DependencyClient
@@ -36,37 +36,37 @@ enum ServerClientError: Error, Equatable {
 }
 
 extension ServerClientError: LocalizedError {
-  public var errorDescription: String? {
+  var errorDescription: String? {
     switch self {
-    case .internalServerError(let message, _, _):
+    case let .internalServerError(message, _, _):
       return NSLocalizedString(message, comment: "Server error")
     case .unauthorized:
       return NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
-    case .badRequest(let message, _, _):
+    case let .badRequest(message, _, _):
       return NSLocalizedString(message, comment: "Bad request error")
-    case .networkError(let message, _, _):
+    case let .networkError(message, _, _):
       return NSLocalizedString(message, comment: "Network error")
     }
   }
 
   /// The request ID for server errors, useful for debugging
-  public var requestId: String? {
+  var requestId: String? {
     switch self {
-    case .internalServerError(_, let requestId, _),
-         .unauthorized(let requestId, _),
-         .badRequest(_, let requestId, _),
-         .networkError(_, let requestId, _):
+    case let .internalServerError(_, requestId, _),
+         let .unauthorized(requestId, _),
+         let .badRequest(_, requestId, _),
+         let .networkError(_, requestId, _):
       return requestId
     }
   }
 
   /// The correlation ID for request tracing
-  public var correlationId: String? {
+  var correlationId: String? {
     switch self {
-    case .internalServerError(_, _, let correlationId),
-         .unauthorized(_, let correlationId),
-         .badRequest(_, _, let correlationId),
-         .networkError(_, _, let correlationId):
+    case let .internalServerError(_, _, correlationId),
+         let .unauthorized(_, correlationId),
+         let .badRequest(_, _, correlationId),
+         let .networkError(_, _, correlationId):
       return correlationId
     }
   }
@@ -109,7 +109,7 @@ private func mapStatusCodeToError(
     return .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
   case 409:
     return .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
-  case 500...599:
+  case 500 ... 599:
     return .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
   default:
     return .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
@@ -122,10 +122,10 @@ private func mapStatusCodeToError(
 /// Certificate pinning is enforced in production, disabled for debugging if needed
 private let pinnedURLSession: URLSession = {
   #if DEBUG
-  // In debug mode, pinning is enabled but can be toggled for development
-  return makePinnedURLSession(enforcesPinning: true)
+    // In debug mode, pinning is enabled but can be toggled for development
+    return makePinnedURLSession(enforcesPinning: true)
   #else
-  return makePinnedURLSession(enforcesPinning: true)
+    return makePinnedURLSession(enforcesPinning: true)
   #endif
 }()
 
@@ -157,7 +157,7 @@ private func makeAuthenticatedAPIClient() -> Client {
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
       APIKeyMiddleware(apiKey: Environment.apiKey),
-      AuthenticationMiddleware(keychainClient: keychainClient)
+      AuthenticationMiddleware(keychainClient: keychainClient),
     ]
   )
 }
@@ -172,7 +172,7 @@ private func makeUnauthenticatedAPIClient() -> Client {
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
-      APIKeyMiddleware(apiKey: Environment.apiKey)
+      APIKeyMiddleware(apiKey: Environment.apiKey),
     ]
   )
 }
@@ -199,7 +199,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-      print("📡 Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
+        print("📡 Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
       #endif
 
       let response = try await client.Devices_registerDevice(
@@ -211,18 +211,18 @@ extension ServerClient: DependencyKey {
         endpoint: "registerDevice",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
-          case .created(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
+          case let .created(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
-          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -247,7 +247,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-      print("📡 Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
+        print("📡 Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
       #endif
 
       let response = try await client.Authentication_registerUser(
@@ -259,16 +259,16 @@ extension ServerClient: DependencyKey {
         endpoint: "registerUser",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -296,7 +296,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-      print("📡 Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
+        print("📡 Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
       #endif
 
       let response = try await client.Authentication_loginUser(
@@ -308,18 +308,18 @@ extension ServerClient: DependencyKey {
         endpoint: "loginUser",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .notFound(let r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .conflict(let r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
+          case let .notFound(r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .conflict(r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -350,15 +350,15 @@ extension ServerClient: DependencyKey {
         endpoint: "refreshToken",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -391,16 +391,16 @@ extension ServerClient: DependencyKey {
         endpoint: "getFiles",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
-          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -425,7 +425,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-      print("📡 Request body: articleURL=\(url.absoluteString)")
+        print("📡 Request body: articleURL=\(url.absoluteString)")
       #endif
 
       let response = try await client.Webhooks_processFeedlyWebhook(
@@ -437,17 +437,17 @@ extension ServerClient: DependencyKey {
         endpoint: "addFile",
         successExtractor: {
           switch response {
-          case .ok(let r): return try? r.body.json.body.value1
-          case .accepted(let r): return try? r.body.json.body.value1
+          case let .ok(r): return try? r.body.json.body.value1
+          case let .accepted(r): return try? r.body.json.body.value1
           default: return nil
           }
         },
         errorExtractor: {
           switch response {
-          case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
-          case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
+          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -473,11 +473,11 @@ extension ServerClient: DependencyKey {
       case .noContent:
         print("📡 ServerClient.logoutUser succeeded")
         return
-      case .unauthorized(let r):
+      case let .unauthorized(r):
         throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
-      case .internalServerError(let r):
+      case let .internalServerError(r):
         throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
-      case .undocumented(let code, let p):
+      case let .undocumented(code, p):
         throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[amznRequestIdField])
       }
     }
@@ -579,6 +579,6 @@ extension ServerClient {
         requestId: "test-request-id"
       )
     },
-    logoutUser: { }
+    logoutUser: {}
   )
 }

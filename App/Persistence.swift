@@ -4,7 +4,7 @@ struct PersistenceController {
   /// Check if running in a test environment
   private static var isTestEnvironment: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-    NSClassFromString("XCTestCase") != nil
+      NSClassFromString("XCTestCase") != nil
   }
 
   static let shared: PersistenceController = {
@@ -16,10 +16,7 @@ struct PersistenceController {
   }()
 
   @MainActor
-  static let preview: PersistenceController = {
-    let result = PersistenceController(inMemory: true)
-    return result
-  }()
+  static let preview: PersistenceController = .init(inMemory: true)
 
   let container: NSPersistentContainer
 
@@ -28,7 +25,7 @@ struct PersistenceController {
     if inMemory {
       container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
     }
-    container.loadPersistentStores { storeDescription, error in
+    container.loadPersistentStores { _, error in
       if let error = error as NSError? {
         // In test environments, log but don't crash
         if PersistenceController.isTestEnvironment {

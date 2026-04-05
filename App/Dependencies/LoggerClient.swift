@@ -5,7 +5,7 @@ import os.log
 
 // MARK: - Log Types
 
-enum LogLevel: Int, Sendable, Comparable {
+enum LogLevel: Int, Comparable {
   case debug = 0
   case info = 1
   case warning = 2
@@ -37,7 +37,7 @@ enum LogLevel: Int, Sendable, Comparable {
   }
 }
 
-enum LogCategory: String, Sendable {
+enum LogCategory: String {
   case auth = "Auth"
   case network = "Network"
   case download = "Download"
@@ -52,7 +52,7 @@ enum LogCategory: String, Sendable {
   }
 }
 
-struct LogEntry: Equatable, Sendable, Identifiable {
+struct LogEntry: Equatable, Identifiable {
   let id: UUID
   let timestamp: Date
   let level: LogLevel
@@ -86,7 +86,7 @@ struct LogEntry: Equatable, Sendable, Identifiable {
 // MARK: - Logger Client
 
 @DependencyClient
-struct LoggerClient: Sendable {
+struct LoggerClient {
   var log: @Sendable (LogLevel, LogCategory, String, [String: String]?, String, Int) -> Void
   var getRecentLogs: @Sendable (Int) -> [LogEntry] = { _ in [] }
   var clearLogs: @Sendable () -> Void = {}
@@ -180,8 +180,8 @@ extension LoggerClient: DependencyKey {
 
         // Also print in DEBUG for Xcode console visibility
         #if DEBUG
-        let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
-        print("\(level.emoji) [\(timestamp)] [\(category.rawValue)] \(message)")
+          let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
+          print("\(level.emoji) [\(timestamp)] [\(category.rawValue)] \(message)")
         #endif
       },
       getRecentLogs: { count in
@@ -253,7 +253,7 @@ private final class LogStorage: @unchecked Sendable {
         "category": entry.category.rawValue,
         "message": entry.message,
         "file": entry.file,
-        "line": entry.line
+        "line": entry.line,
       ]
       if let metadata = entry.metadata {
         dict["metadata"] = metadata

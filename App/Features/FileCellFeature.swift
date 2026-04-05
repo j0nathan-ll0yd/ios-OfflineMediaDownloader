@@ -6,14 +6,19 @@ struct FileCellFeature {
   @ObservableState
   struct State: Equatable, Identifiable {
     var file: File
-    var id: String { file.fileId }
+    var id: String {
+      file.fileId
+    }
+
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
-    var isDownloaded: Bool = false  // Cached to avoid fileClient.fileExists() in view body
+    var isDownloaded: Bool = false // Cached to avoid fileClient.fileExists() in view body
     @Presents var alert: AlertState<Action.Alert>?
 
     /// File is pending when metadata is received but no download URL is available yet
-    var isPending: Bool { file.url == nil }
+    var isPending: Bool {
+      file.url == nil
+    }
   }
 
   enum Action {
@@ -119,7 +124,7 @@ struct FileCellFeature {
       case .downloadCompleted:
         state.isDownloading = false
         state.downloadProgress = 1.0
-        state.isDownloaded = true  // Update cached state
+        state.isDownloaded = true // Update cached state
         let fileId = state.file.fileId
         return .merge(
           .send(.delegate(.downloadCompleted(fileId: fileId))),

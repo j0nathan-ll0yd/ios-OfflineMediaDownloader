@@ -1,19 +1,17 @@
+import ComposableArchitecture
 import ConcurrencyExtras
 import Foundation
-import Testing
-import ComposableArchitecture
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("DiagnosticFeature Tests")
 struct DiagnosticFeatureTests {
-
   // MARK: - Keychain Loading Tests
 
   @MainActor
   @Test("onAppear loads all keychain items")
-  func onAppearLoadsAllItems() async throws {
+  func onAppearLoadsAllItems() async {
     await withMainSerialExecutor {
-      let testToken = "test-token-012345678901234567890123456789012345678"  // 50 chars
+      let testToken = "test-token-012345678901234567890123456789012345678" // 50 chars
       let testExpiration = Date().addingTimeInterval(3600)
       let store = TestStore(initialState: DiagnosticFeature.State()) {
         DiagnosticFeature()
@@ -46,7 +44,7 @@ struct DiagnosticFeatureTests {
             displayValue: "\(TestData.sampleUser.firstName) \(TestData.sampleUser.lastName) (\(TestData.sampleUser.email))",
             itemType: .userData
           ),
-          KeychainItem(name: "DeviceData", displayValue: TestData.sampleDevice.endpointArn, itemType: .deviceData)
+          KeychainItem(name: "DeviceData", displayValue: TestData.sampleDevice.endpointArn, itemType: .deviceData),
         ]
       }
     }
@@ -54,7 +52,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("onAppear with only token shows token item")
-  func onAppearOnlyToken() async throws {
+  func onAppearOnlyToken() async {
     await withMainSerialExecutor {
       let testToken = "short-token"
       let store = TestStore(initialState: DiagnosticFeature.State()) {
@@ -81,7 +79,7 @@ struct DiagnosticFeatureTests {
       await store.receive(\.keychainItemsLoaded) {
         $0.isLoading = false
         $0.keychainItems = [
-          KeychainItem(name: "Token", displayValue: testToken, itemType: .token)
+          KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
         ]
       }
     }
@@ -89,7 +87,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("onAppear with no keychain items shows empty list")
-  func onAppearNoItems() async throws {
+  func onAppearNoItems() async {
     await withMainSerialExecutor {
       let store = TestStore(initialState: DiagnosticFeature.State()) {
         DiagnosticFeature()
@@ -123,7 +121,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Toggle debug mode shows debug actions")
-  func toggleDebugModeOn() async throws {
+  func toggleDebugModeOn() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     }
@@ -135,7 +133,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Toggle debug mode hides debug actions")
-  func toggleDebugModeOff() async throws {
+  func toggleDebugModeOff() async {
     var state = DiagnosticFeature.State()
     state.showDebugActions = true
 
@@ -152,12 +150,12 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Delete token removes from keychain and list")
-  func deleteToken() async throws {
+  func deleteToken() async {
     let deleteTokenCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
       KeychainItem(name: "Token", displayValue: "test...", itemType: .token),
-      KeychainItem(name: "UserData", displayValue: "Test User", itemType: .userData)
+      KeychainItem(name: "UserData", displayValue: "Test User", itemType: .userData),
     ]
 
     let store = TestStore(initialState: state) {
@@ -177,11 +175,11 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Delete user data removes from keychain and list")
-  func deleteUserData() async throws {
+  func deleteUserData() async {
     let deleteUserDataCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
-      KeychainItem(name: "UserData", displayValue: "Test User", itemType: .userData)
+      KeychainItem(name: "UserData", displayValue: "Test User", itemType: .userData),
     ]
 
     let store = TestStore(initialState: state) {
@@ -201,11 +199,11 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Delete device data removes from keychain and list")
-  func deleteDeviceData() async throws {
+  func deleteDeviceData() async {
     let deleteDeviceDataCalled = LockIsolated(false)
     var state = DiagnosticFeature.State()
     state.keychainItems = [
-      KeychainItem(name: "DeviceData", displayValue: "arn:aws:sns:test", itemType: .deviceData)
+      KeychainItem(name: "DeviceData", displayValue: "arn:aws:sns:test", itemType: .deviceData),
     ]
 
     let store = TestStore(initialState: state) {
@@ -224,10 +222,10 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Delete with empty index set does nothing")
-  func deleteEmptyIndexSet() async throws {
+  func deleteEmptyIndexSet() async {
     var state = DiagnosticFeature.State()
     state.keychainItems = [
-      KeychainItem(name: "Token", displayValue: "test...", itemType: .token)
+      KeychainItem(name: "Token", displayValue: "test...", itemType: .token),
     ]
 
     let store = TestStore(initialState: state) {
@@ -242,7 +240,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Truncate files calls coreDataClient")
-  func truncateFiles() async throws {
+  func truncateFiles() async {
     await withMainSerialExecutor {
       let truncateCalled = LockIsolated(false)
 
@@ -250,7 +248,7 @@ struct DiagnosticFeatureTests {
         DiagnosticFeature()
       } withDependencies: {
         $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
-        $0.coreDataClient.resetMetrics = { }
+        $0.coreDataClient.resetMetrics = {}
         $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
       }
 
@@ -267,10 +265,10 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Delete keychain error shows alert")
-  func deleteKeychainError() async throws {
+  func deleteKeychainError() async {
     var state = DiagnosticFeature.State()
     state.keychainItems = [
-      KeychainItem(name: "Token", displayValue: "test...", itemType: .token)
+      KeychainItem(name: "Token", displayValue: "test...", itemType: .token),
     ]
 
     let store = TestStore(initialState: state) {
@@ -298,7 +296,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Truncate files error shows alert")
-  func truncateFilesError() async throws {
+  func truncateFilesError() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
@@ -322,7 +320,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("ShowError action creates alert state")
-  func showErrorCreatesAlert() async throws {
+  func showErrorCreatesAlert() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     }
@@ -342,7 +340,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Alert dismiss clears alert state")
-  func alertDismissClearsState() async throws {
+  func alertDismissClearsState() async {
     var state = DiagnosticFeature.State()
     state.alert = AlertState {
       TextState("Test")
@@ -365,7 +363,7 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("Initial state has empty keychain items")
-  func initialStateEmpty() async throws {
+  func initialStateEmpty() {
     let state = DiagnosticFeature.State()
     #expect(state.keychainItems.isEmpty)
     #expect(state.showDebugActions == false)
@@ -377,14 +375,14 @@ struct DiagnosticFeatureTests {
 
   @MainActor
   @Test("KeychainItem ID is name")
-  func keychainItemId() async throws {
+  func keychainItemId() {
     let item = KeychainItem(name: "Token", displayValue: "value", itemType: .token)
     #expect(item.id == "Token")
   }
 
   @MainActor
   @Test("KeychainItem types are correct")
-  func keychainItemTypes() async throws {
+  func keychainItemTypes() {
     let tokenItem = KeychainItem(name: "Token", displayValue: "v", itemType: .token)
     let userItem = KeychainItem(name: "User", displayValue: "v", itemType: .userData)
     let deviceItem = KeychainItem(name: "Device", displayValue: "v", itemType: .deviceData)

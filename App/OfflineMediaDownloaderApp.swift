@@ -5,9 +5,9 @@
 //  Created by Jonathan Lloyd on 10/21/24.
 //
 
-import SwiftUI
 import ComposableArchitecture
 import Network
+import SwiftUI
 
 @main
 struct OfflineMediaDownloaderApp: App {

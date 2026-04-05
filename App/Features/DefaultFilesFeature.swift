@@ -1,6 +1,6 @@
-import SwiftUI
-import ComposableArchitecture
 import AVKit
+import ComposableArchitecture
+import SwiftUI
 
 // MARK: - DefaultFilesFeature
 

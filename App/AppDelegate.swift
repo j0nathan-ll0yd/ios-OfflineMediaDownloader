@@ -1,14 +1,14 @@
+import AVFoundation
+import ComposableArchitecture
 import Foundation
 import SwiftUI
-import ComposableArchitecture
 import UserNotifications
-import AVFoundation
 
 class AppDelegate: NSObject, UIApplicationDelegate {
   /// Check if running as a test host (unit tests hosted by the app)
   private static var isRunningTests: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-    NSClassFromString("XCTestCase") != nil
+      NSClassFromString("XCTestCase") != nil
   }
 
   /// Store is lazy to avoid initialization when running as test host
@@ -30,10 +30,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
           setJwtToken: { _ in },
           setTokenExpiresAt: { _ in },
           setDeviceData: { _ in },
-          deleteUserData: { },
-          deleteJwtToken: { },
-          deleteTokenExpiresAt: { },
-          deleteDeviceData: { }
+          deleteUserData: {},
+          deleteJwtToken: {},
+          deleteTokenExpiresAt: {},
+          deleteDeviceData: {}
         )
         $0.serverClient = .testValue
         $0.coreDataClient = .testValue
@@ -44,19 +44,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     #if DEBUG
-    return Store(initialState: RootFeature.State()) {
-      RootFeature()._printChanges()
-    }
+      return Store(initialState: RootFeature.State()) {
+        RootFeature()._printChanges()
+      }
     #else
-    return Store(initialState: RootFeature.State()) {
-      RootFeature()
-    }
+      return Store(initialState: RootFeature.State()) {
+        RootFeature()
+      }
     #endif
   }()
 
   func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    _: UIApplication,
+    didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     // Configure audio session for video playback
     let audioSession = AVAudioSession.sharedInstance()
@@ -71,7 +71,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   }
 
   func application(
-    _ application: UIApplication,
+    _: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
     let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
@@ -79,14 +79,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   }
 
   func application(
-    _ application: UIApplication,
+    _: UIApplication,
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
     store.send(.didFailToRegisterForRemoteNotificationsWithError(error))
   }
 
   func application(
-    _ application: UIApplication,
+    _: UIApplication,
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
@@ -97,7 +97,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   }
 
   func application(
-    _ application: UIApplication,
+    _: UIApplication,
     handleEventsForBackgroundURLSession identifier: String,
     completionHandler: @escaping () -> Void
   ) {

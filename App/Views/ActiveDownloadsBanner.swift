@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 /// A floating banner that displays active download progress.
 /// Shows above the tab bar when downloads are in progress.

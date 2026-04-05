@@ -1,6 +1,6 @@
-import SwiftUI
-import AVKit
 import AVFoundation
+import AVKit
+import SwiftUI
 
 /// Wrapper view that adds swipe-to-dismiss and loading state to the video player
 struct VideoPlayerSheet: View {
@@ -80,7 +80,8 @@ struct MediaPlayerView: UIViewControllerRepresentable {
 
     // Quick size check for corrupted files
     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize {
+       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize
+    {
       print("🎬 MediaPlayerView: File corrupted (\(size) bytes)")
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
       DispatchQueue.main.async { self.isLoading = false }
@@ -111,7 +112,7 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     return controller
   }
 
-  func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
+  func updateUIViewController(_: AVPlayerViewController, context _: Context) {
     // No updates needed
   }
 
@@ -123,11 +124,11 @@ struct MediaPlayerView: UIViewControllerRepresentable {
     private var statusObservation: NSKeyValueObservation?
     private var bufferObservation: NSKeyValueObservation?
 
-    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    func playerViewControllerWillStartPictureInPicture(_: AVPlayerViewController) {
       print("🎬 MediaPlayerView: Starting Picture in Picture")
     }
 
-    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    func playerViewControllerDidStopPictureInPicture(_: AVPlayerViewController) {
       print("🎬 MediaPlayerView: Stopped Picture in Picture")
     }
 
@@ -191,7 +192,7 @@ struct MediaPlayerView: UIViewControllerRepresentable {
         errorLabel.centerXAnchor.constraint(equalTo: controller.view.centerXAnchor),
         errorLabel.centerYAnchor.constraint(equalTo: controller.view.centerYAnchor),
         errorLabel.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor, constant: 20),
-        errorLabel.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor, constant: -20)
+        errorLabel.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor, constant: -20),
       ])
     }
 

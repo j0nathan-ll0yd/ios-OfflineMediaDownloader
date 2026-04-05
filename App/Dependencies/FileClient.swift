@@ -6,10 +6,12 @@ struct FileClient {
   var documentsDirectory: @Sendable () -> URL = {
     URL.documentsDirectory
   }
+
   var filePath: @Sendable (_ url: URL) -> URL = { url in
     let documentsPath = URL.documentsDirectory
     return documentsPath.appendingPathComponent(url.lastPathComponent)
   }
+
   var fileExists: @Sendable (_ url: URL) -> Bool = { _ in false }
   var deleteFile: @Sendable (_ url: URL) async throws -> Void
   var moveFile: @Sendable (_ from: URL, _ to: URL) throws -> Void
@@ -28,6 +30,7 @@ enum FileClientError: Error {
 }
 
 // MARK: - Live API implementation
+
 extension FileClient: DependencyKey {
   static let liveValue = FileClient(
     documentsDirectory: {

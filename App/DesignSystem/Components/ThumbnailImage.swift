@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 /// Thumbnail image with disk caching and loading states
 public struct ThumbnailImage: View {

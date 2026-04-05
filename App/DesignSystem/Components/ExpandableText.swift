@@ -47,7 +47,8 @@ public struct ExpandableText: View {
     for match in matches.reversed() {
       guard let range = Range(match.range, in: text),
             let attributedRange = Range(range, in: result),
-            let url = URL(string: String(text[range])) else {
+            let url = URL(string: String(text[range]))
+      else {
         continue
       }
       result[attributedRange].link = url

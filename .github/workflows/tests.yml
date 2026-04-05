@@ -89,7 +89,7 @@ jobs:
       - name: Install SwiftFormat
         run: |
           set -e
-          SWIFTFORMAT_VERSION=0.54.6
+          SWIFTFORMAT_VERSION=0.60.1
           curl -fsSL -o swiftformat_linux.zip \
             "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip"
           unzip -q swiftformat_linux.zip

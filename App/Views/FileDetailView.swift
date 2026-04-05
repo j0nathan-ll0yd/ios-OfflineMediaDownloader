@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct FileDetailView: View {
   @Bindable var store: StoreOf<FileDetailFeature>
@@ -96,7 +96,7 @@ struct FileDetailView: View {
       } else {
         Rectangle()
           .fill(Color(white: 0.15))
-          .aspectRatio(16/9, contentMode: .fit)
+          .aspectRatio(16 / 9, contentMode: .fit)
           .overlay {
             Image(systemName: "film")
               .font(.system(size: 48))
@@ -113,10 +113,9 @@ struct FileDetailView: View {
       // State overlay (centered)
       stateOverlay
     }
-    .aspectRatio(16/9, contentMode: .fit)
+    .aspectRatio(16 / 9, contentMode: .fit)
   }
 
-  @ViewBuilder
   private var stateOverlay: some View {
     ZStack {
       if store.isDownloaded {

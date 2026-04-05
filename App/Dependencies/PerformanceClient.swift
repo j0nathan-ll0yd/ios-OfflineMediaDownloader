@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - Performance Types
 
-struct PerformanceTrace: Sendable {
+struct PerformanceTrace {
   let id: UUID
   let name: String
   let startTime: Date
@@ -17,7 +17,7 @@ struct PerformanceTrace: Sendable {
   }
 }
 
-struct PerformanceMetric: Sendable {
+struct PerformanceMetric {
   let name: String
   let value: Double
   let unit: String
@@ -28,7 +28,7 @@ struct PerformanceMetric: Sendable {
 // MARK: - Performance Client
 
 @DependencyClient
-struct PerformanceClient: Sendable {
+struct PerformanceClient {
   var startTrace: @Sendable (String) -> UUID = { _ in UUID() }
   var endTrace: @Sendable (UUID, [String: String]?) -> Void = { _, _ in }
   var recordMetric: @Sendable (String, Double, String, [String: String]?) -> Void = { _, _, _, _ in }
@@ -86,10 +86,10 @@ extension PerformanceClient: DependencyKey {
       endTrace: { id, metadata in
         if let trace = storage.endTrace(id, metadata: metadata) {
           #if DEBUG
-          if let duration = trace.duration {
-            let ms = duration * 1000
-            print("⏱️ [\(trace.name)] \(String(format: "%.2f", ms))ms")
-          }
+            if let duration = trace.duration {
+              let ms = duration * 1000
+              print("⏱️ [\(trace.name)] \(String(format: "%.2f", ms))ms")
+            }
           #endif
         }
       },
@@ -103,7 +103,7 @@ extension PerformanceClient: DependencyKey {
         )
         storage.recordMetric(metric)
         #if DEBUG
-        print("📊 [\(name)] \(String(format: "%.2f", value)) \(unit)")
+          print("📊 [\(name)] \(String(format: "%.2f", value)) \(unit)")
         #endif
       },
       getActiveTraces: {

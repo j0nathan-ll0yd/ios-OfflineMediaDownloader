@@ -11,7 +11,7 @@ struct DownloadActivityAttributes: ActivityAttributes {
     var authorName: String?
   }
 
-  // Only truly static attributes here
+  /// Only truly static attributes here
   var fileId: String
 }
 

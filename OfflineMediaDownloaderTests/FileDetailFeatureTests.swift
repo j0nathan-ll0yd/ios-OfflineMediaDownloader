@@ -1,17 +1,15 @@
+import ComposableArchitecture
 import ConcurrencyExtras
 import Foundation
-import Testing
-import ComposableArchitecture
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("FileDetailFeature Tests")
 struct FileDetailFeatureTests {
-
   // MARK: - File Existence Tests
 
   @MainActor
   @Test("onAppear checks file existence and sets downloaded true")
-  func onAppearFileExists() async throws {
+  func onAppearFileExists() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
@@ -27,7 +25,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("onAppear checks file existence and sets downloaded false")
-  func onAppearFileNotExists() async throws {
+  func onAppearFileNotExists() async {
     var initialState = FileDetailFeature.State(file: TestData.sampleFile)
     initialState.isDownloaded = true
 
@@ -46,7 +44,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("onAppear with nil URL returns immediately")
-  func onAppearNilUrl() async throws {
+  func onAppearNilUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
     }
@@ -59,7 +57,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped starts download with progress updates")
-  func downloadWithProgress() async throws {
+  func downloadWithProgress() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
@@ -90,7 +88,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Download failure resets state and shows alert")
-  func downloadFails() async throws {
+  func downloadFails() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
@@ -130,7 +128,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Download failure retry triggers download")
-  func downloadFailureRetry() async throws {
+  func downloadFailureRetry() async {
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.alert = AlertState {
       TextState("Download Failed")
@@ -169,7 +167,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped does nothing without URL")
-  func downloadWithoutUrl() async throws {
+  func downloadWithoutUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
     }
@@ -182,7 +180,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Cancel download stops and resets state")
-  func cancelDownload() async throws {
+  func cancelDownload() async {
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
     state.downloadProgress = 0.5
@@ -201,7 +199,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Cancel download with nil URL still cancels")
-  func cancelDownloadNilUrl() async throws {
+  func cancelDownloadNilUrl() async {
     var state = FileDetailFeature.State(file: TestData.pendingFile)
     state.isDownloading = true
     state.downloadProgress = 0.5
@@ -220,7 +218,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Download progress updates correctly")
-  func downloadProgressUpdates() async throws {
+  func downloadProgressUpdates() async {
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
 
@@ -241,7 +239,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Download completed sets isDownloaded and progress to 1.0")
-  func downloadCompleted() async throws {
+  func downloadCompleted() async {
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
     state.downloadProgress = 0.9
@@ -261,7 +259,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("playButtonTapped sends delegate action")
-  func playButtonTapped() async throws {
+  func playButtonTapped() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     }
@@ -274,7 +272,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("deleteButtonTapped shows confirmation alert")
-  func deleteButtonTappedShowsAlert() async throws {
+  func deleteButtonTappedShowsAlert() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     }
@@ -297,7 +295,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("confirmDelete removes file from CoreData and filesystem")
-  func confirmDelete() async throws {
+  func confirmDelete() async {
     let coreDataDeleteCalled = LockIsolated(false)
     let fileDeleteCalled = LockIsolated(false)
 
@@ -330,7 +328,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("confirmDelete skips local file deletion if file not exists")
-  func confirmDeleteFileNotExists() async throws {
+  func confirmDeleteFileNotExists() async {
     let fileDeleteCalled = LockIsolated(false)
 
     var state = FileDetailFeature.State(file: TestData.sampleFile)
@@ -363,7 +361,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("shareButtonTapped triggers delegate with local URL")
-  func shareButtonTapped() async throws {
+  func shareButtonTapped() async {
     let expectedLocalURL = URL(fileURLWithPath: "/local/path/test.mp4")
 
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
@@ -378,7 +376,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("shareButtonTapped does nothing without URL")
-  func shareButtonTappedNoUrl() async throws {
+  func shareButtonTappedNoUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
     }
@@ -391,7 +389,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("alert dismiss clears alert state")
-  func alertDismiss() async throws {
+  func alertDismiss() async {
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.alert = AlertState {
       TextState("Test Alert")
@@ -414,7 +412,7 @@ struct FileDetailFeatureTests {
 
   @MainActor
   @Test("Initial state has correct defaults")
-  func initialState() async throws {
+  func initialState() {
     let state = FileDetailFeature.State(file: TestData.sampleFile)
 
     #expect(state.file == TestData.sampleFile)

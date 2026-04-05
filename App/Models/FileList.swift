@@ -1,6 +1,6 @@
 import Foundation
 
-struct FileList: Codable, Sendable {
+struct FileList: Codable {
   var contents: [File]
   var keyCount: Int
 

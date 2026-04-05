@@ -1,33 +1,31 @@
-import Foundation
-import Testing
 import ComposableArchitecture
+import Foundation
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("ActiveDownloadsFeature Tests")
 struct ActiveDownloadsFeatureTests {
-
   // MARK: - Download Started Tests
 
   @MainActor
   @Test("Download started adds new download to list")
-  func downloadStartedAddsDownload() async throws {
+  func downloadStartedAddsDownload() async {
     let store = TestStore(initialState: ActiveDownloadsFeature.State()) {
       ActiveDownloadsFeature()
     }
 
     await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: true)) {
       $0.activeDownloads = [
-        .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .downloading, isBackgroundInitiated: true)
+        .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .downloading, isBackgroundInitiated: true),
       ]
     }
   }
 
   @MainActor
   @Test("Download started does not add duplicate")
-  func downloadStartedNoDuplicate() async throws {
+  func downloadStartedNoDuplicate() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true),
     ]
 
     let store = TestStore(initialState: state) {
@@ -42,10 +40,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Download progress update modifies progress value")
-  func downloadProgressUpdated() async throws {
+  func downloadProgressUpdated() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .downloading, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .downloading, isBackgroundInitiated: true),
     ]
 
     let store = TestStore(initialState: state) {
@@ -59,7 +57,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Download progress update for non-existent download does nothing")
-  func downloadProgressNonExistent() async throws {
+  func downloadProgressNonExistent() async {
     let store = TestStore(initialState: ActiveDownloadsFeature.State()) {
       ActiveDownloadsFeature()
     }
@@ -72,10 +70,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Download completed updates status")
-  func downloadCompleted() async throws {
+  func downloadCompleted() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test Video.mp4", progress: 99, status: .downloading, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 99, status: .downloading, isBackgroundInitiated: true),
     ]
 
     let store = TestStore(initialState: state) {
@@ -94,10 +92,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Download failed updates status")
-  func downloadFailed() async throws {
+  func downloadFailed() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true),
     ]
 
     let store = TestStore(initialState: state) {
@@ -115,7 +113,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Clear completed removes only completed downloads")
-  func clearCompleted() async throws {
+  func clearCompleted() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
       .init(fileId: "file1", title: "Completed.mp4", progress: 100, status: .completed, isBackgroundInitiated: true),
@@ -137,7 +135,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Clear all removes all downloads")
-  func clearAll() async throws {
+  func clearAll() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
       .init(fileId: "file1", title: "Test1.mp4", progress: 100, status: .completed, isBackgroundInitiated: true),
@@ -157,7 +155,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Remove download removes specific download")
-  func removeDownload() async throws {
+  func removeDownload() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
       .init(fileId: "file1", title: "Test1.mp4", progress: 100, status: .completed, isBackgroundInitiated: true),
@@ -170,7 +168,7 @@ struct ActiveDownloadsFeatureTests {
 
     await store.send(.removeDownload(fileId: "file1")) {
       $0.activeDownloads = [
-        .init(fileId: "file2", title: "Test2.mp4", progress: 50, status: .downloading, isBackgroundInitiated: false)
+        .init(fileId: "file2", title: "Test2.mp4", progress: 50, status: .downloading, isBackgroundInitiated: false),
       ]
     }
   }
@@ -179,10 +177,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("hasActiveDownloads returns true when downloading")
-  func hasActiveDownloadsTrue() async throws {
+  func hasActiveDownloadsTrue() {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true),
     ]
 
     #expect(state.hasActiveDownloads == true)
@@ -190,10 +188,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("hasActiveDownloads returns false when only completed")
-  func hasActiveDownloadsFalseWhenCompleted() async throws {
+  func hasActiveDownloadsFalseWhenCompleted() {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test.mp4", progress: 100, status: .completed, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test.mp4", progress: 100, status: .completed, isBackgroundInitiated: true),
     ]
 
     #expect(state.hasActiveDownloads == false)
@@ -201,10 +199,10 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("hasVisibleDownloads returns true when has any downloads")
-  func hasVisibleDownloadsTrue() async throws {
+  func hasVisibleDownloadsTrue() {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test.mp4", progress: 100, status: .completed, isBackgroundInitiated: true)
+      .init(fileId: "file1", title: "Test.mp4", progress: 100, status: .completed, isBackgroundInitiated: true),
     ]
 
     #expect(state.hasVisibleDownloads == true)
@@ -212,7 +210,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("hasVisibleDownloads returns false when empty")
-  func hasVisibleDownloadsFalse() async throws {
+  func hasVisibleDownloadsFalse() {
     let state = ActiveDownloadsFeature.State()
     #expect(state.hasVisibleDownloads == false)
   }
@@ -221,7 +219,7 @@ struct ActiveDownloadsFeatureTests {
 
   @MainActor
   @Test("Initial state has empty downloads")
-  func initialStateEmpty() async throws {
+  func initialStateEmpty() {
     let state = ActiveDownloadsFeature.State()
     #expect(state.activeDownloads.isEmpty)
     #expect(state.hasActiveDownloads == false)

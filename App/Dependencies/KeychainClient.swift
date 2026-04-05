@@ -3,11 +3,11 @@ import Foundation
 import Valet
 
 class ValetUtil {
-  static var shared: ValetUtil = ValetUtil()
+  static var shared: ValetUtil = .init()
   var secureEnclave: SecureEnclaveValet?
   var keychain: Valet
 
-  // Use a safe identifier that works in both app and test environments
+  /// Use a safe identifier that works in both app and test environments
   static let identifier: String = {
     if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
       return "\(bundleId).Valet"
@@ -24,14 +24,14 @@ class ValetUtil {
     // SecureEnclaveValet is not available in simulator environments
     // and may fail on devices without Secure Enclave hardware
     #if targetEnvironment(simulator)
-    secureEnclave = nil
+      secureEnclave = nil
     #else
-    // Try to create SecureEnclaveValet, but it may fail on older devices
-    // or in certain CI environments
-    secureEnclave = SecureEnclaveValet.valet(
-      with: identifier,
-      accessControl: .userPresence
-    )
+      // Try to create SecureEnclaveValet, but it may fail on older devices
+      // or in certain CI environments
+      secureEnclave = SecureEnclaveValet.valet(
+        with: identifier,
+        accessControl: .userPresence
+      )
     #endif
 
     keychain = Valet.valet(
@@ -41,7 +41,7 @@ class ValetUtil {
   }
 }
 
-// This enum maintains ALL keys stored in the Keychain. They MUST be unique.
+/// This enum maintains ALL keys stored in the Keychain. They MUST be unique.
 enum KeychainKeys: String {
   case email
   case firstName
@@ -90,16 +90,16 @@ private func isItemNotFoundError(_ error: Error) -> Bool {
 }
 
 // MARK: - Live API implementation
+
 extension KeychainClient: DependencyKey {
   static let liveValue = KeychainClient(
     getUserData: {
-      let userData = User(
-        email: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.email.rawValue),
-        firstName: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.firstName.rawValue),
-        identifier: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue),
-        lastName: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.lastName.rawValue)
+      try User(
+        email: ValetUtil.shared.keychain.string(forKey: KeychainKeys.email.rawValue),
+        firstName: ValetUtil.shared.keychain.string(forKey: KeychainKeys.firstName.rawValue),
+        identifier: ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue),
+        lastName: ValetUtil.shared.keychain.string(forKey: KeychainKeys.lastName.rawValue)
       )
-      return userData
     },
     getJwtToken: {
       do {
@@ -223,9 +223,9 @@ extension KeychainClient: DependencyKey {
     setJwtToken: { _ in },
     setTokenExpiresAt: { _ in },
     setDeviceData: { _ in },
-    deleteUserData: { },
-    deleteJwtToken: { },
-    deleteTokenExpiresAt: { },
-    deleteDeviceData: { }
+    deleteUserData: {},
+    deleteJwtToken: {},
+    deleteTokenExpiresAt: {},
+    deleteDeviceData: {}
   )
 }

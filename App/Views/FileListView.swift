@@ -1,6 +1,6 @@
-import SwiftUI
-import ComposableArchitecture
 import AVKit
+import ComposableArchitecture
+import SwiftUI
 import UIKit
 
 // MARK: - FileCellView
@@ -196,7 +196,7 @@ private func formatFileSize(_ bytes: Int?) -> String {
 
 struct FileListView: View {
   @Bindable var store: StoreOf<FileListFeature>
-  @Dependency(\.fileClient) var fileClient  // For fullScreenCover local URL conversion
+  @Dependency(\.fileClient) var fileClient // For fullScreenCover local URL conversion
 
   private let theme = DarkProfessionalTheme()
 

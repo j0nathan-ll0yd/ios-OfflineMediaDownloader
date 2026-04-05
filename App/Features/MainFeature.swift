@@ -8,13 +8,13 @@ struct MainFeature {
     var selectedTab: Tab = .files
     var isAuthenticated: Bool = false
     var isRegistered: Bool = false
-    var fileList: FileListFeature.State = FileListFeature.State()
-    var diagnostic: DiagnosticFeature.State = DiagnosticFeature.State()
-    var accountLogin: LoginFeature.State = LoginFeature.State()
-    var activeDownloads: ActiveDownloadsFeature.State = ActiveDownloadsFeature.State()
+    var fileList: FileListFeature.State = .init()
+    var diagnostic: DiagnosticFeature.State = .init()
+    var accountLogin: LoginFeature.State = .init()
+    var activeDownloads: ActiveDownloadsFeature.State = .init()
     @Presents var loginSheet: LoginFeature.State?
 
-    enum Tab: Equatable, Sendable {
+    enum Tab: Equatable {
       case files
       case account
     }

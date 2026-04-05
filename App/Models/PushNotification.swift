@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents the type of push notification received for file operations
-enum PushNotificationType: Equatable, Sendable {
+enum PushNotificationType: Equatable {
   /// Full file metadata received (no url, no size) - file is being processed on server
   case metadata(File)
   /// Download URL is ready - can start downloading
@@ -14,7 +14,8 @@ enum PushNotificationType: Equatable, Sendable {
   /// Parse push notification userInfo into a typed notification
   static func parse(from userInfo: [AnyHashable: Any]) -> PushNotificationType {
     guard let notificationType = userInfo["notificationType"] as? String,
-          let fileData = userInfo["file"] as? [String: Any] else {
+          let fileData = userInfo["file"] as? [String: Any]
+    else {
       return .unknown
     }
 
@@ -36,7 +37,8 @@ enum PushNotificationType: Equatable, Sendable {
             let key = fileData["key"] as? String,
             let urlString = fileData["url"] as? String,
             let url = URL(string: urlString),
-            let size = fileData["size"] as? Int else {
+            let size = fileData["size"] as? Int
+      else {
         print("Missing required fields in DownloadReadyNotification")
         return .unknown
       }
@@ -45,7 +47,8 @@ enum PushNotificationType: Equatable, Sendable {
     case "FailureNotification":
       guard let fileId = fileData["fileId"] as? String,
             let errorCategory = fileData["errorCategory"] as? String,
-            let errorMessage = fileData["errorMessage"] as? String else {
+            let errorMessage = fileData["errorMessage"] as? String
+      else {
         print("Missing required fields in FailureNotification")
         return .unknown
       }

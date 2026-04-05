@@ -7,7 +7,7 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "OfflineM
 actor LiveActivityManager {
   static let shared = LiveActivityManager()
   private var activeActivities: [String: Activity<DownloadActivityAttributes>] = [:]
-  // Track current state so we can preserve title/author when updating progress
+  /// Track current state so we can preserve title/author when updating progress
   private var currentStates: [String: DownloadActivityAttributes.ContentState] = [:]
 
   /// Start a Live Activity with just a fileId (used when queueing, before metadata is available)
@@ -52,7 +52,8 @@ actor LiveActivityManager {
   /// Update Live Activity with metadata when received from push notification
   func updateMetadata(fileId: String, title: String, authorName: String?) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       logger.debug("No active Live Activity to update metadata for fileId: \(fileId)")
       return
     }
@@ -107,7 +108,8 @@ actor LiveActivityManager {
 
   func updateProgress(fileId: String, percent: Int, status: DownloadActivityStatus) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       logger.debug("No active Live Activity for fileId: \(fileId)")
       return
     }
@@ -122,7 +124,8 @@ actor LiveActivityManager {
 
   func endActivity(fileId: String, status: DownloadActivityStatus, errorMessage: String? = nil) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       logger.debug("No active Live Activity to end for fileId: \(fileId)")
       return
     }

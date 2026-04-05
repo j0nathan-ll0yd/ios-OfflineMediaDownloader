@@ -2,11 +2,11 @@ import ComposableArchitecture
 import Foundation
 
 /// Download quality preferences
-enum DownloadQuality: String, CaseIterable, Sendable, Codable {
-  case auto = "auto"
-  case high = "high"
-  case medium = "medium"
-  case low = "low"
+enum DownloadQuality: String, CaseIterable, Codable {
+  case auto
+  case high
+  case medium
+  case low
 
   var displayName: String {
     switch self {
@@ -52,17 +52,20 @@ extension DependencyValues {
 }
 
 // MARK: - Keys
+
 private enum UserDefaultsKeys {
   static let downloadQuality = "downloadQuality"
   static let cellularDownloadsEnabled = "cellularDownloadsEnabled"
 }
 
 // MARK: - Live Implementation
+
 extension UserDefaultsClient: DependencyKey {
   static let liveValue = UserDefaultsClient(
     getDownloadQuality: {
       guard let rawValue = UserDefaults.standard.string(forKey: UserDefaultsKeys.downloadQuality),
-            let quality = DownloadQuality(rawValue: rawValue) else {
+            let quality = DownloadQuality(rawValue: rawValue)
+      else {
         return .auto
       }
       return quality
@@ -80,6 +83,7 @@ extension UserDefaultsClient: DependencyKey {
 }
 
 // MARK: - Test Implementation
+
 extension UserDefaultsClient {
   static let testValue = UserDefaultsClient(
     getDownloadQuality: { .auto },

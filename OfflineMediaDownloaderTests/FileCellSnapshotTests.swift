@@ -1,13 +1,11 @@
-import Foundation
-import Testing
 import ComposableArchitecture
-import SwiftUI
-import SnapshotTesting
+import Foundation
 @testable import OfflineMediaDownloader
+import SnapshotTesting
+import SwiftUI
+import Testing
 
-@Suite("FileCellView Snapshot Tests")
 struct FileCellSnapshotTests {
-
   // MARK: - Test Helpers
 
   /// Creates a test file with the given properties
@@ -15,8 +13,8 @@ struct FileCellSnapshotTests {
     id: String = "test-file-id",
     title: String = "Test Video Title",
     author: String? = "Test Author",
-    size: Int? = 45_000_000,  // 45 MB
-    publishDate: Date? = Date().addingTimeInterval(-86400),  // 1 day ago
+    size: Int? = 45_000_000, // 45 MB
+    publishDate: Date? = Date().addingTimeInterval(-86400), // 1 day ago
     url: URL? = URL(string: "https://example.com/video.mp4")
   ) -> File {
     var file = File(
@@ -64,7 +62,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - ready to download")
-  func snapshotReadyToDownload() async {
+  func snapshotReadyToDownload() {
     let file = makeTestFile()
     let state = makeState(file: file, isDownloaded: false)
     let view = makeView(state: state)
@@ -78,7 +76,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - ready to download (dark mode)")
-  func snapshotReadyToDownloadDarkMode() async {
+  func snapshotReadyToDownloadDarkMode() {
     let file = makeTestFile()
     let state = makeState(file: file, isDownloaded: false)
     let view = makeView(state: state)
@@ -95,7 +93,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - downloading 25%")
-  func snapshotDownloading25() async {
+  func snapshotDownloading25() {
     let file = makeTestFile()
     let state = makeState(file: file, isDownloading: true, downloadProgress: 0.25)
     let view = makeView(state: state)
@@ -109,7 +107,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - downloading 75%")
-  func snapshotDownloading75() async {
+  func snapshotDownloading75() {
     let file = makeTestFile()
     let state = makeState(file: file, isDownloading: true, downloadProgress: 0.75)
     let view = makeView(state: state)
@@ -125,7 +123,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - downloaded (ready to play)")
-  func snapshotDownloaded() async {
+  func snapshotDownloaded() {
     let file = makeTestFile()
     let state = makeState(file: file, isDownloaded: true)
     let view = makeView(state: state)
@@ -141,8 +139,8 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - pending (no URL)")
-  func snapshotPending() async {
-    let file = makeTestFile(url: nil)  // No URL = pending
+  func snapshotPending() {
+    let file = makeTestFile(url: nil) // No URL = pending
     let state = makeState(file: file)
     let view = makeView(state: state)
 
@@ -157,7 +155,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - long title (truncation)")
-  func snapshotLongTitle() async {
+  func snapshotLongTitle() {
     let file = makeTestFile(
       title: "This is a very long video title that should be truncated after two lines of text to prevent overflow"
     )
@@ -173,7 +171,7 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - no author")
-  func snapshotNoAuthor() async {
+  func snapshotNoAuthor() {
     let file = makeTestFile(author: nil)
     let state = makeState(file: file, isDownloaded: false)
     let view = makeView(state: state)
@@ -187,8 +185,8 @@ struct FileCellSnapshotTests {
 
   @MainActor
   @Test("FileCellView snapshot - large file size")
-  func snapshotLargeFileSize() async {
-    let file = makeTestFile(size: 2_500_000_000)  // 2.5 GB
+  func snapshotLargeFileSize() {
+    let file = makeTestFile(size: 2_500_000_000) // 2.5 GB
     let state = makeState(file: file, isDownloaded: false)
     let view = makeView(state: state)
 

@@ -1,17 +1,15 @@
 import Foundation
 
-// https://thoughtbot.com/blog/let-s-setup-your-ios-environments
+/// https://thoughtbot.com/blog/let-s-setup-your-ios-environments
 public enum Environment {
   /// Check if running in a test environment
   private static var isTestEnvironment: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-    NSClassFromString("XCTestCase") != nil
+      NSClassFromString("XCTestCase") != nil
   }
 
-  private static let infoDictionary: [String: Any] = {
-    // In test environments, Bundle.main.infoDictionary may be nil or missing keys
+  private static let infoDictionary: [String: Any] = // In test environments, Bundle.main.infoDictionary may be nil or missing keys
     Bundle.main.infoDictionary ?? [:]
-  }()
 
   static let basePath: String = {
     if let basePath = Environment.infoDictionary["MEDIA_DOWNLOADER_BASE_PATH"] as? String {

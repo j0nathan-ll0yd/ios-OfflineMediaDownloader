@@ -128,12 +128,12 @@ enum DownloadBehavior {
     case .downloadButtonTapped:
       state.isDownloading = true
       state.downloadProgress = 0
-      return false  // Caller should create the download effect
+      return false // Caller should create the download effect
 
     case .cancelDownloadButtonTapped:
       state.isDownloading = false
       state.downloadProgress = 0
-      return false  // Caller should cancel the download
+      return false // Caller should cancel the download
 
     case let .downloadProgressUpdated(progress):
       state.downloadProgress = progress
@@ -148,7 +148,7 @@ enum DownloadBehavior {
     case .downloadFailed:
       state.isDownloading = false
       state.downloadProgress = 0
-      return false  // Caller should show alert
+      return false // Caller should show alert
     }
   }
 }
