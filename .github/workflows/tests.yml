@@ -161,8 +161,6 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
-            GCC_TREAT_WARNINGS_AS_ERRORS=YES \
             2>&1 | tee build.log | xcbeautify --report junit --report-path build-results.xml
 
       - name: Check build warnings
