@@ -84,13 +84,20 @@ struct FileDetailView: View {
   // MARK: - Thumbnail Section
 
   private var thumbnailSection: some View {
+    GeometryReader { proxy in
+      thumbnailContent(width: proxy.size.width)
+    }
+    .aspectRatio(16 / 9, contentMode: .fit)
+  }
+
+  private func thumbnailContent(width: CGFloat) -> some View {
     ZStack(alignment: .bottomTrailing) {
       // Thumbnail or placeholder
       if thumbnailURL != nil {
         ThumbnailImage(
           fileId: store.file.fileId,
           url: thumbnailURL,
-          size: CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width * 9 / 16),
+          size: CGSize(width: width, height: width * 9 / 16),
           cornerRadius: 0
         )
       } else {

@@ -9,28 +9,26 @@ struct ActiveDownloadsBanner: View {
   private let theme = DarkProfessionalTheme()
 
   var body: some View {
-    WithPerceptionTracking {
-      if store.hasVisibleDownloads {
-        VStack(spacing: 0) {
-          // Downloads list
-          VStack(spacing: 8) {
-            ForEach(store.activeDownloads) { download in
-              DownloadRowView(download: download)
-            }
+    if store.hasVisibleDownloads {
+      VStack(spacing: 0) {
+        // Downloads list
+        VStack(spacing: 8) {
+          ForEach(store.activeDownloads) { download in
+            DownloadRowView(download: download)
           }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 12)
         }
-        .background(
-          RoundedRectangle(cornerRadius: 16)
-            .fill(theme.surfaceColor)
-            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -2)
-        )
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.activeDownloads.count)
+        .padding(.vertical, 12)
       }
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(theme.surfaceColor)
+          .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -2)
+      )
+      .padding(.horizontal, 16)
+      .padding(.bottom, 8)
+      .transition(.move(edge: .bottom).combined(with: .opacity))
+      .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.activeDownloads.count)
     }
   }
 }
