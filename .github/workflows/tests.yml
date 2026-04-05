@@ -1,22 +1,40 @@
 name: Tests
 
 on:
-  push:
-    branches: [master, main, develop]
-    paths:
-      - 'App/**'
-      - 'OfflineMediaDownloaderTests/**'
-      - 'OfflineMediaDownloader.xcodeproj/**'
-      - 'Package.swift'
-      - '.github/workflows/tests.yml'
   pull_request:
     branches: [master, main, develop]
     paths:
       - 'App/**'
       - 'OfflineMediaDownloaderTests/**'
       - 'OfflineMediaDownloader.xcodeproj/**'
+      - 'OfflineMediaDownloaderUITests/**'
+      - 'APITypes/**'
+      - 'Packages/**'
+      - 'Scripts/**'
       - 'Package.swift'
-      - '.github/workflows/tests.yml'
+      - 'Package.resolved'
+      - '.swiftlint.yml'
+      - '.swiftformat'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/dependabot.yml'
+  push:
+    branches: [master, main, develop]
+    paths:
+      - 'App/**'
+      - 'OfflineMediaDownloaderTests/**'
+      - 'OfflineMediaDownloader.xcodeproj/**'
+      - 'OfflineMediaDownloaderUITests/**'
+      - 'APITypes/**'
+      - 'Packages/**'
+      - 'Scripts/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - '.swiftlint.yml'
+      - '.swiftformat'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/dependabot.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,150 +45,166 @@ env:
   PROJECT: OfflineMediaDownloader.xcodeproj
 
 jobs:
-  test:
-    name: Run Tests
-    runs-on: macos-14
-    timeout-minutes: 30
-
+  pr-title:
+    name: PR Title (Conventional Commits)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Create Development Configuration
-        run: |
-          cat > Development.xcconfig << 'EOF'
-          // CI Configuration - placeholder values for testing
-          MEDIA_DOWNLOADER_API_KEY = CI_PLACEHOLDER_KEY
-          MEDIA_DOWNLOADER_BASE_PATH = https:/$()/example.com/
-          EOF
-
-      - name: Select Xcode
-        run: |
-          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_PATH" ]; then
-            sudo xcode-select -s "$XCODE_PATH"
-          fi
-          xcodebuild -version
-
-      - name: Cache Xcode Build
-        uses: actions/cache@v5
+      - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017  # v5.5.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          path: |
-            DerivedData
-            SourcePackages
-          key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.swift', '**/Package.resolved') }}
+          types: |
+            feat
+            fix
+            chore
+            refactor
+            test
+            style
+            ci
+            docs
+            perf
+            revert
+            deps
+
+  lint:
+    name: Lint (conventions, SwiftLint, SwiftFormat, ShellCheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate iOS version targets
+        run: bash Scripts/validate-ios-version.sh
+
+      - name: Validate TCA patterns
+        run: bash Scripts/validate-tca-patterns.sh
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@9f4dcd7fd46b4e75d7935cf2f4df406d5cae3684  # 3.2.1
+        env:
+          DIFF_BASE: ${{ github.base_ref }}
+
+      - name: Install SwiftFormat
+        run: |
+          set -e
+          SWIFTFORMAT_VERSION=0.54.6
+          curl -fsSL -o swiftformat_linux.zip \
+            "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip"
+          unzip -q swiftformat_linux.zip
+          chmod +x swiftformat_linux
+          sudo mv swiftformat_linux /usr/local/bin/swiftformat
+          swiftformat --version
+
+      - name: SwiftFormat (lint mode)
+        run: swiftformat --lint .
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck Scripts/*.sh
+
+  apitypes-build:
+    name: APITypes Build (SPM)
+    needs: lint
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-xcode-env
+      - name: Build APITypes package
+        run: xcrun swift build --package-path APITypes --disable-sandbox
+
+  test:
+    name: Test (build + unit + snapshots + warnings)
+    needs: lint
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      SNAPSHOT_TESTING_RECORD: never
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-xcode-env
+        id: env
+
+      - uses: irgaly/xcode-cache@fd644652c5d3fd1f794edcdf839eb1dc03a9021f  # v1.8.1
+        with:
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-xcode-
+            xcode-deriveddata-${{ runner.os }}-
 
-      - name: Resolve Dependencies
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Boot simulator
         run: |
-          xcodebuild -resolvePackageDependencies \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -derivedDataPath DerivedData \
-            -skipPackagePluginValidation \
-            -skipMacroValidation
+          DEVICE_ID="${{ steps.env.outputs.device_id }}"
+          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+          for i in {1..30}; do
+            if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "Booted"; then
+              echo "Simulator ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
 
-      - name: Find Simulator
-        id: simulator
-        run: |
-          # List available simulators for debugging
-          echo "Available iOS runtimes:"
-          xcrun simctl list runtimes | grep iOS || true
-
-          echo "Available iPhone devices:"
-          xcrun simctl list devices available | grep iPhone || true
-
-          # Find an iPhone simulator preferring iOS 18 runtimes (compatible with Xcode 16)
-          # First try iOS 18, then fall back to any iOS version
-          DEVICE_INFO=$(xcrun simctl list devices available -j | \
-            jq -r '.devices | to_entries[] | select(.key | test("iOS-18")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-            head -1)
-          
-          # Fallback to any iOS runtime if no iOS 18 devices found
-          if [ -z "$DEVICE_INFO" ]; then
-            echo "No iOS 18 simulators found, trying any iOS version..."
-            DEVICE_INFO=$(xcrun simctl list devices available -j | \
-              jq -r '.devices | to_entries[] | select(.key | test("iOS-[0-9]+")) | .value[] | select(.name | startswith("iPhone")) | "\(.name)|\(.udid)"' | \
-              sort -V | tail -1)
-          fi
-
-          if [ -n "$DEVICE_INFO" ]; then
-            DEVICE_NAME=$(echo "$DEVICE_INFO" | cut -d'|' -f1)
-            DEVICE_ID=$(echo "$DEVICE_INFO" | cut -d'|' -f2)
-            echo "Found iOS simulator: $DEVICE_NAME ($DEVICE_ID)"
-            echo "device=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
-            echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
-          else
-            echo "No iPhone simulators found, using generic destination"
-            echo "device=Any iOS Simulator Device" >> "$GITHUB_OUTPUT"
-            echo "device_id=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Boot Simulator
-        run: |
-          DEVICE_ID="${{ steps.simulator.outputs.device_id }}"
-          if [ -n "$DEVICE_ID" ]; then
-            echo "Booting simulator $DEVICE_ID..."
-            xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-
-            # Poll for simulator ready (max 30s)
-            for i in {1..30}; do
-              if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "Booted"; then
-                echo "Simulator ready after ${i}s"
-                break
-              fi
-              sleep 1
-            done
-          fi
-
-      - name: Build for Testing
+      - name: Build for testing
         run: |
           set -o pipefail
           xcodebuild build-for-testing \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
-            -derivedDataPath DerivedData \
-            -clonedSourcePackagesDirPath SourcePackages \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | xcpretty --color || (cat build.log && exit 1)
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
+            GCC_TREAT_WARNINGS_AS_ERRORS=YES \
+            2>&1 | tee build.log | xcbeautify --report junit --report-path build-results.xml
 
-      - name: Run Tests
+      - name: Check build warnings
+        run: bash Scripts/check-build-warnings.sh
+
+      - name: Run tests (including snapshots)
         run: |
           set -o pipefail
-          # Run unit tests with parallel execution enabled
-          # Unit tests use withMainSerialExecutor for deterministic action ordering
-          # Snapshot tests are skipped in CI (require local reference image generation)
           xcodebuild test-without-building \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
-            -derivedDataPath DerivedData \
-            -clonedSourcePackagesDirPath SourcePackages \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 120 \
             -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
-            -skip-testing:OfflineMediaDownloaderTests/FileCellSnapshotTests \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee test.log | xcpretty --color --report junit --output test-results.xml || (cat test.log && exit 1)
+            2>&1 | tee test.log | xcbeautify --report junit --report-path test-results.xml
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+      - name: Upload test results (always)
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: |
             TestResults.xcresult
             test-results.xml
+            build-results.xml
           retention-days: 7
+
+      - name: Upload snapshot failures (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-failures
+          path: |
+            **/__Snapshots__/**/*.png
+            **/*.diff.png
+          retention-days: 3
 
       - name: Test Summary
         if: always()
@@ -178,14 +212,10 @@ jobs:
           if [ -f test-results.xml ]; then
             echo "### Test Results" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-
-            # Parse test counts from JUnit XML (with fallbacks for empty results)
             TESTS=$(grep -o 'tests="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
             FAILURES=$(grep -o 'failures="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
-
             if [ -z "$TESTS" ]; then TESTS="0"; fi
             if [ -z "$FAILURES" ]; then FAILURES="0"; fi
-
             if [ "$FAILURES" = "0" ]; then
               echo "All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
             else
@@ -196,19 +226,36 @@ jobs:
             echo "No test results file found" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Build Release
+  release-build:
+    name: Release Archive (no codesign)
+    needs: lint
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-xcode-env
+
+      - uses: irgaly/xcode-cache@fd644652c5d3fd1f794edcdf839eb1dc03a9021f  # v1.8.1
+        with:
+          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          restore-keys: |
+            xcode-deriveddata-release-${{ runner.os }}-
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Archive (no codesign)
         run: |
           set -o pipefail
-          # Verify Release configuration builds successfully
-          # Uses same simulator and cached dependencies from test build
-          xcodebuild build \
+          xcodebuild archive \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}" \
+            -destination 'generic/platform=iOS' \
             -configuration Release \
-            -derivedDataPath DerivedData \
-            -clonedSourcePackagesDirPath SourcePackages \
+            -archivePath build/OfflineMediaDownloader.xcarchive \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee release-build.log | xcpretty --color || (cat release-build.log && exit 1)
+            CODE_SIGNING_REQUIRED=NO \
+            2>&1 | tee release-build.log | xcbeautify
