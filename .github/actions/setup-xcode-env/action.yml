@@ -1,5 +1,5 @@
 name: Setup Xcode Environment
-description: Preflight Xcode 16.2, create Development.xcconfig, discover simulator
+description: Preflight Xcode 26.3, create Development.xcconfig, discover simulator
 outputs:
   device_id:
     description: "Simulator UDID"
@@ -10,18 +10,18 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Preflight — verify Xcode 16.2 available
+    - name: Preflight — verify Xcode 26.3 available
       shell: bash
       run: |
-        if [ ! -d /Applications/Xcode_16.2.app ]; then
-          echo "::error::Xcode 16.2 not installed on this runner image."
+        if [ ! -d /Applications/Xcode_26.3.app ]; then
+          echo "::error::Xcode 26.3 not installed on this runner image."
           echo "Available Xcodes:"
           ls /Applications | grep -i xcode
           exit 1
         fi
     - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd  # v1.6.0
       with:
-        xcode-version: "16.2"
+        xcode-version: "26.3"
     - name: Create Development.xcconfig (CI placeholder)
       shell: bash
       run: |
