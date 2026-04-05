@@ -1,6 +1,6 @@
 #!/bin/bash
 # validate-ios-version.sh
-# Ensures no backwards compatibility code for iOS versions below 26
+# Ensures no backwards compatibility code for iOS versions below 18
 
 set -euo pipefail
 
@@ -27,21 +27,21 @@ for file in "${FILES[@]}"; do
     # Skip if file doesn't exist
     [ ! -f "$file" ] && continue
 
-    # Check for @available with iOS < 26
-    # Matches: @available(iOS 10-25, ...) or @available(*, iOS 10-25, ...)
-    if grep -nE '@available\s*\([^)]*iOS\s+(1[0-9]|2[0-5])[^0-9]' "$file" 2>/dev/null; then
-        echo -e "${RED}VIOLATION: @available for iOS < 26${NC}"
+    # Check for @available with iOS < 18
+    # Matches: @available(iOS 10-17, ...) or @available(*, iOS 10-17, ...)
+    if grep -nE '@available\s*\([^)]*iOS\s+(1[0-7])[^0-9]' "$file" 2>/dev/null; then
+        echo -e "${RED}VIOLATION: @available for iOS < 18${NC}"
         echo "   File: $file"
-        echo "   Rule: iOS 26+ only - no availability annotations for older versions"
+        echo "   Rule: iOS 18+ only - no availability annotations for older versions"
         echo ""
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 
-    # Check for #available with iOS < 26
-    if grep -nE '#available\s*\([^)]*iOS\s+(1[0-9]|2[0-5])[^0-9]' "$file" 2>/dev/null; then
-        echo -e "${RED}VIOLATION: #available for iOS < 26${NC}"
+    # Check for #available with iOS < 18
+    if grep -nE '#available\s*\([^)]*iOS\s+(1[0-7])[^0-9]' "$file" 2>/dev/null; then
+        echo -e "${RED}VIOLATION: #available for iOS < 18${NC}"
         echo "   File: $file"
-        echo "   Rule: iOS 26+ only - no runtime availability checks for older versions"
+        echo "   Rule: iOS 18+ only - no runtime availability checks for older versions"
         echo ""
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
@@ -50,7 +50,7 @@ for file in "${FILES[@]}"; do
     if grep -nE '#unavailable\s*\(' "$file" 2>/dev/null; then
         echo -e "${RED}VIOLATION: #unavailable usage detected${NC}"
         echo "   File: $file"
-        echo "   Rule: iOS 26+ only - no unavailability checks needed"
+        echo "   Rule: iOS 18+ only - no unavailability checks needed"
         echo ""
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
@@ -59,7 +59,7 @@ for file in "${FILES[@]}"; do
     if grep -nE '@available\s*\(\s*\*\s*,\s*deprecated' "$file" 2>/dev/null; then
         echo -e "${RED}WARNING: Deprecated API marker found${NC}"
         echo "   File: $file"
-        echo "   Note: Review if this is for iOS < 26 compatibility"
+        echo "   Note: Review if this is for iOS < 18 compatibility"
         echo ""
     fi
 done
