@@ -1,0 +1,35 @@
+disabled_rules:
+  - trailing_whitespace
+  - identifier_name
+  - nesting
+  - multiple_closures_with_trailing_closure
+  - type_body_length
+  - trailing_comma
+  - file_length
+  - switch_case_alignment
+  - redundant_string_enum_value
+  - line_length
+  - todo
+  - unused_closure_parameter
+  - vertical_whitespace
+  - static_over_final_class
+  - implicit_optional_initialization
+  - trailing_newline
+  - statement_position
+  - redundant_void_return
+  - large_tuple
+  - function_body_length
+  - cyclomatic_complexity
+opt_in_rules:
+  - force_unwrapping
+  - force_cast
+  - empty_count
+  - closure_spacing
+included:
+  - App
+  - OfflineMediaDownloaderTests
+excluded:
+  - APITypes/.build
+  - .build
+  - DerivedData
+  - SourcePackages
