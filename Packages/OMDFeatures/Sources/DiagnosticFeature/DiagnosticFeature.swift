@@ -1,15 +1,18 @@
+import APIClient
 import ComposableArchitecture
 import Foundation
-import SwiftUI
-import SharedModels
 import KeychainClient
+import LoggerClient
 import PersistenceClient
 import ServerClient
-import LoggerClient
-import APIClient
+import SharedModels
+import SwiftUI
 
 public struct KeychainItem: Equatable, Identifiable, Sendable {
-  public var id: String { name }
+  public var id: String {
+    name
+  }
+
   public var name: String
   public var displayValue: String
   public var itemType: KeychainItemType

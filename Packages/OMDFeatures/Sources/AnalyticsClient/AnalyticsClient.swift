@@ -63,12 +63,12 @@ public struct AnalyticsClient: Sendable {
 
 // MARK: - Convenience Methods
 
-extension AnalyticsClient {
-  public func track(_ event: AnalyticsEvent) {
+public extension AnalyticsClient {
+  func track(_ event: AnalyticsEvent) {
     track(event, nil)
   }
 
-  public func trackFileEvent(
+  func trackFileEvent(
     _ event: AnalyticsEvent,
     fileId: String,
     fileName: String? = nil,
@@ -80,10 +80,10 @@ extension AnalyticsClient {
     track(event, properties)
   }
 
-  public func trackError(_ event: AnalyticsEvent, errorType: String, message: String) {
+  func trackError(_ event: AnalyticsEvent, errorType: String, message: String) {
     track(event, [
       "error_type": errorType,
-      "error_message": message
+      "error_message": message,
     ])
   }
 }
@@ -96,10 +96,9 @@ private let analyticsLog = OSLog(subsystem: "OfflineMediaDownloader", category: 
 // MARK: - Live Implementation
 
 extension AnalyticsClient: DependencyKey {
-  public static let liveValue: AnalyticsClient = {
-    return AnalyticsClient(
-      track: { event, properties in
-        #if DEBUG
+  public static let liveValue: AnalyticsClient = .init(
+    track: { event, properties in
+      #if DEBUG
         let propsString = properties.map { dict in
           dict.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
         } ?? ""
@@ -108,31 +107,30 @@ extension AnalyticsClient: DependencyKey {
         } else {
           os_log("[Analytics] %{public}@ {%{public}@}", log: analyticsLog, type: .debug, event.rawValue, propsString)
         }
-        #endif
-      },
-      setUserId: { userId in
-        #if DEBUG
+      #endif
+    },
+    setUserId: { userId in
+      #if DEBUG
         os_log("[Analytics] Set user ID: %{public}@", log: analyticsLog, type: .debug, userId ?? "nil")
-        #endif
-      },
-      setUserProperty: { name, value in
-        #if DEBUG
+      #endif
+    },
+    setUserProperty: { name, value in
+      #if DEBUG
         os_log("[Analytics] Set user property %{public}@: %{public}@", log: analyticsLog, type: .debug, name, value ?? "nil")
-        #endif
-      },
-      screenView: { screenName in
-        #if DEBUG
+      #endif
+    },
+    screenView: { screenName in
+      #if DEBUG
         os_log("[Analytics] Screen view: %{public}@", log: analyticsLog, type: .debug, screenName)
-        #endif
-      }
-    )
-  }()
+      #endif
+    }
+  )
 
   public static let testValue = AnalyticsClient()
 }
 
-extension DependencyValues {
-  public var analytics: AnalyticsClient {
+public extension DependencyValues {
+  var analytics: AnalyticsClient {
     get { self[AnalyticsClient.self] }
     set { self[AnalyticsClient.self] = newValue }
   }

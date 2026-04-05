@@ -137,26 +137,26 @@ struct DownloadSettingsView: View {
   private func iconName(for quality: DownloadQuality) -> String {
     switch quality {
     case .auto:
-      return "sparkles"
+      "sparkles"
     case .high:
-      return "4k.tv"
+      "4k.tv"
     case .medium:
-      return "film"
+      "film"
     case .low:
-      return "antenna.radiowaves.left.and.right"
+      "antenna.radiowaves.left.and.right"
     }
   }
 
   private func iconColor(for quality: DownloadQuality) -> Color {
     switch quality {
     case .auto:
-      return theme.primaryColor
+      theme.primaryColor
     case .high:
-      return theme.accentColor
+      theme.accentColor
     case .medium:
-      return theme.warningColor
+      theme.warningColor
     case .low:
-      return theme.successColor
+      theme.successColor
     }
   }
 

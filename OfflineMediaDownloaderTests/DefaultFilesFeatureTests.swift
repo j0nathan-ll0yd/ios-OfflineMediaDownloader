@@ -1,17 +1,15 @@
+import ComposableArchitecture
 import ConcurrencyExtras
 import Foundation
-import Testing
-import ComposableArchitecture
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("DefaultFilesFeature Tests")
 struct DefaultFilesFeatureTests {
-
   // MARK: - onAppear Tests
 
   @MainActor
   @Test("onAppear with no file sets isLoadingFile true")
-  func onAppearWithNoFileSetsLoading() async throws {
+  func onAppearWithNoFileSetsLoading() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -23,7 +21,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("onAppear with existing file does nothing")
-  func onAppearWithExistingFileDoesNothing() async throws {
+  func onAppearWithExistingFileDoesNothing() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
     state.isLoadingFile = false
@@ -40,7 +38,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("parentProvidedFile sets file and stops loading")
-  func parentProvidedFileSetsFileAndStopsLoading() async throws {
+  func parentProvidedFileSetsFileAndStopsLoading() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
@@ -55,7 +53,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("parentProvidedFile sets isDownloaded true when file exists locally")
-  func parentProvidedFileMarksDownloadedWhenExists() async throws {
+  func parentProvidedFileMarksDownloadedWhenExists() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
@@ -71,7 +69,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("parentProvidedFile with nil file sets isLoadingFile false and file nil")
-  func parentProvidedFileWithNilFile() async throws {
+  func parentProvidedFileWithNilFile() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -86,7 +84,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("fileLoaded sets file and stops loading")
-  func fileLoadedSetsFile() async throws {
+  func fileLoadedSetsFile() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
@@ -101,7 +99,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("fileLoaded marks downloaded when local file exists")
-  func fileLoadedMarksDownloaded() async throws {
+  func fileLoadedMarksDownloaded() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
@@ -119,7 +117,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("fileFetchFailed stops loading and shows alert")
-  func fileFetchFailedShowsAlert() async throws {
+  func fileFetchFailedShowsAlert() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -142,7 +140,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped starts download with progress updates")
-  func downloadButtonTappedStartsDownload() async throws {
+  func downloadButtonTappedStartsDownload() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
 
@@ -175,7 +173,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped marks already-downloaded when file exists")
-  func downloadButtonTappedWhenFileAlreadyExists() async throws {
+  func downloadButtonTappedWhenFileAlreadyExists() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
 
@@ -192,7 +190,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped does nothing without a file")
-  func downloadButtonTappedWithNoFile() async throws {
+  func downloadButtonTappedWithNoFile() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -203,7 +201,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadButtonTapped does nothing when file has no URL")
-  func downloadButtonTappedWithNoUrl() async throws {
+  func downloadButtonTappedWithNoUrl() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.pendingFile
 
@@ -217,7 +215,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("Download failure resets state and shows alert")
-  func downloadFails() async throws {
+  func downloadFails() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
 
@@ -258,7 +256,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadProgress action updates progress correctly")
-  func downloadProgressUpdatesState() async throws {
+  func downloadProgressUpdatesState() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
     state.isDownloading = true
@@ -276,7 +274,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("downloadCompleted sets isDownloaded and clears isDownloading")
-  func downloadCompletedSetsState() async throws {
+  func downloadCompletedSetsState() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
     state.isDownloading = true
@@ -296,7 +294,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("playButtonTapped sets isPreparingToPlay and then isPlaying")
-  func playButtonTappedSetsPlaying() async throws {
+  func playButtonTappedSetsPlaying() async {
     var state = DefaultFilesFeature.State()
     state.file = TestData.sampleFile
     state.isDownloaded = true
@@ -304,7 +302,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     } withDependencies: {
-      $0.coreDataClient.incrementPlayCount = { }
+      $0.coreDataClient.incrementPlayCount = {}
     }
 
     await store.send(.playButtonTapped) {
@@ -318,7 +316,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("setPlaying false clears isPlaying and isPreparingToPlay")
-  func setPlayingFalseClearsState() async throws {
+  func setPlayingFalseClearsState() async {
     var state = DefaultFilesFeature.State()
     state.isPlaying = true
     state.isPreparingToPlay = true
@@ -335,7 +333,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("setPlaying true increments play count")
-  func setPlayingTrueIncrementsPlayCount() async throws {
+  func setPlayingTrueIncrementsPlayCount() async {
     let incrementCalled = LockIsolated(false)
 
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
@@ -355,7 +353,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("toggleBenefits flips showBenefits")
-  func toggleBenefitsFlips() async throws {
+  func toggleBenefitsFlips() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -373,7 +371,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("registerButtonTapped does nothing (handled by parent)")
-  func registerButtonTappedIsNoOp() async throws {
+  func registerButtonTappedIsNoOp() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     }
@@ -386,7 +384,7 @@ struct DefaultFilesFeatureTests {
 
   @MainActor
   @Test("Alert dismiss action clears alert")
-  func alertDismissClearsAlert() async throws {
+  func alertDismissClearsAlert() async {
     var state = DefaultFilesFeature.State()
     state.alert = AlertState {
       TextState("Download Failed")

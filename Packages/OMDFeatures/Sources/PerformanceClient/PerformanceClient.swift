@@ -55,9 +55,9 @@ public struct PerformanceClient: Sendable {
 
 // MARK: - Convenience Methods
 
-extension PerformanceClient {
+public extension PerformanceClient {
   /// Execute a block and automatically trace its duration
-  public func trace<T>(
+  func trace<T>(
     _ name: String,
     metadata: [String: String]? = nil,
     operation: () async throws -> T
@@ -68,17 +68,17 @@ extension PerformanceClient {
   }
 
   /// Record a timing metric in milliseconds
-  public func recordTiming(_ name: String, milliseconds: Double, metadata: [String: String]? = nil) {
+  func recordTiming(_ name: String, milliseconds: Double, metadata: [String: String]? = nil) {
     recordMetric(name, milliseconds, "ms", metadata)
   }
 
   /// Record a count metric
-  public func recordCount(_ name: String, count: Int, metadata: [String: String]? = nil) {
+  func recordCount(_ name: String, count: Int, metadata: [String: String]? = nil) {
     recordMetric(name, Double(count), "count", metadata)
   }
 
   /// Record a size metric in bytes
-  public func recordSize(_ name: String, bytes: Int64, metadata: [String: String]? = nil) {
+  func recordSize(_ name: String, bytes: Int64, metadata: [String: String]? = nil) {
     recordMetric(name, Double(bytes), "bytes", metadata)
   }
 }
@@ -108,10 +108,10 @@ extension PerformanceClient: DependencyKey {
       endTrace: { id, metadata in
         if let trace = storage.endTrace(id, metadata: metadata) {
           #if DEBUG
-          if let duration = trace.duration {
-            let ms = duration * 1000
-            os_log("[Perf] [%{public}@] %.2fms", log: perfLog, type: .debug, trace.name, ms)
-          }
+            if let duration = trace.duration {
+              let ms = duration * 1000
+              os_log("[Perf] [%{public}@] %.2fms", log: perfLog, type: .debug, trace.name, ms)
+            }
           #endif
         }
       },
@@ -125,7 +125,7 @@ extension PerformanceClient: DependencyKey {
         )
         storage.recordMetric(metric)
         #if DEBUG
-        os_log("[Perf] [%{public}@] %.2f %{public}@", log: perfLog, type: .debug, name, value, unit)
+          os_log("[Perf] [%{public}@] %.2f %{public}@", log: perfLog, type: .debug, name, value, unit)
         #endif
       },
       getActiveTraces: {
@@ -140,8 +140,8 @@ extension PerformanceClient: DependencyKey {
   public static let testValue = PerformanceClient()
 }
 
-extension DependencyValues {
-  public var performance: PerformanceClient {
+public extension DependencyValues {
+  var performance: PerformanceClient {
     get { self[PerformanceClient.self] }
     set { self[PerformanceClient.self] = newValue }
   }

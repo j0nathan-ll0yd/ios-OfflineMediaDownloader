@@ -1,10 +1,10 @@
-import ComposableArchitecture
-import Foundation
-import SharedModels
-import FileListFeature
-import LoginFeature
 import ActiveDownloadsFeature
+import ComposableArchitecture
 import DiagnosticFeature
+import FileListFeature
+import Foundation
+import LoginFeature
+import SharedModels
 
 @Reducer
 public struct MainFeature: Sendable {
@@ -15,10 +15,10 @@ public struct MainFeature: Sendable {
     public var selectedTab: Tab = .files
     @Shared(.inMemory("isAuthenticated")) public var isAuthenticated = false
     @Shared(.inMemory("isRegistered")) public var isRegistered = false
-    public var fileList: FileListFeature.State = FileListFeature.State()
-    public var diagnostic: DiagnosticFeature.State = DiagnosticFeature.State()
-    public var accountLogin: LoginFeature.State = LoginFeature.State()
-    public var activeDownloads: ActiveDownloadsFeature.State = ActiveDownloadsFeature.State()
+    public var fileList: FileListFeature.State = .init()
+    public var diagnostic: DiagnosticFeature.State = .init()
+    public var accountLogin: LoginFeature.State = .init()
+    public var activeDownloads: ActiveDownloadsFeature.State = .init()
     @Presents public var loginSheet: LoginFeature.State?
 
     public enum Tab: Equatable, Sendable {

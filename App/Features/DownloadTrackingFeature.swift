@@ -2,14 +2,19 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct DownloadTrackingFeature: Sendable {
+struct DownloadTrackingFeature {
   @ObservableState
   struct State: Equatable {
     var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
-    var isBlockingForDownloadInitiation: Bool { !initiatingDownloads.isEmpty }
+    var isBlockingForDownloadInitiation: Bool {
+      !initiatingDownloads.isEmpty
+    }
 
     struct DownloadInitiation: Equatable, Identifiable {
-      var id: String { fileId }
+      var id: String {
+        fileId
+      }
+
       let fileId: String
       let title: String
     }

@@ -44,7 +44,7 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
 // MARK: - LoginFeature
 
 @Reducer
-struct LoginFeature: Sendable {
+struct LoginFeature {
   @ObservableState
   struct State: Equatable {
     var registrationStatus: RegistrationStatus = .unregistered
@@ -86,11 +86,11 @@ struct LoginFeature: Sendable {
     let data = try handleLoginSuccess(authorization: result)
     if let userData = data.userData {
       await send(.registrationResponse(Result {
-        try await self.serverClient.registerUser(userData, data.idToken)
+        try await serverClient.registerUser(userData, data.idToken)
       }))
     } else {
       await send(.loginResponse(Result {
-        try await self.serverClient.loginUser(data.idToken)
+        try await serverClient.loginUser(data.idToken)
       }))
     }
   }
@@ -118,7 +118,7 @@ struct LoginFeature: Sendable {
           try await keychainClient.setJwtToken(token)
 
           // Store expiration if provided
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
             debugPrint("LoginFeature: expiration stored: \(expirationDate)")
           }
@@ -153,7 +153,7 @@ struct LoginFeature: Sendable {
           try await keychainClient.setJwtToken(token)
 
           // Store expiration if provided
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
             debugPrint("LoginFeature: expiration stored: \(expirationDate)")
           }
@@ -167,7 +167,7 @@ struct LoginFeature: Sendable {
           }
           debugPrint("LoginFeature: token stored and verified ✓")
 
-          if let userData = userData {
+          if let userData {
             try await keychainClient.setUserData(userData)
             debugPrint("LoginFeature: userData stored")
           }

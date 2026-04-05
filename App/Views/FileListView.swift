@@ -65,7 +65,7 @@ struct FileCellView: View {
           if let viewCount = store.file.viewCount {
             Text(MetadataFormatters.formatViewCount(viewCount))
           }
-          if store.file.viewCount != nil && store.file.size != nil {
+          if store.file.viewCount != nil, store.file.size != nil {
             Text("•")
           }
           if store.file.size != nil {
@@ -185,7 +185,7 @@ struct FileCellView: View {
 
 /// Format bytes to human-readable string (e.g., "45 MB")
 private func formatFileSize(_ bytes: Int?) -> String {
-  guard let bytes = bytes, bytes > 0 else { return "" }
+  guard let bytes, bytes > 0 else { return "" }
   let mb = Double(bytes) / 1_000_000
   if mb >= 1000 {
     return String(format: "%.1f GB", mb / 1000)
@@ -277,12 +277,12 @@ struct FileListView: View {
   private var fileListContent: some View {
     // Show DefaultFilesView only for UNREGISTERED users with no files
     // Registered users (even if signed out) should never see default file
-    if !store.isRegistered && store.files.isEmpty {
+    if !store.isRegistered, store.files.isEmpty {
       DefaultFilesView(
         store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
         onRegisterTapped: { store.send(.delegate(.loginRequired)) }
       )
-    } else if store.isLoading && store.files.isEmpty {
+    } else if store.isLoading, store.files.isEmpty {
       loadingView
     } else if store.files.isEmpty {
       emptyView

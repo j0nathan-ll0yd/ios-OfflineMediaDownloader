@@ -14,8 +14,8 @@ public struct ThumbnailCacheClient: Sendable {
   public var clearCache: @Sendable () async -> Void
 }
 
-extension DependencyValues {
-  public var thumbnailCacheClient: ThumbnailCacheClient {
+public extension DependencyValues {
+  var thumbnailCacheClient: ThumbnailCacheClient {
     get { self[ThumbnailCacheClient.self] }
     set { self[ThumbnailCacheClient.self] = newValue }
   }
@@ -34,7 +34,8 @@ extension ThumbnailCacheClient: DependencyKey {
       // Check if cached
       if fileManager.fileExists(atPath: cachedPath.path) {
         if let data = try? Data(contentsOf: cachedPath),
-           let image = UIImage(data: data) {
+           let image = UIImage(data: data)
+        {
           return image
         }
       }
@@ -45,7 +46,8 @@ extension ThumbnailCacheClient: DependencyKey {
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200,
-              let image = UIImage(data: data) else {
+              let image = UIImage(data: data)
+        else {
           return nil
         }
 
@@ -80,19 +82,19 @@ extension ThumbnailCacheClient: DependencyKey {
 
 // MARK: - Test Implementation
 
-extension ThumbnailCacheClient {
-  public static let testValue = ThumbnailCacheClient(
+public extension ThumbnailCacheClient {
+  static let testValue = ThumbnailCacheClient(
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: { }
+    clearCache: {}
   )
 
-  public static let previewValue = ThumbnailCacheClient(
+  static let previewValue = ThumbnailCacheClient(
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: { }
+    clearCache: {}
   )
 }
 

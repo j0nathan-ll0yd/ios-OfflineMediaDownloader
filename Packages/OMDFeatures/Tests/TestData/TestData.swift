@@ -1,36 +1,32 @@
+import APIClient
 import Foundation
 import SharedModels
-import APIClient
 
 /// Centralized test data fixtures for all feature tests
 public enum TestData {
-
   // MARK: - Files
 
   public static let sampleFile = File(
     fileId: "test-file-123",
     key: "Test Video.mp4",
-    publishDate: Date(timeIntervalSince1970: 1700000000),
-    size: 1024000,
+    publishDate: Date(timeIntervalSince1970: 1_700_000_000),
+    size: 1_024_000,
     url: URL(string: "https://example.com/test.mp4")
   )
 
-  public static let pendingFile: File = {
-    var file = File(
-      fileId: "pending-file-456",
-      key: "Pending Video.mp4",
-      publishDate: Date(timeIntervalSince1970: 1700000000),
-      size: nil,
-      url: nil  // No URL = pending
-    )
-    return file
-  }()
+  public static let pendingFile: File = .init(
+    fileId: "pending-file-456",
+    key: "Pending Video.mp4",
+    publishDate: Date(timeIntervalSince1970: 1_700_000_000),
+    size: nil,
+    url: nil // No URL = pending
+  )
 
   public static let downloadedFile = File(
     fileId: "downloaded-file-789",
     key: "Downloaded Video.mp4",
-    publishDate: Date(timeIntervalSince1970: 1699000000),
-    size: 2048000,
+    publishDate: Date(timeIntervalSince1970: 1_699_000_000),
+    size: 2_048_000,
     url: URL(string: "https://example.com/downloaded.mp4")
   )
 
@@ -40,10 +36,10 @@ public enum TestData {
     File(
       fileId: "file-3",
       key: "Another Video.mp4",
-      publishDate: Date(timeIntervalSince1970: 1698000000),
-      size: 512000,
+      publishDate: Date(timeIntervalSince1970: 1_698_000_000),
+      size: 512_000,
       url: URL(string: "https://example.com/another.mp4")
-    )
+    ),
   ]
 
   // MARK: - Users
@@ -118,24 +114,24 @@ public enum TestData {
 
   // MARK: - Push Notification Payloads
 
-  nonisolated(unsafe) public static let metadataPushPayload: [AnyHashable: Any] = [
+  public nonisolated(unsafe) static let metadataPushPayload: [AnyHashable: Any] = [
     "aps": ["content-available": 1],
     "type": "metadata",
     "file": [
       "fileId": "push-file-123",
       "key": "Push Video.mp4",
       "publishDate": "2024-01-15",
-      "size": 1500000
-    ]
+      "size": 1_500_000,
+    ],
   ]
 
-  nonisolated(unsafe) public static let downloadReadyPushPayload: [AnyHashable: Any] = [
+  public nonisolated(unsafe) static let downloadReadyPushPayload: [AnyHashable: Any] = [
     "aps": ["content-available": 1],
     "type": "download-ready",
     "fileId": "push-file-123",
     "key": "push-video.mp4",
     "url": "https://example.com/push-video.mp4",
-    "size": 1500000
+    "size": 1_500_000,
   ]
 
   // MARK: - Tokens
@@ -148,7 +144,9 @@ public enum TestData {
 
   public struct TestNetworkError: Error, LocalizedError {
     public let message: String
-    public var errorDescription: String? { message }
+    public var errorDescription: String? {
+      message
+    }
 
     /// NSError with NSURLErrorNotConnectedToInternet - properly detected by AppError.from()
     public static let notConnected = NSError(

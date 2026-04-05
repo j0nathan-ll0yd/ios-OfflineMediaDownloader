@@ -1,10 +1,10 @@
-import SharedModels
 import APIClient
+import SharedModels
 
 /// Bridge between generated API FileStatus and domain FileStatus
-extension FileStatus {
+public extension FileStatus {
   /// Initialize from generated API type
-  public init(from apiStatus: APIFileStatus) {
+  init(from apiStatus: APIFileStatus) {
     switch apiStatus {
     case .Queued: self = .queued
     case .Downloading: self = .downloading

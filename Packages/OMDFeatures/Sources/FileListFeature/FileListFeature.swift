@@ -1,17 +1,17 @@
+import APIClient
 import ComposableArchitecture
-import Foundation
-import OrderedCollections
-import UIKit
-import SharedModels
+import DefaultFilesFeature
 import FileCellFeature
 import FileDetailFeature
-import DefaultFilesFeature
-import ServerClient
-import PersistenceClient
-import LoggerClient
+import Foundation
 import LiveActivityClient
+import LoggerClient
+import OrderedCollections
 import PasteboardClient
-import APIClient
+import PersistenceClient
+import ServerClient
+import SharedModels
+import UIKit
 
 @Reducer
 public struct FileListFeature: Sendable {
@@ -32,7 +32,7 @@ public struct FileListFeature: Sendable {
     public var pendingAddUrl: URL?
     public var pendingYoutubeId: String?
     public var sharingFileURL: URL?
-    public var defaultFiles: DefaultFilesFeature.State = DefaultFilesFeature.State()
+    public var defaultFiles: DefaultFilesFeature.State = .init()
 
     public init() {}
   }
@@ -141,7 +141,7 @@ public struct FileListFeature: Sendable {
         }
 
       case .refreshButtonTapped:
-        if state.isRegistered && !state.isAuthenticated {
+        if state.isRegistered, !state.isAuthenticated {
           return .send(.delegate(.authenticationRequired))
         }
         state.isLoading = true
@@ -167,7 +167,7 @@ public struct FileListFeature: Sendable {
             }
             return newState
           })
-          let availableIds = Set(fileList.contents.map { $0.fileId })
+          let availableIds = Set(fileList.contents.map(\.fileId))
           state.pendingFileIds.removeAll { availableIds.contains($0) }
         }
         state.isLoading = false
@@ -270,7 +270,8 @@ public struct FileListFeature: Sendable {
           let result = await Task.detached {
             guard pasteboard.hasStrings(),
                   let urlString = pasteboard.string(),
-                  let url = URL(string: urlString) else {
+                  let url = URL(string: urlString)
+            else {
               return nil as (URL, String?)?
             }
             return (url, urlString.youtubeID)

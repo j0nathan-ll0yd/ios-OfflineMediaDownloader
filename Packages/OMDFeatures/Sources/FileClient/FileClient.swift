@@ -6,17 +6,19 @@ public struct FileClient: Sendable {
   public var documentsDirectory: @Sendable () -> URL = {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
   }
+
   public var filePath: @Sendable (_ url: URL) -> URL = { url in
     let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     return documentsPath.appendingPathComponent(url.lastPathComponent)
   }
+
   public var fileExists: @Sendable (_ url: URL) -> Bool = { _ in false }
   public var deleteFile: @Sendable (_ url: URL) async throws -> Void
   public var moveFile: @Sendable (_ from: URL, _ to: URL) throws -> Void
 }
 
-extension DependencyValues {
-  public var fileClient: FileClient {
+public extension DependencyValues {
+  var fileClient: FileClient {
     get { self[FileClient.self] }
     set { self[FileClient.self] = newValue }
   }
@@ -28,6 +30,7 @@ public enum FileClientError: Error {
 }
 
 // MARK: - Live API implementation
+
 extension FileClient: DependencyKey {
   public static let liveValue = FileClient(
     documentsDirectory: {

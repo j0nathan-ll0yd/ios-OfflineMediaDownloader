@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct MainFeature: Sendable {
+struct MainFeature {
   @ObservableState
   struct State: Equatable {
     var selectedTab: Tab = .files

@@ -18,21 +18,21 @@ public enum LogLevel: Int, Sendable, Comparable {
 
   public var osLogType: OSLogType {
     switch self {
-    case .debug: return .debug
-    case .info: return .info
-    case .warning: return .default
-    case .error: return .error
-    case .critical: return .fault
+    case .debug: .debug
+    case .info: .info
+    case .warning: .default
+    case .error: .error
+    case .critical: .fault
     }
   }
 
   public var emoji: String {
     switch self {
-    case .debug: return "🔍"
-    case .info: return "ℹ️"
-    case .warning: return "⚠️"
-    case .error: return "❌"
-    case .critical: return "🔥"
+    case .debug: "🔍"
+    case .info: "ℹ️"
+    case .warning: "⚠️"
+    case .error: "❌"
+    case .critical: "🔥"
     }
   }
 }
@@ -96,8 +96,8 @@ public struct LoggerClient: Sendable {
 
 // MARK: - Convenience Methods
 
-extension LoggerClient {
-  public func debug(
+public extension LoggerClient {
+  func debug(
     _ category: LogCategory,
     _ message: String,
     metadata: [String: String]? = nil,
@@ -107,7 +107,7 @@ extension LoggerClient {
     log(.debug, category, message, metadata, file, line)
   }
 
-  public func info(
+  func info(
     _ category: LogCategory,
     _ message: String,
     metadata: [String: String]? = nil,
@@ -117,7 +117,7 @@ extension LoggerClient {
     log(.info, category, message, metadata, file, line)
   }
 
-  public func warning(
+  func warning(
     _ category: LogCategory,
     _ message: String,
     metadata: [String: String]? = nil,
@@ -127,7 +127,7 @@ extension LoggerClient {
     log(.warning, category, message, metadata, file, line)
   }
 
-  public func error(
+  func error(
     _ category: LogCategory,
     _ message: String,
     metadata: [String: String]? = nil,
@@ -137,7 +137,7 @@ extension LoggerClient {
     log(.error, category, message, metadata, file, line)
   }
 
-  public func critical(
+  func critical(
     _ category: LogCategory,
     _ message: String,
     metadata: [String: String]? = nil,
@@ -185,9 +185,9 @@ extension LoggerClient: DependencyKey {
 
         // Also log via os_log in DEBUG for Xcode console visibility
         #if DEBUG
-        let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
-        let debugMsg = "\(level.emoji) [\(timestamp)] [\(category.rawValue)] \(message)"
-        os_log("%{public}@", log: debugConsoleLog, type: .debug, debugMsg)
+          let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
+          let debugMsg = "\(level.emoji) [\(timestamp)] [\(category.rawValue)] \(message)"
+          os_log("%{public}@", log: debugConsoleLog, type: .debug, debugMsg)
         #endif
       },
       getRecentLogs: { count in
@@ -208,8 +208,8 @@ extension LoggerClient: DependencyKey {
   public static let testValue = LoggerClient()
 }
 
-extension DependencyValues {
-  public var logger: LoggerClient {
+public extension DependencyValues {
+  var logger: LoggerClient {
     get { self[LoggerClient.self] }
     set { self[LoggerClient.self] = newValue }
   }
@@ -259,7 +259,7 @@ private final class LogStorage: @unchecked Sendable {
         "category": entry.category.rawValue,
         "message": entry.message,
         "file": entry.file,
-        "line": entry.line
+        "line": entry.line,
       ]
       if let metadata = entry.metadata {
         dict["metadata"] = metadata

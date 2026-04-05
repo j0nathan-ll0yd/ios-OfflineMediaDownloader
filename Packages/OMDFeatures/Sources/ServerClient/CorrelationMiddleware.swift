@@ -1,8 +1,8 @@
-import Foundation
-import OpenAPIRuntime
-import HTTPTypes
 import CorrelationClient
+import Foundation
+import HTTPTypes
 import LoggerClient
+import OpenAPIRuntime
 
 /// Middleware that adds correlation ID header to requests and tracks request lifecycle
 struct CorrelationMiddleware: ClientMiddleware {
@@ -27,7 +27,7 @@ struct CorrelationMiddleware: ClientMiddleware {
     logger.info(.network, "Request started: \(operationID)", metadata: [
       "correlationId": correlationId.uuidString,
       "method": request.method.rawValue,
-      "path": request.path ?? "unknown"
+      "path": request.path ?? "unknown",
     ])
 
     do {
@@ -50,7 +50,7 @@ struct CorrelationMiddleware: ClientMiddleware {
         "correlationId": correlationId.uuidString,
         "statusCode": "\(response.status.code)",
         "duration": String(format: "%.2fs", duration),
-        "serverRequestId": serverRequestId ?? "none"
+        "serverRequestId": serverRequestId ?? "none",
       ])
 
       return (response, responseBody)
@@ -69,7 +69,7 @@ struct CorrelationMiddleware: ClientMiddleware {
       logger.error(.network, "Request failed: \(operationID)", metadata: [
         "correlationId": correlationId.uuidString,
         "error": error.localizedDescription,
-        "duration": String(format: "%.2fs", duration)
+        "duration": String(format: "%.2fs", duration),
       ])
 
       throw error

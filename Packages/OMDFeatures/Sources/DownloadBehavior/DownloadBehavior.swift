@@ -1,8 +1,8 @@
 import ComposableArchitecture
+import DownloadClient
+import FileClient
 import Foundation
 import SharedModels
-import FileClient
-import DownloadClient
 
 /// Shared download state that can be embedded in features
 public struct DownloadState: Equatable, Sendable {
@@ -42,7 +42,7 @@ public enum DownloadBehavior {
     url: URL?,
     fileClient: FileClient
   ) -> Effect<DownloadAction> {
-    guard let url = url else { return .none }
+    guard let url else { return .none }
     return .run { send in
       let exists = fileClient.fileExists(url)
       await send(.checkFileExistence(exists))
@@ -78,7 +78,7 @@ public enum DownloadBehavior {
     downloadClient: DownloadClient,
     cancelId: some Hashable & Sendable
   ) -> Effect<DownloadAction> {
-    guard let url = url else { return .cancel(id: cancelId) }
+    guard let url else { return .cancel(id: cancelId) }
     return .run { _ in
       await downloadClient.cancelDownload(url)
     }

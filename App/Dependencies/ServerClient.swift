@@ -39,13 +39,13 @@ extension ServerClientError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case let .internalServerError(message, _, _):
-      return NSLocalizedString(message, comment: "Server error")
+      NSLocalizedString(message, comment: "Server error")
     case .unauthorized:
-      return NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
+      NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
     case let .badRequest(message, _, _):
-      return NSLocalizedString(message, comment: "Bad request error")
+      NSLocalizedString(message, comment: "Bad request error")
     case let .networkError(message, _, _):
-      return NSLocalizedString(message, comment: "Network error")
+      NSLocalizedString(message, comment: "Network error")
     }
   }
 
@@ -56,7 +56,7 @@ extension ServerClientError: LocalizedError {
          let .unauthorized(requestId, _),
          let .badRequest(_, requestId, _),
          let .networkError(_, requestId, _):
-      return requestId
+      requestId
     }
   }
 
@@ -67,7 +67,7 @@ extension ServerClientError: LocalizedError {
          let .unauthorized(_, correlationId),
          let .badRequest(_, _, correlationId),
          let .networkError(_, _, correlationId):
-      return correlationId
+      correlationId
     }
   }
 }
@@ -103,17 +103,17 @@ private func mapStatusCodeToError(
 ) -> ServerClientError {
   switch statusCode {
   case 400:
-    return .badRequest(message: message ?? "Bad request", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Bad request", requestId: requestId, correlationId: nil)
   case 401, 403:
-    return .unauthorized(requestId: requestId, correlationId: nil)
+    .unauthorized(requestId: requestId, correlationId: nil)
   case 404:
-    return .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
   case 409:
-    return .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
   case 500 ... 599:
-    return .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
+    .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
   default:
-    return .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
+    .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
   }
 }
 
@@ -213,19 +213,19 @@ extension ServerClient: DependencyKey {
         endpoint: "registerDevice",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          case let .created(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          case let .created(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_DeviceRegistrationResponse) in
@@ -262,17 +262,17 @@ extension ServerClient: DependencyKey {
         endpoint: "registerUser",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
@@ -312,19 +312,19 @@ extension ServerClient: DependencyKey {
         endpoint: "loginUser",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .notFound(r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .conflict(r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .notFound(r): (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .conflict(r): (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
@@ -355,16 +355,16 @@ extension ServerClient: DependencyKey {
         endpoint: "refreshToken",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_TokenRefreshResponse) in
@@ -397,17 +397,17 @@ extension ServerClient: DependencyKey {
         endpoint: "getFiles",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_FileListResponse) in
@@ -444,18 +444,18 @@ extension ServerClient: DependencyKey {
         endpoint: "addFile",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          case let .accepted(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          case let .accepted(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
@@ -633,6 +633,6 @@ extension ServerClient {
         requestId: "preview"
       )
     },
-    logoutUser: { }
+    logoutUser: {}
   )
 }

@@ -1,9 +1,9 @@
+import AuthenticationServices
 import ComposableArchitecture
 import Foundation
-import AuthenticationServices
-import SharedModels
 import KeychainClient
 import LoggerClient
+import SharedModels
 
 @DependencyClient
 public struct AuthenticationClient: Sendable {
@@ -17,8 +17,8 @@ public struct AuthenticationClient: Sendable {
   public var determineLoginStatus: @Sendable () async throws -> LoginStatus
 }
 
-extension DependencyValues {
-  public var authenticationClient: AuthenticationClient {
+public extension DependencyValues {
+  var authenticationClient: AuthenticationClient {
     get { self[AuthenticationClient.self] }
     set { self[AuthenticationClient.self] = newValue }
   }
@@ -29,6 +29,7 @@ public enum AuthenticationError: Error {
 }
 
 // MARK: - Live API implementation
+
 extension AuthenticationClient: DependencyKey {
   public static let liveValue = AuthenticationClient(
     determineAuthState: {
@@ -60,7 +61,7 @@ extension AuthenticationClient: DependencyKey {
 
       let loginStatus: LoginStatus
       switch result {
-      case .success(let credentialState):
+      case let .success(credentialState):
         switch credentialState {
         case .authorized:
           // Apple credentials are valid, but also verify JWT token exists
@@ -92,7 +93,7 @@ extension AuthenticationClient: DependencyKey {
           loginStatus = .unauthenticated
           logger.warning(.auth, "Unknown Apple ID credential state")
         }
-      case .failure(let error):
+      case let .failure(error):
         logger.error(.auth, "Error checking Apple ID credential state", metadata: ["error": "\(error)"])
         loginStatus = .unauthenticated
       }
@@ -114,25 +115,26 @@ extension AuthenticationClient: DependencyKey {
         try await appleIDProvider.credentialState(forUserID: currentUserIdentifier)
       }
       switch result {
-        case .success(let credentialState):
-          switch credentialState {
-            case .authorized:   return .authenticated
-            case .revoked, .notFound: return .unauthenticated
-            case .transferred: return .unauthenticated
-            @unknown default: return .unauthenticated
-          }
-        case .failure(let error):
-          @Dependency(\.logger) var logger
-          logger.error(.auth, "Error checking credential state: \(error)")
-          return .unauthenticated
+      case let .success(credentialState):
+        switch credentialState {
+        case .authorized: return .authenticated
+        case .revoked, .notFound: return .unauthenticated
+        case .transferred: return .unauthenticated
+        @unknown default: return .unauthenticated
+        }
+      case let .failure(error):
+        @Dependency(\.logger) var logger
+        logger.error(.auth, "Error checking credential state: \(error)")
+        return .unauthenticated
       }
     }
   )
 }
 
 // MARK: - Test/Preview implementation
-extension AuthenticationClient {
-  public static let testValue = AuthenticationClient(
+
+public extension AuthenticationClient {
+  static let testValue = AuthenticationClient(
     determineAuthState: { AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered) },
     determineLoginStatus: { .unauthenticated }
   )

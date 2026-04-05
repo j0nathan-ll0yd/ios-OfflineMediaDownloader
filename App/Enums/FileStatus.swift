@@ -14,11 +14,11 @@ public enum FileStatus: String, Codable, Equatable, Sendable, CaseIterable {
 
   var displayString: String {
     switch self {
-    case .pending: return "Processing..."
-    case .queued: return "Queued"
-    case .downloading: return "Downloading..."
-    case .downloaded: return "Ready"
-    case .failed: return "Failed"
+    case .pending: "Processing..."
+    case .queued: "Queued"
+    case .downloading: "Downloading..."
+    case .downloaded: "Ready"
+    case .failed: "Failed"
     }
   }
 

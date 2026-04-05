@@ -1,22 +1,22 @@
-import SwiftUI
+import APIClient
+import AuthenticationClient
 import ComposableArchitecture
-import UserNotifications
-import SharedModels
 import DesignSystem
+import DiagnosticFeature
+import DownloadClient
+import DownloadTrackingFeature
+import FileClient
+import KeychainClient
+import LiveActivityClient
+import LoggerClient
 import LoginFeature
 import MainFeature
-import DownloadTrackingFeature
-import DiagnosticFeature
-import AuthenticationClient
-import ServerClient
-import KeychainClient
-import PersistenceClient
-import DownloadClient
-import FileClient
-import LoggerClient
 import NotificationRegistrationClient
-import LiveActivityClient
-import APIClient
+import PersistenceClient
+import ServerClient
+import SharedModels
+import SwiftUI
+import UserNotifications
 
 // MARK: - Notification Setup Helper
 
@@ -25,7 +25,7 @@ public func setupNotifications() {
   @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
   let client = notificationRegistrationClient
   let center = UNUserNotificationCenter.current()
-  center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+  center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
     guard granted else { return }
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       guard settings.authorizationStatus == .authorized else { return }
@@ -36,8 +36,8 @@ public func setupNotifications() {
   }
 }
 
-// Token refresh threshold - refresh if token expires within this time
-private let tokenRefreshThreshold: TimeInterval = 5 * 60  // 5 minutes
+/// Token refresh threshold - refresh if token expires within this time
+private let tokenRefreshThreshold: TimeInterval = 5 * 60 // 5 minutes
 
 // MARK: - RootFeature
 
@@ -52,17 +52,20 @@ public struct RootFeature: Sendable {
     public var launchStatus: String = "Starting..."
     @Shared(.inMemory("isAuthenticated")) public var isAuthenticated = false
     @Shared(.inMemory("isRegistered")) public var isRegistered = false
-    public var login: LoginFeature.State = LoginFeature.State()
-    public var main: MainFeature.State = MainFeature.State()
-    public var downloadTracking: DownloadTrackingFeature.State = DownloadTrackingFeature.State()
+    public var login: LoginFeature.State = .init()
+    public var main: MainFeature.State = .init()
+    public var downloadTracking: DownloadTrackingFeature.State = .init()
 
-    public var isBlockingForDownloadInitiation: Bool { downloadTracking.isBlockingForDownloadInitiation }
+    public var isBlockingForDownloadInitiation: Bool {
+      downloadTracking.isBlockingForDownloadInitiation
+    }
+
     public var initiatingDownloads: IdentifiedArrayOf<DownloadTrackingFeature.State.DownloadInitiation> {
       downloadTracking.initiatingDownloads
     }
 
     #if DEBUG
-    @Presents public var diagnostic: DiagnosticFeature.State?
+      @Presents public var diagnostic: DiagnosticFeature.State?
     #endif
   }
 
@@ -83,8 +86,8 @@ public struct RootFeature: Sendable {
     case main(MainFeature.Action)
     case requestDeviceRegistration
     #if DEBUG
-    case shakeDetected
-    case diagnostic(PresentationAction<DiagnosticFeature.Action>)
+      case shakeDetected
+      case diagnostic(PresentationAction<DiagnosticFeature.Action>)
     #endif
   }
 
@@ -125,7 +128,7 @@ public struct RootFeature: Sendable {
       case let .authStateResponse(authState):
         logger.info(.lifecycle, "Auth state determined", metadata: [
           "loginStatus": "\(authState.loginStatus)",
-          "registrationStatus": "\(authState.registrationStatus)"
+          "registrationStatus": "\(authState.registrationStatus)",
         ])
         state.isLaunching = false
         state.login.registrationStatus = authState.registrationStatus
@@ -161,7 +164,8 @@ public struct RootFeature: Sendable {
 
       case let .deviceRegistrationResponse(.failure(error)):
         if let serverError = error as? ServerClientError,
-           case .unauthorized = serverError {
+           case .unauthorized = serverError
+        {
           state.$isAuthenticated.withLock { $0 = false }
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
@@ -203,7 +207,7 @@ public struct RootFeature: Sendable {
         let expirationDate = response.body?.expirationDate
         return .run { [keychainClient, logger] _ in
           try await keychainClient.setJwtToken(token)
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
           logger.info(.auth, "Token refreshed successfully")
@@ -211,7 +215,8 @@ public struct RootFeature: Sendable {
 
       case let .tokenRefreshResponse(.failure(error)):
         if let serverError = error as? ServerClientError,
-           case .unauthorized = serverError {
+           case .unauthorized = serverError
+        {
           logger.warning(.auth, "Token refresh failed with 401 - session expired")
           return .send(.main(.delegate(.authenticationRequired)))
         }
@@ -320,18 +325,18 @@ public struct RootFeature: Sendable {
         return .none
 
       #if DEBUG
-      case .shakeDetected:
-        state.diagnostic = DiagnosticFeature.State()
-        return .none
+        case .shakeDetected:
+          state.diagnostic = DiagnosticFeature.State()
+          return .none
 
-      case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
-        state.$isAuthenticated.withLock { $0 = false }
-        state.login.loginStatus = .unauthenticated
-        state.diagnostic = nil
-        return .send(.main(.fileList(.clearAllFiles)))
+        case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
+          state.$isAuthenticated.withLock { $0 = false }
+          state.login.loginStatus = .unauthenticated
+          state.diagnostic = nil
+          return .send(.main(.fileList(.clearAllFiles)))
 
-      case .diagnostic:
-        return .none
+        case .diagnostic:
+          return .none
       #endif
       }
     }
@@ -340,8 +345,8 @@ public struct RootFeature: Sendable {
     }
     #if DEBUG
     .ifLet(\.$diagnostic, action: \.diagnostic) {
-      DiagnosticFeature()
-    }
+        DiagnosticFeature()
+      }
     #endif
   }
 }

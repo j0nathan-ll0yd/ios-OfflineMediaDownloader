@@ -4,7 +4,7 @@ import OrderedCollections
 import UIKit
 
 @Reducer
-struct FileListFeature: Sendable {
+struct FileListFeature {
   @ObservableState
   struct State: Equatable {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
@@ -143,7 +143,7 @@ struct FileListFeature: Sendable {
 
       case .refreshButtonTapped:
         // Registered but unauthenticated users need to login first
-        if state.isRegistered && !state.isAuthenticated {
+        if state.isRegistered, !state.isAuthenticated {
           return .send(.delegate(.authenticationRequired))
         }
         state.isLoading = true
@@ -173,7 +173,7 @@ struct FileListFeature: Sendable {
             return newState
           })
           // Remove pending IDs that are now available
-          let availableIds = Set(fileList.contents.map { $0.fileId })
+          let availableIds = Set(fileList.contents.map(\.fileId))
           state.pendingFileIds.removeAll { availableIds.contains($0) }
         }
         state.isLoading = false

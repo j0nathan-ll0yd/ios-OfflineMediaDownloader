@@ -1,10 +1,10 @@
 import ComposableArchitecture
-import Foundation
-import SharedModels
 import DownloadClient
+import Foundation
 import LiveActivityClient
-import PersistenceClient
 import LoggerClient
+import PersistenceClient
+import SharedModels
 
 @Reducer
 public struct DownloadTrackingFeature: Sendable {
@@ -13,10 +13,15 @@ public struct DownloadTrackingFeature: Sendable {
   @ObservableState
   public struct State: Equatable {
     public var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
-    public var isBlockingForDownloadInitiation: Bool { !initiatingDownloads.isEmpty }
+    public var isBlockingForDownloadInitiation: Bool {
+      !initiatingDownloads.isEmpty
+    }
 
     public struct DownloadInitiation: Equatable, Identifiable, Sendable {
-      public var id: String { fileId }
+      public var id: String {
+        fileId
+      }
+
       public let fileId: String
       public let title: String
 

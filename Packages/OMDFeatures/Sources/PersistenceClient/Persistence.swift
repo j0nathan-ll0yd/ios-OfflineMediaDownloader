@@ -5,7 +5,7 @@ public struct PersistenceController: Sendable {
   /// Check if running in a test environment
   private static var isTestEnvironment: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
-    NSClassFromString("XCTestCase") != nil
+      NSClassFromString("XCTestCase") != nil
   }
 
   public static let shared: PersistenceController = {
@@ -16,10 +16,7 @@ public struct PersistenceController: Sendable {
   }()
 
   @MainActor
-  public static let preview: PersistenceController = {
-    let result = PersistenceController(inMemory: true)
-    return result
-  }()
+  public static let preview: PersistenceController = .init(inMemory: true)
 
   public let container: NSPersistentContainer
 
@@ -28,7 +25,7 @@ public struct PersistenceController: Sendable {
     if inMemory {
       container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
     }
-    container.loadPersistentStores { storeDescription, error in
+    container.loadPersistentStores { _, error in
       if let error = error as NSError? {
         if PersistenceController.isTestEnvironment {
           @Dependency(\.logger) var logger

@@ -23,8 +23,8 @@ public class FileEntity: NSManagedObject, @unchecked Sendable {
   @NSManaged public var thumbnailUrl: String?
 }
 
-extension FileEntity {
-  @nonobjc public class func fetchRequest() -> NSFetchRequest<FileEntity> {
+public extension FileEntity {
+  @nonobjc class func fetchRequest() -> NSFetchRequest<FileEntity> {
     NSFetchRequest<FileEntity>(entityName: "FileEntity")
   }
 }

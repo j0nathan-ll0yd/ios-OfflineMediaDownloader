@@ -16,11 +16,11 @@ public enum MetadataFormatters {
   public static func formatViewCount(_ count: Int) -> String {
     switch count {
     case 0 ..< 1000:
-      return "\(count) views"
+      "\(count) views"
     case 1000 ..< 1_000_000:
-      return String(format: "%.1fK views", Double(count) / 1000)
+      String(format: "%.1fK views", Double(count) / 1000)
     default:
-      return String(format: "%.1fM views", Double(count) / 1_000_000)
+      String(format: "%.1fM views", Double(count) / 1_000_000)
     }
   }
 

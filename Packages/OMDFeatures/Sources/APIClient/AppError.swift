@@ -1,11 +1,10 @@
 import Foundation
-import OpenAPIRuntime
 import HTTPTypes
+import OpenAPIRuntime
 
 /// Unified error type for user-facing alerts throughout the app.
 /// Provides structured error handling with titles, messages, and retry capabilities.
 public enum AppError: Error, Equatable {
-
   // MARK: - Network Errors
 
   /// No internet connection available
@@ -59,49 +58,49 @@ public enum AppError: Error, Equatable {
   public var title: String {
     switch self {
     case .networkUnavailable:
-      return "No Connection"
+      "No Connection"
     case .serverError:
-      return "Server Error"
+      "Server Error"
     case .unauthorized, .sessionExpired:
-      return "Session Expired"
+      "Session Expired"
     case .timeout:
-      return "Request Timeout"
+      "Request Timeout"
     case .downloadFailed:
-      return "Download Failed"
+      "Download Failed"
     case .deleteFailed:
-      return "Delete Failed"
+      "Delete Failed"
     case .invalidClipboardUrl:
-      return "Invalid URL"
+      "Invalid URL"
     case .loginFailed:
-      return "Login Failed"
+      "Login Failed"
     case .registrationFailed:
-      return "Registration Failed"
+      "Registration Failed"
     case .invalidAppleCredential:
-      return "Sign In Failed"
+      "Sign In Failed"
     case .keychainError:
-      return "Security Error"
+      "Security Error"
     case .storageError:
-      return "Storage Error"
+      "Storage Error"
     }
   }
 
   /// The request ID for server errors, useful for debugging
   public var requestId: String? {
     switch self {
-    case .serverError(_, let requestId, _), .unauthorized(let requestId, _):
-      return requestId
+    case let .serverError(_, requestId, _), let .unauthorized(requestId, _):
+      requestId
     default:
-      return nil
+      nil
     }
   }
 
   /// The correlation ID for request tracing
   public var correlationId: String? {
     switch self {
-    case .serverError(_, _, let correlationId), .unauthorized(_, let correlationId):
-      return correlationId
+    case let .serverError(_, _, correlationId), let .unauthorized(_, correlationId):
+      correlationId
     default:
-      return nil
+      nil
     }
   }
 
@@ -110,27 +109,27 @@ public enum AppError: Error, Equatable {
     switch self {
     case .networkUnavailable:
       return "Please check your internet connection and try again."
-    case .serverError(let message, let requestId, let correlationId):
+    case let .serverError(message, requestId, correlationId):
       var result = message
       if correlationId != nil || requestId != nil {
         result += "\n"
       }
-      if let correlationId = correlationId {
+      if let correlationId {
         result += "\nCorrelation ID: \(correlationId)"
       }
-      if let requestId = requestId {
+      if let requestId {
         result += "\nRequest ID: \(requestId)"
       }
       return result
-    case .unauthorized(let requestId, let correlationId):
+    case let .unauthorized(requestId, correlationId):
       var result = "Your session has expired. Please sign in again."
       if correlationId != nil || requestId != nil {
         result += "\n"
       }
-      if let correlationId = correlationId {
+      if let correlationId {
         result += "\nCorrelation ID: \(correlationId)"
       }
-      if let requestId = requestId {
+      if let requestId {
         result += "\nRequest ID: \(requestId)"
       }
       return result
@@ -138,21 +137,21 @@ public enum AppError: Error, Equatable {
       return "Your session has expired. Please sign in again."
     case .timeout:
       return "The request took too long. Please try again."
-    case .downloadFailed(let fileName, let reason):
+    case let .downloadFailed(fileName, reason):
       return "Failed to download \"\(fileName)\": \(reason)"
-    case .deleteFailed(let fileName):
+    case let .deleteFailed(fileName):
       return "Failed to delete \"\(fileName)\". Please try again."
     case .invalidClipboardUrl:
       return "The clipboard does not contain a valid URL."
-    case .loginFailed(let reason):
+    case let .loginFailed(reason):
       return reason
-    case .registrationFailed(let reason):
+    case let .registrationFailed(reason):
       return reason
     case .invalidAppleCredential:
       return "Could not verify your Apple ID credentials. Please try again."
-    case .keychainError(let operation):
+    case let .keychainError(operation):
       return "Failed to \(operation) secure data."
-    case .storageError(let operation):
+    case let .storageError(operation):
       return "Failed to \(operation) local data."
     }
   }
@@ -161,11 +160,11 @@ public enum AppError: Error, Equatable {
   public var isRetryable: Bool {
     switch self {
     case .networkUnavailable, .timeout, .downloadFailed, .deleteFailed:
-      return true
+      true
     case .serverError, .unauthorized, .sessionExpired, .invalidClipboardUrl,
          .loginFailed, .registrationFailed, .invalidAppleCredential,
          .keychainError, .storageError:
-      return false
+      false
     }
   }
 
@@ -173,22 +172,21 @@ public enum AppError: Error, Equatable {
   public var requiresReauth: Bool {
     switch self {
     case .unauthorized, .sessionExpired:
-      return true
+      true
     default:
-      return false
+      false
     }
   }
 }
 
 // MARK: - Error Conversion
 
-extension AppError {
-
+public extension AppError {
   /// Creates an AppError from any Error, mapping known error types appropriately.
   /// Note: some error type checks (ServerClientError, CoreDataError, etc.) require
   /// importing the relevant modules. Features that use this should provide their own
   /// bridging via AppError.from(_:) or use the specific case constructors directly.
-  public static func from(_ error: Error) -> AppError {
+  static func from(_ error: Error) -> AppError {
     // Check for OpenAPI ClientError - extract requestId from response headers
     if let clientError = error as? ClientError {
       let requestId = clientError.response?.headerFields[.init("x-amzn-requestid")!]

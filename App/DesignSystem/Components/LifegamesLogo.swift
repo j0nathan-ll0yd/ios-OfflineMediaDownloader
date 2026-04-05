@@ -7,25 +7,25 @@ enum LogoSize {
 
   var iconSize: CGFloat {
     switch self {
-    case .small: return 40
-    case .medium: return 80
-    case .large: return 120
+    case .small: 40
+    case .medium: 80
+    case .large: 120
     }
   }
 
   var titleFont: Font {
     switch self {
-    case .small: return .headline
-    case .medium: return .title2
-    case .large: return .largeTitle
+    case .small: .headline
+    case .medium: .title2
+    case .large: .largeTitle
     }
   }
 
   var subtitleFont: Font {
     switch self {
-    case .small: return .caption
-    case .medium: return .subheadline
-    case .large: return .title3
+    case .small: .caption
+    case .medium: .subheadline
+    case .large: .title3
     }
   }
 }

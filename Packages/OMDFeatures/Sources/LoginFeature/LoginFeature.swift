@@ -1,12 +1,12 @@
-import UIKit
-import SwiftUI
+import APIClient
 import AuthenticationServices
 import ComposableArchitecture
-import SharedModels
-import ServerClient
 import KeychainClient
 import LoggerClient
-import APIClient
+import ServerClient
+import SharedModels
+import SwiftUI
+import UIKit
 
 // MARK: - Models
 
@@ -20,7 +20,8 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
   }
 
   guard let identityTokenData = credential.identityToken,
-        let idToken = String(data: identityTokenData, encoding: .utf8) else {
+        let idToken = String(data: identityTokenData, encoding: .utf8)
+  else {
     throw LoginFeatureError.invalidAuthorizationCredential
   }
 
@@ -33,8 +34,7 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
       lastName: credential.fullName?.familyName ?? ""
     )
     return (idToken, userData)
-  }
-  else {
+  } else {
     return (idToken, nil)
   }
 }
@@ -84,15 +84,15 @@ public struct LoginFeature: Sendable {
 
   private enum CancelID { case signIn }
 
-  func dispatchAuthCode(send: Send<Action>, result: ASAuthorization) async throws -> Void {
+  func dispatchAuthCode(send: Send<Action>, result: ASAuthorization) async throws {
     let data = try handleLoginSuccess(authorization: result)
     if let userData = data.userData {
       await send(.registrationResponse(Result {
-        try await self.serverClient.registerUser(userData, data.idToken)
+        try await serverClient.registerUser(userData, data.idToken)
       }))
     } else {
       await send(.loginResponse(Result {
-        try await self.serverClient.loginUser(data.idToken)
+        try await serverClient.loginUser(data.idToken)
       }))
     }
   }
@@ -116,7 +116,7 @@ public struct LoginFeature: Sendable {
         let expirationDate = response.body?.expirationDate
         return .run { send in
           try await keychainClient.setJwtToken(token)
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
           let storedToken = try await keychainClient.getJwtToken()
@@ -142,7 +142,7 @@ public struct LoginFeature: Sendable {
         let expirationDate = response.body?.expirationDate
         return .run { send in
           try await keychainClient.setJwtToken(token)
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
           let storedToken = try await keychainClient.getJwtToken()
@@ -150,7 +150,7 @@ public struct LoginFeature: Sendable {
             await send(.showError(.registrationFailed(reason: "Failed to store authentication token")))
             return
           }
-          if let userData = userData {
+          if let userData {
             try await keychainClient.setUserData(userData)
           }
           await send(.delegate(.registrationCompleted))

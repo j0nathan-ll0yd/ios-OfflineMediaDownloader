@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 /// Thumbnail image with disk caching and loading states
 public struct ThumbnailImage: View {
@@ -28,7 +28,7 @@ public struct ThumbnailImage: View {
 
   public var body: some View {
     ZStack {
-      if let image = image {
+      if let image {
         Image(uiImage: image)
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -51,7 +51,7 @@ public struct ThumbnailImage: View {
   }
 
   private func loadThumbnail() async {
-    guard let url = url else { return }
+    guard let url else { return }
 
     // Use fileId for caching if available, otherwise derive from URL
     let cacheId = fileId ?? url.lastPathComponent
@@ -72,7 +72,7 @@ public struct ThumbnailImage: View {
     Rectangle()
       .fill(Color(white: 0.2))
       .overlay {
-        if let icon = icon {
+        if let icon {
           Image(systemName: icon)
             .font(.title3)
             .foregroundStyle(.secondary)

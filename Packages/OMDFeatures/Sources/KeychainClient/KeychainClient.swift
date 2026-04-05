@@ -1,15 +1,15 @@
 import ComposableArchitecture
 import Foundation
-import Valet
-import SharedModels
 import LoggerClient
+import SharedModels
+import Valet
 
 public final class ValetUtil: Sendable {
   public static let shared = ValetUtil()
   public let secureEnclave: SecureEnclaveValet?
   public let keychain: Valet
 
-  // Use a safe identifier that works in both app and test environments
+  /// Use a safe identifier that works in both app and test environments
   public static let identifier: String = {
     if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
       return "\(bundleId).Valet"
@@ -22,14 +22,14 @@ public final class ValetUtil: Sendable {
     // SecureEnclaveValet is not available in simulator environments
     // and may fail on devices without Secure Enclave hardware
     #if targetEnvironment(simulator)
-    secureEnclave = nil
+      secureEnclave = nil
     #else
-    // Try to create SecureEnclaveValet, but it may fail on older devices
-    // or in certain CI environments
-    secureEnclave = SecureEnclaveValet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
-      accessControl: .userPresence
-    )
+      // Try to create SecureEnclaveValet, but it may fail on older devices
+      // or in certain CI environments
+      secureEnclave = SecureEnclaveValet.valet(
+        with: Identifier(nonEmpty: ValetUtil.identifier)!,
+        accessControl: .userPresence
+      )
     #endif
 
     keychain = Valet.valet(
@@ -39,7 +39,7 @@ public final class ValetUtil: Sendable {
   }
 }
 
-// This enum maintains ALL keys stored in the Keychain. They MUST be unique.
+/// This enum maintains ALL keys stored in the Keychain. They MUST be unique.
 public enum KeychainKeys: String {
   case email
   case firstName
@@ -67,8 +67,8 @@ public struct KeychainClient: Sendable {
   public var deleteDeviceData: @Sendable () async throws -> Void
 }
 
-extension DependencyValues {
-  public var keychainClient: KeychainClient {
+public extension DependencyValues {
+  var keychainClient: KeychainClient {
     get { self[KeychainClient.self] }
     set { self[KeychainClient.self] = newValue }
   }
@@ -88,16 +88,16 @@ private func isItemNotFoundError(_ error: Error) -> Bool {
 }
 
 // MARK: - Live API implementation
+
 extension KeychainClient: DependencyKey {
   public static let liveValue = KeychainClient(
     getUserData: {
-      let userData = User(
-        email: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.email.rawValue),
-        firstName: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.firstName.rawValue),
-        identifier: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue),
-        lastName: try ValetUtil.shared.keychain.string(forKey: KeychainKeys.lastName.rawValue)
+      try User(
+        email: ValetUtil.shared.keychain.string(forKey: KeychainKeys.email.rawValue),
+        firstName: ValetUtil.shared.keychain.string(forKey: KeychainKeys.firstName.rawValue),
+        identifier: ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue),
+        lastName: ValetUtil.shared.keychain.string(forKey: KeychainKeys.lastName.rawValue)
       )
-      return userData
     },
     getJwtToken: {
       @Dependency(\.logger) var logger
@@ -223,9 +223,9 @@ extension KeychainClient: DependencyKey {
     setJwtToken: { _ in },
     setTokenExpiresAt: { _ in },
     setDeviceData: { _ in },
-    deleteUserData: { },
-    deleteJwtToken: { },
-    deleteTokenExpiresAt: { },
-    deleteDeviceData: { }
+    deleteUserData: {},
+    deleteJwtToken: {},
+    deleteTokenExpiresAt: {},
+    deleteDeviceData: {}
   )
 }

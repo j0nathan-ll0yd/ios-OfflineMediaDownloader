@@ -14,17 +14,19 @@ public struct DownloadClient: Sendable {
   public var downloadFile: @Sendable (_ url: URL, _ expectedSize: Int64) -> AsyncStream<DownloadProgress> = { _, _ in
     AsyncStream { _ in }
   }
+
   public var cancelDownload: @Sendable (_ url: URL) async -> Void
 }
 
-extension DependencyValues {
-  public var downloadClient: DownloadClient {
+public extension DependencyValues {
+  var downloadClient: DownloadClient {
     get { self[DownloadClient.self] }
     set { self[DownloadClient.self] = newValue }
   }
 }
 
 // MARK: - Download Manager (handles URLSession delegate)
+
 actor DownloadManager: NSObject {
   static let shared = DownloadManager()
 
@@ -112,8 +114,8 @@ actor DownloadManager: NSObject {
 
   // MARK: - Background Session Support
 
-  public func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
-    self.backgroundCompletionHandler = handler
+  func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
+    backgroundCompletionHandler = handler
   }
 
   private func callCompletionHandler() {
@@ -123,15 +125,18 @@ actor DownloadManager: NSObject {
 }
 
 // MARK: - URLSession Delegate
+
 extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   // MARK: Authentication Challenge (Certificate Pinning)
+
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     didReceive challenge: URLAuthenticationChallenge,
     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
   ) {
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-          let serverTrust = challenge.protectionSpace.serverTrust else {
+          let serverTrust = challenge.protectionSpace.serverTrust
+    else {
       completionHandler(.performDefaultHandling, nil)
       return
     }
@@ -160,8 +165,9 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   }
 
   // MARK: Download Completion
+
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     downloadTask: URLSessionDownloadTask,
     didFinishDownloadingTo location: URL
   ) {
@@ -193,11 +199,11 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   }
 
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     task: URLSessionTask,
     didCompleteWithError error: Error?
   ) {
-    guard let error = error,
+    guard let error,
           let originalURL = task.originalRequest?.url else { return }
 
     Task {
@@ -205,7 +211,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     }
   }
 
-  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
     @Dependency(\.logger) var logger
     logger.info(.download, "URLSession background events finished")
     Task {
@@ -215,6 +221,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
 }
 
 // MARK: - Live API implementation
+
 extension DownloadClient: DependencyKey {
   public static let liveValue = DownloadClient(
     downloadFile: { url, expectedSize in
@@ -235,8 +242,9 @@ extension DownloadClient: DependencyKey {
 }
 
 // MARK: - Test implementation
-extension DownloadClient {
-  public static let testValue = DownloadClient(
+
+public extension DownloadClient {
+  static let testValue = DownloadClient(
     downloadFile: { _, _ in
       AsyncStream { continuation in
         continuation.yield(.progress(percent: 50))
@@ -248,7 +256,7 @@ extension DownloadClient {
     cancelDownload: { _ in }
   )
 
-  public static let previewValue = DownloadClient(
+  static let previewValue = DownloadClient(
     downloadFile: { _, _ in
       AsyncStream { continuation in
         continuation.yield(.progress(percent: 100))

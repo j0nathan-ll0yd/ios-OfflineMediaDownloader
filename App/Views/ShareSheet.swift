@@ -4,7 +4,7 @@ import UIKit
 /// A SwiftUI wrapper for UIActivityViewController to share content
 struct ShareSheet: UIViewControllerRepresentable {
   let items: [Any]
-  var excludedActivityTypes: [UIActivity.ActivityType]? = nil
+  var excludedActivityTypes: [UIActivity.ActivityType]?
 
   func makeUIViewController(context _: Context) -> UIActivityViewController {
     let controller = UIActivityViewController(

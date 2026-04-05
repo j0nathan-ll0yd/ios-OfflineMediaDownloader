@@ -1,11 +1,11 @@
 import ComposableArchitecture
-import Foundation
-import SharedModels
-import PersistenceClient
-import FileClient
 import DownloadClient
-import ThumbnailCacheClient
+import FileClient
+import Foundation
 import LoggerClient
+import PersistenceClient
+import SharedModels
+import ThumbnailCacheClient
 
 @Reducer
 public struct FileDetailFeature: Sendable {

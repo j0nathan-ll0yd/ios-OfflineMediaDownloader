@@ -1,6 +1,6 @@
-import SwiftUI
 import ComposableArchitecture
 import DesignSystem
+import SwiftUI
 
 /// A floating banner that displays active download progress.
 /// Shows above the tab bar when downloads are in progress.
@@ -131,22 +131,22 @@ private struct DownloadRowView: View {
   private var progressText: String {
     switch download.status {
     case .downloading:
-      return "\(download.progress)%"
+      "\(download.progress)%"
     case .completed:
-      return "Done"
+      "Done"
     case let .failed(error):
-      return error.prefix(20) + (error.count > 20 ? "..." : "")
+      error.prefix(20) + (error.count > 20 ? "..." : "")
     }
   }
 
   private var statusColor: Color {
     switch download.status {
     case .downloading:
-      return theme.textSecondary
+      theme.textSecondary
     case .completed:
-      return theme.successColor
+      theme.successColor
     case .failed:
-      return theme.errorColor
+      theme.errorColor
     }
   }
 }

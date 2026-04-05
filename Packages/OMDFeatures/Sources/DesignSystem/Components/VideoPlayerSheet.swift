@@ -1,6 +1,6 @@
-import SwiftUI
-import AVKit
 import AVFoundation
+import AVKit
+import SwiftUI
 
 /// Wrapper view that adds swipe-to-dismiss and loading state to the video player
 public struct VideoPlayerSheet: View {
@@ -66,7 +66,7 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
 
   public init(url: URL, isLoading: Binding<Bool>) {
     self.url = url
-    self._isLoading = isLoading
+    _isLoading = isLoading
   }
 
   public func makeUIViewController(context: Context) -> AVPlayerViewController {
@@ -83,15 +83,16 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
     // File validation
     guard FileManager.default.fileExists(atPath: url.path) else {
       context.coordinator.showError("File not found", in: controller)
-      Task { @MainActor in self.isLoading = false }
+      Task { @MainActor in isLoading = false }
       return controller
     }
 
     // Quick size check for corrupted files
     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize {
+       let size = attrs[.size] as? Int64, size < Self.minimumValidFileSize
+    {
       context.coordinator.showError("File corrupted (\(size) bytes).\nDelete and re-download.", in: controller)
-      Task { @MainActor in self.isLoading = false }
+      Task { @MainActor in isLoading = false }
       return controller
     }
 
@@ -111,13 +112,13 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
 
     // Wait for player item to be ready, then play and hide loader
     context.coordinator.waitForReadyThenPlay(playerItem: playerItem, player: player) { @Sendable in
-      Task { @MainActor in self.isLoading = false }
+      Task { @MainActor in isLoading = false }
     }
 
     return controller
   }
 
-  public func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
+  public func updateUIViewController(_: AVPlayerViewController, context _: Context) {
     // No updates needed
   }
 
@@ -130,9 +131,9 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
     private var statusObservation: NSKeyValueObservation?
     private var bufferObservation: NSKeyValueObservation?
 
-    nonisolated public func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {}
+    public nonisolated func playerViewControllerWillStartPictureInPicture(_: AVPlayerViewController) {}
 
-    nonisolated public func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {}
+    public nonisolated func playerViewControllerDidStopPictureInPicture(_: AVPlayerViewController) {}
 
     public func waitForReadyThenPlay(playerItem: AVPlayerItem, player: AVPlayer, onReady: @escaping @Sendable () -> Void) {
       statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
@@ -142,9 +143,9 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
           switch item.status {
           case .readyToPlay:
             if item.isPlaybackLikelyToKeepUp {
-              self.startPlayback(player: player, onReady: onReady)
+              startPlayback(player: player, onReady: onReady)
             } else {
-              self.waitForBuffer(playerItem: item, player: player, onReady: onReady)
+              waitForBuffer(playerItem: item, player: player, onReady: onReady)
             }
           case .failed:
             onReady()
@@ -192,7 +193,7 @@ public struct MediaPlayerView: UIViewControllerRepresentable {
         errorLabel.centerXAnchor.constraint(equalTo: controller.view.centerXAnchor),
         errorLabel.centerYAnchor.constraint(equalTo: controller.view.centerYAnchor),
         errorLabel.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor, constant: 20),
-        errorLabel.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor, constant: -20)
+        errorLabel.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor, constant: -20),
       ])
     }
 

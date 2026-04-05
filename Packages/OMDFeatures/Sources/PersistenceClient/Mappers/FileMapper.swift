@@ -1,11 +1,10 @@
-import Foundation
 @preconcurrency import CoreData
+import Foundation
 import SharedModels
 
 /// FileMapper handles conversion between different representations of File data.
 /// This keeps the domain File model clean and independent of infrastructure concerns.
 public enum FileMapper {
-
   // MARK: - CoreData Mapping
 
   /// Convert a CoreData FileEntity to domain File model
@@ -36,11 +35,10 @@ public enum FileMapper {
     request.predicate = NSPredicate(format: "fileId == %@", file.fileId)
     request.fetchLimit = 1
 
-    let entity: FileEntity
-    if let existing = try? context.fetch(request).first {
-      entity = existing
+    let entity: FileEntity = if let existing = try? context.fetch(request).first {
+      existing
     } else {
-      entity = FileEntity(context: context)
+      FileEntity(context: context)
     }
 
     entity.fileId = file.fileId
@@ -65,9 +63,9 @@ public enum FileMapper {
 
 // MARK: - File Extension for Builder Pattern
 
-extension File {
+public extension File {
   /// Builder-style method to set optional properties
-  public func with(
+  func with(
     authorName: String? = nil,
     authorUser: String? = nil,
     contentType: String? = nil,
@@ -80,16 +78,16 @@ extension File {
     thumbnailUrl: String? = nil
   ) -> File {
     var copy = self
-    if let authorName = authorName { copy.authorName = authorName }
-    if let authorUser = authorUser { copy.authorUser = authorUser }
-    if let contentType = contentType { copy.contentType = contentType }
-    if let description = description { copy.description = description }
-    if let status = status { copy.status = status }
-    if let title = title { copy.title = title }
-    if let duration = duration { copy.duration = duration }
-    if let uploadDate = uploadDate { copy.uploadDate = uploadDate }
-    if let viewCount = viewCount { copy.viewCount = viewCount }
-    if let thumbnailUrl = thumbnailUrl { copy.thumbnailUrl = thumbnailUrl }
+    if let authorName { copy.authorName = authorName }
+    if let authorUser { copy.authorUser = authorUser }
+    if let contentType { copy.contentType = contentType }
+    if let description { copy.description = description }
+    if let status { copy.status = status }
+    if let title { copy.title = title }
+    if let duration { copy.duration = duration }
+    if let uploadDate { copy.uploadDate = uploadDate }
+    if let viewCount { copy.viewCount = viewCount }
+    if let thumbnailUrl { copy.thumbnailUrl = thumbnailUrl }
     return copy
   }
 }

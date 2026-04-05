@@ -209,7 +209,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     task: URLSessionTask,
     didCompleteWithError error: Error?
   ) {
-    guard let error = error,
+    guard let error,
           let originalURL = task.originalRequest?.url else { return }
 
     Task {

@@ -1,8 +1,8 @@
 import ComposableArchitecture
 import CryptoKit
 import Foundation
-import Security
 import LoggerClient
+import Security
 
 /// Certificate pinning configuration for SSL/TLS security
 /// This implementation pins to Amazon's root CA for AWS API Gateway connections
@@ -12,7 +12,7 @@ public enum CertificatePinning {
     // Amazon Root CA 1 - computed by iOS SecKeyCopyExternalRepresentation (raw key, no ASN.1 header)
     "UAJ/9yOqq6nk4CX2QtZgDmyT6JHYlkBfihOzezH/8cs=",
     // Amazon RSA 2048 M01 - Intermediate CA (issued by Amazon Root CA 1)
-    "/LWYS0bnqApLztW89p14Ilm/6JdJpH9mSOpWaxSNCL0="
+    "/LWYS0bnqApLztW89p14Ilm/6JdJpH9mSOpWaxSNCL0=",
   ]
 
   /// Validates whether a certificate chain contains a pinned public key
@@ -25,7 +25,8 @@ public enum CertificatePinning {
 
     for certificate in certificateChain {
       if let publicKey = SecCertificateCopyKey(certificate),
-         let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as? Data {
+         let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as? Data
+      {
         let hash = SHA256.hash(data: publicKeyData)
         let hashBase64 = Data(hash).base64EncodedString()
 
@@ -50,12 +51,13 @@ public final class PinningURLSessionDelegate: NSObject, URLSessionDelegate, Send
   }
 
   public func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     didReceive challenge: URLAuthenticationChallenge,
     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
   ) {
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-          let serverTrust = challenge.protectionSpace.serverTrust else {
+          let serverTrust = challenge.protectionSpace.serverTrust
+    else {
       completionHandler(.performDefaultHandling, nil)
       return
     }

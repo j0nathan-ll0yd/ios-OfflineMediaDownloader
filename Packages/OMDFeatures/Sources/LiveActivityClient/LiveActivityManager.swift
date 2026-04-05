@@ -53,7 +53,8 @@ public actor LiveActivityManager {
 
   public func updateMetadata(fileId: String, title: String, authorName: String?) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       liveActivityLog.debug("No active Live Activity to update metadata for fileId: \(fileId)")
       return
     }
@@ -107,7 +108,8 @@ public actor LiveActivityManager {
 
   public func updateProgress(fileId: String, percent: Int, status: DownloadActivityStatus) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       liveActivityLog.debug("No active Live Activity for fileId: \(fileId)")
       return
     }
@@ -124,7 +126,8 @@ public actor LiveActivityManager {
 
   public func endActivity(fileId: String, status: DownloadActivityStatus, errorMessage: String? = nil) async {
     guard let activity = activeActivities[fileId],
-          var state = currentStates[fileId] else {
+          var state = currentStates[fileId]
+    else {
       liveActivityLog.debug("No active Live Activity to end for fileId: \(fileId)")
       return
     }

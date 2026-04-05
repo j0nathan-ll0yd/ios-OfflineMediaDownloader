@@ -23,7 +23,10 @@ public struct ActiveDownloadsFeature: Sendable {
 
   public struct ActiveDownload: Equatable, Identifiable, Sendable {
     public let fileId: String
-    public var id: String { fileId }
+    public var id: String {
+      fileId
+    }
+
     public var title: String
     public var progress: Int
     public var status: DownloadStatus

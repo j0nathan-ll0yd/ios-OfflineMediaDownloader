@@ -11,26 +11,26 @@ enum DownloadQuality: String, CaseIterable, Codable {
   var displayName: String {
     switch self {
     case .auto:
-      return "Auto (Recommended)"
+      "Auto (Recommended)"
     case .high:
-      return "High Quality"
+      "High Quality"
     case .medium:
-      return "Medium Quality"
+      "Medium Quality"
     case .low:
-      return "Low Quality (Data Saver)"
+      "Low Quality (Data Saver)"
     }
   }
 
   var description: String {
     switch self {
     case .auto:
-      return "Automatically selects quality based on network conditions"
+      "Automatically selects quality based on network conditions"
     case .high:
-      return "Best quality, larger file sizes"
+      "Best quality, larger file sizes"
     case .medium:
-      return "Balanced quality and file size"
+      "Balanced quality and file size"
     case .low:
-      return "Smaller files, reduced quality"
+      "Smaller files, reduced quality"
     }
   }
 }

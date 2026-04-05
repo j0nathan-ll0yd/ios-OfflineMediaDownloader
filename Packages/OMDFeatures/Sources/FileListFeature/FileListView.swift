@@ -1,18 +1,18 @@
-import SwiftUI
 import ComposableArchitecture
-import DesignSystem
-import SharedModels
-import FileClient
-import FileCellFeature
-import FileDetailFeature
 import DefaultFilesFeature
+import DesignSystem
+import FileCellFeature
+import FileClient
+import FileDetailFeature
 import OrderedCollections
+import SharedModels
+import SwiftUI
 
 // MARK: - FileListView
 
 public struct FileListView: View {
   @Bindable var store: StoreOf<FileListFeature>
-  @Dependency(\.fileClient) var fileClient  // For fullScreenCover local URL conversion
+  @Dependency(\.fileClient) var fileClient // For fullScreenCover local URL conversion
 
   private let theme = DarkProfessionalTheme()
 
@@ -96,12 +96,12 @@ public struct FileListView: View {
   private var fileListContent: some View {
     // Show DefaultFilesView only for UNREGISTERED users with no files
     // Registered users (even if signed out) should never see default file
-    if !store.isRegistered && store.files.isEmpty {
+    if !store.isRegistered, store.files.isEmpty {
       DefaultFilesView(
         store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
         onRegisterTapped: { store.send(.delegate(.loginRequired)) }
       )
-    } else if store.isLoading && store.files.isEmpty {
+    } else if store.isLoading, store.files.isEmpty {
       loadingView
     } else if store.files.isEmpty {
       emptyView

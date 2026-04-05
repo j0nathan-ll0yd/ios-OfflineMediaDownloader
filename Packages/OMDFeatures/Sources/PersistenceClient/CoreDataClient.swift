@@ -1,8 +1,8 @@
 import ComposableArchitecture
 @preconcurrency import CoreData
 import Foundation
-import SharedModels
 import LoggerClient
+import SharedModels
 
 @DependencyClient
 public struct CoreDataClient: Sendable {
@@ -22,8 +22,8 @@ public struct CoreDataClient: Sendable {
   public var resetMetrics: @Sendable () async throws -> Void
 }
 
-extension DependencyValues {
-  public var coreDataClient: CoreDataClient {
+public extension DependencyValues {
+  var coreDataClient: CoreDataClient {
     get { self[CoreDataClient.self] }
     set { self[CoreDataClient.self] = newValue }
   }
@@ -50,6 +50,7 @@ public struct FileMetrics: Equatable, Sendable {
 }
 
 // MARK: - Live API implementation
+
 extension CoreDataClient: DependencyKey {
   public static let liveValue = CoreDataClient(
     getFiles: {
@@ -226,10 +227,12 @@ extension CoreDataClient: DependencyKey {
         var totalBytes: Int64 = 0
         for entity in downloadedFiles {
           if let urlString = entity.url,
-             let url = URL(string: urlString) {
+             let url = URL(string: urlString)
+          {
             let localURL = documentsPath.appendingPathComponent(url.lastPathComponent)
             if let attrs = try? FileManager.default.attributesOfItem(atPath: localURL.path),
-               let size = attrs[.size] as? Int64 {
+               let size = attrs[.size] as? Int64
+            {
               totalBytes += size
             }
           }
@@ -317,36 +320,37 @@ extension CoreDataClient: DependencyKey {
 }
 
 // MARK: - Test/Preview implementation
-extension CoreDataClient {
-  public static let testValue = CoreDataClient(
+
+public extension CoreDataClient {
+  static let testValue = CoreDataClient(
     getFiles: { [] },
     getFile: { _ in nil },
     cacheFiles: { _ in },
     cacheFile: { _ in },
     updateFileUrl: { _, _ in },
     updateFileStatus: { _, _ in },
-    saveContext: { },
-    truncateFiles: { },
+    saveContext: {},
+    truncateFiles: {},
     deleteFile: { _ in },
     getMetrics: { .zero },
     markFileDownloaded: { _ in },
-    incrementPlayCount: { },
-    resetMetrics: { }
+    incrementPlayCount: {},
+    resetMetrics: {}
   )
 
-  public static let previewValue = CoreDataClient(
+  static let previewValue = CoreDataClient(
     getFiles: { [] },
     getFile: { _ in nil },
     cacheFiles: { _ in },
     cacheFile: { _ in },
     updateFileUrl: { _, _ in },
     updateFileStatus: { _, _ in },
-    saveContext: { },
-    truncateFiles: { },
+    saveContext: {},
+    truncateFiles: {},
     deleteFile: { _ in },
     getMetrics: { .zero },
     markFileDownloaded: { _ in },
-    incrementPlayCount: { },
-    resetMetrics: { }
+    incrementPlayCount: {},
+    resetMetrics: {}
   )
 }

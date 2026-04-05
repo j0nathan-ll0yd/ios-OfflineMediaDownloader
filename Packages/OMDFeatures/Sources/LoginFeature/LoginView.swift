@@ -1,7 +1,7 @@
-import SwiftUI
 import AuthenticationServices
 import ComposableArchitecture
 import DesignSystem
+import SwiftUI
 
 // MARK: - LoginView
 
@@ -17,9 +17,9 @@ public struct LoginView: View {
   /// Computed welcome subtitle based on registration status
   private var welcomeSubtitle: String {
     if store.registrationStatus == .registered {
-      return "Welcome back"
+      "Welcome back"
     } else {
-      return "Sign in to get started"
+      "Sign in to get started"
     }
   }
 
@@ -76,9 +76,9 @@ public struct LoginView: View {
             store.send(.loginButtonTapped)
           } onCompletion: { result in
             switch result {
-            case .success(let authorization):
+            case let .success(authorization):
               store.send(.signInWithAppleButtonTapped(.success(authorization)))
-            case .failure(let error):
+            case let .failure(error):
               store.send(.signInWithAppleButtonTapped(.failure(error)))
             }
           }
@@ -87,12 +87,12 @@ public struct LoginView: View {
           .clipShape(Capsule())
 
           // Disabled Google button (Coming Soon)
-          AuthButton(provider: .google, style: .dark) { }
+          AuthButton(provider: .google, style: .dark) {}
             .disabled(true)
             .opacity(0.5)
 
           // Disabled Email button (Coming Soon)
-          AuthButton(provider: .email, style: .dark) { }
+          AuthButton(provider: .email, style: .dark) {}
             .disabled(true)
             .opacity(0.5)
         }
@@ -109,7 +109,7 @@ public struct LoginView: View {
             .foregroundStyle(theme.textSecondary)
 
           HStack(spacing: 4) {
-            Button("Terms") { }
+            Button("Terms") {}
               .font(.caption)
               .fontWeight(.medium)
               .foregroundStyle(theme.primaryColor)
@@ -118,7 +118,7 @@ public struct LoginView: View {
               .font(.caption)
               .foregroundStyle(theme.textSecondary)
 
-            Button("Privacy Policy") { }
+            Button("Privacy Policy") {}
               .font(.caption)
               .fontWeight(.medium)
               .foregroundStyle(theme.primaryColor)

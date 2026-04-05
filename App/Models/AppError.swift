@@ -58,29 +58,29 @@ enum AppError: Error, Equatable {
   var title: String {
     switch self {
     case .networkUnavailable:
-      return "No Connection"
+      "No Connection"
     case .serverError:
-      return "Server Error"
+      "Server Error"
     case .unauthorized, .sessionExpired:
-      return "Session Expired"
+      "Session Expired"
     case .timeout:
-      return "Request Timeout"
+      "Request Timeout"
     case .downloadFailed:
-      return "Download Failed"
+      "Download Failed"
     case .deleteFailed:
-      return "Delete Failed"
+      "Delete Failed"
     case .invalidClipboardUrl:
-      return "Invalid URL"
+      "Invalid URL"
     case .loginFailed:
-      return "Login Failed"
+      "Login Failed"
     case .registrationFailed:
-      return "Registration Failed"
+      "Registration Failed"
     case .invalidAppleCredential:
-      return "Sign In Failed"
+      "Sign In Failed"
     case .keychainError:
-      return "Security Error"
+      "Security Error"
     case .storageError:
-      return "Storage Error"
+      "Storage Error"
     }
   }
 
@@ -88,9 +88,9 @@ enum AppError: Error, Equatable {
   var requestId: String? {
     switch self {
     case let .serverError(_, requestId, _), let .unauthorized(requestId, _):
-      return requestId
+      requestId
     default:
-      return nil
+      nil
     }
   }
 
@@ -98,9 +98,9 @@ enum AppError: Error, Equatable {
   var correlationId: String? {
     switch self {
     case let .serverError(_, _, correlationId), let .unauthorized(_, correlationId):
-      return correlationId
+      correlationId
     default:
-      return nil
+      nil
     }
   }
 
@@ -114,10 +114,10 @@ enum AppError: Error, Equatable {
       if correlationId != nil || requestId != nil {
         result += "\n"
       }
-      if let correlationId = correlationId {
+      if let correlationId {
         result += "\nCorrelation ID: \(correlationId)"
       }
-      if let requestId = requestId {
+      if let requestId {
         result += "\nRequest ID: \(requestId)"
       }
       return result
@@ -126,10 +126,10 @@ enum AppError: Error, Equatable {
       if correlationId != nil || requestId != nil {
         result += "\n"
       }
-      if let correlationId = correlationId {
+      if let correlationId {
         result += "\nCorrelation ID: \(correlationId)"
       }
-      if let requestId = requestId {
+      if let requestId {
         result += "\nRequest ID: \(requestId)"
       }
       return result
@@ -160,11 +160,11 @@ enum AppError: Error, Equatable {
   var isRetryable: Bool {
     switch self {
     case .networkUnavailable, .timeout, .downloadFailed, .deleteFailed:
-      return true
+      true
     case .serverError, .unauthorized, .sessionExpired, .invalidClipboardUrl,
          .loginFailed, .registrationFailed, .invalidAppleCredential,
          .keychainError, .storageError:
-      return false
+      false
     }
   }
 
@@ -172,9 +172,9 @@ enum AppError: Error, Equatable {
   var requiresReauth: Bool {
     switch self {
     case .unauthorized, .sessionExpired:
-      return true
+      true
     default:
-      return false
+      false
     }
   }
 }

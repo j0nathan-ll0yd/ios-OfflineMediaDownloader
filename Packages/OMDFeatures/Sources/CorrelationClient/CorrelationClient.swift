@@ -6,18 +6,26 @@ import Foundation
 
 /// A record of an API request with its correlation ID and metadata
 public struct RequestRecord: Equatable, Sendable, Identifiable {
-  public let id: UUID  // This IS the correlation ID
+  public let id: UUID // This IS the correlation ID
   public let timestamp: Date
   public let endpoint: String
   public let method: String
   public var statusCode: Int?
   public var duration: TimeInterval?
   public var error: String?
-  public var serverRequestId: String?  // The x-amzn-requestid from response
+  public var serverRequestId: String? // The x-amzn-requestid from response
 
-  public var isCompleted: Bool { statusCode != nil || error != nil }
-  public var isSuccess: Bool { statusCode.map { $0 >= 200 && $0 < 300 } ?? false }
-  public var isError: Bool { error != nil || statusCode.map { $0 >= 400 } ?? false }
+  public var isCompleted: Bool {
+    statusCode != nil || error != nil
+  }
+
+  public var isSuccess: Bool {
+    statusCode.map { $0 >= 200 && $0 < 300 } ?? false
+  }
+
+  public var isError: Bool {
+    error != nil || statusCode.map { $0 >= 400 } ?? false
+  }
 
   public init(
     id: UUID,
@@ -109,8 +117,8 @@ extension CorrelationClient: DependencyKey {
   public static let testValue = CorrelationClient()
 }
 
-extension DependencyValues {
-  public var correlationClient: CorrelationClient {
+public extension DependencyValues {
+  var correlationClient: CorrelationClient {
     get { self[CorrelationClient.self] }
     set { self[CorrelationClient.self] = newValue }
   }

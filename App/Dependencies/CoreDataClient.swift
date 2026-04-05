@@ -357,12 +357,12 @@ extension CoreDataClient {
     cacheFile: { _ in },
     updateFileUrl: { _, _ in },
     updateFileStatus: { _, _ in },
-    saveContext: { },
-    truncateFiles: { },
+    saveContext: {},
+    truncateFiles: {},
     deleteFile: { _ in },
     getMetrics: { .zero },
     markFileDownloaded: { _ in },
-    incrementPlayCount: { },
-    resetMetrics: { }
+    incrementPlayCount: {},
+    resetMetrics: {}
   )
 }

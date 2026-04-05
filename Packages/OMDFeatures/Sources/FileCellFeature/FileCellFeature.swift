@@ -1,12 +1,12 @@
 import ComposableArchitecture
-import Foundation
-import SharedModels
-import ServerClient
-import PersistenceClient
-import FileClient
 import DownloadClient
-import ThumbnailCacheClient
+import FileClient
+import Foundation
 import LoggerClient
+import PersistenceClient
+import ServerClient
+import SharedModels
+import ThumbnailCacheClient
 
 @Reducer
 public struct FileCellFeature: Sendable {
@@ -15,13 +15,18 @@ public struct FileCellFeature: Sendable {
   @ObservableState
   public struct State: Equatable, Identifiable {
     public var file: File
-    public var id: String { file.fileId }
+    public var id: String {
+      file.fileId
+    }
+
     public var isDownloading: Bool = false
     public var downloadProgress: Double = 0
     public var isDownloaded: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?
 
-    public var isPending: Bool { file.url == nil }
+    public var isPending: Bool {
+      file.url == nil
+    }
 
     public init(file: File, isDownloading: Bool = false, downloadProgress: Double = 0, isDownloaded: Bool = false) {
       self.file = file

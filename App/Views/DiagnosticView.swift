@@ -612,7 +612,7 @@ struct KeychainDetailView: View {
           }
 
           // Delete button
-          if let onDelete = onDelete {
+          if let onDelete {
             Button(action: onDelete) {
               HStack {
                 Image(systemName: "trash")
@@ -641,11 +641,11 @@ struct KeychainDetailView: View {
   private var itemTypeName: String {
     switch item.itemType {
     case .token:
-      return "JWT Token"
+      "JWT Token"
     case .userData:
-      return "User Data"
+      "User Data"
     case .deviceData:
-      return "Device Data"
+      "Device Data"
     }
   }
 }
@@ -715,7 +715,7 @@ struct TokenExpirationDetailView: View {
           // Action buttons
           VStack(spacing: 12) {
             // Expire Soon button
-            if let onExpireSoon = onExpireSoon {
+            if let onExpireSoon {
               Button(action: {
                 onExpireSoon()
                 dismiss()
@@ -735,7 +735,7 @@ struct TokenExpirationDetailView: View {
             }
 
             // Delete button
-            if let onDelete = onDelete, expiresAt != nil {
+            if let onDelete, expiresAt != nil {
               Button(action: {
                 onDelete()
                 dismiss()
@@ -785,7 +785,7 @@ struct TokenExpirationDetailView: View {
   }
 
   private var formattedValue: String {
-    guard let expiresAt = expiresAt else {
+    guard let expiresAt else {
       return "Not set"
     }
     let formatter = DateFormatter()
@@ -795,7 +795,7 @@ struct TokenExpirationDetailView: View {
   }
 
   private var statusColor: Color {
-    guard let expiresAt = expiresAt else {
+    guard let expiresAt else {
       return theme.textSecondary
     }
     let timeUntil = expiresAt.timeIntervalSinceNow

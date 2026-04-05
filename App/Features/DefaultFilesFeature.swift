@@ -5,7 +5,7 @@ import SwiftUI
 // MARK: - DefaultFilesFeature
 
 @Reducer
-struct DefaultFilesFeature: Sendable {
+struct DefaultFilesFeature {
   @ObservableState
   struct State: Equatable {
     var isLoadingFile: Bool = true

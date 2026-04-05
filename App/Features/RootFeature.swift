@@ -26,7 +26,7 @@ private let tokenRefreshThreshold: TimeInterval = 5 * 60 // 5 minutes
 // MARK: - RootFeature
 
 @Reducer
-struct RootFeature: Sendable {
+struct RootFeature {
   init() {}
 
   @ObservableState
@@ -197,7 +197,7 @@ struct RootFeature: Sendable {
         let expirationDate = response.body?.expirationDate
         return .run { [keychainClient, logger] _ in
           try await keychainClient.setJwtToken(token)
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
           logger.info(.auth, "Token refreshed successfully")

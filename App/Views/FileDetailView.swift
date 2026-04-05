@@ -288,37 +288,37 @@ struct FileDetailView: View {
 
   private var statusIcon: String {
     if store.isDownloaded {
-      return "checkmark.circle.fill"
+      "checkmark.circle.fill"
     } else if store.isDownloading {
-      return "arrow.down.circle"
+      "arrow.down.circle"
     } else if store.file.url == nil {
-      return "clock.fill"
+      "clock.fill"
     } else {
-      return "icloud.and.arrow.down"
+      "icloud.and.arrow.down"
     }
   }
 
   private var statusColor: Color {
     if store.isDownloaded {
-      return theme.successColor
+      theme.successColor
     } else if store.isDownloading {
-      return theme.primaryColor
+      theme.primaryColor
     } else if store.file.url == nil {
-      return theme.warningColor
+      theme.warningColor
     } else {
-      return theme.textSecondary
+      theme.textSecondary
     }
   }
 
   private var statusText: String {
     if store.isDownloaded {
-      return "Downloaded"
+      "Downloaded"
     } else if store.isDownloading {
-      return "Downloading..."
+      "Downloading..."
     } else if store.file.url == nil {
-      return "Processing"
+      "Processing"
     } else {
-      return "Available for download"
+      "Available for download"
     }
   }
 

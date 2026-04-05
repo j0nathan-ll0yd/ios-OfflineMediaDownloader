@@ -1,19 +1,17 @@
-import ConcurrencyExtras
-import Foundation
-import Testing
 import ComposableArchitecture
+import ConcurrencyExtras
+@testable import FileCellFeature
+import Foundation
 import SharedModels
 import TestData
-@testable import FileCellFeature
+import Testing
 
-@Suite("FileCellFeature Tests")
 struct FileCellFeatureTests {
-
   // MARK: - File Existence Tests
 
   @MainActor
   @Test("onAppear checks file existence and sets downloaded true")
-  func onAppearFileExists() async throws {
+  func onAppearFileExists() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
@@ -29,7 +27,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("onAppear checks file existence and sets downloaded false")
-  func onAppearFileNotExists() async throws {
+  func onAppearFileNotExists() async {
     // Start with isDownloaded = true to verify it gets set to false
     var initialState = FileCellFeature.State(file: TestData.sampleFile)
     initialState.isDownloaded = true
@@ -49,7 +47,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("onAppear with nil URL returns immediately")
-  func onAppearNilUrl() async throws {
+  func onAppearNilUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
     }
@@ -62,7 +60,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download button starts download with progress updates")
-  func downloadWithProgress() async throws {
+  func downloadWithProgress() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
@@ -98,7 +96,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download failure resets state and shows alert")
-  func downloadFails() async throws {
+  func downloadFails() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
@@ -141,7 +139,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download failure retry triggers download")
-  func downloadFailureRetry() async throws {
+  func downloadFailureRetry() async {
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.alert = AlertState {
       TextState("Download Failed")
@@ -182,7 +180,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Cancel download stops and resets state")
-  func cancelDownload() async throws {
+  func cancelDownload() async {
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
     state.downloadProgress = 0.5
@@ -201,7 +199,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download button does nothing without URL")
-  func downloadWithoutUrl() async throws {
+  func downloadWithoutUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
     }
@@ -212,7 +210,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download completed sets isDownloaded and progress to 1.0")
-  func downloadCompleted() async throws {
+  func downloadCompleted() async {
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
     state.downloadProgress = 0.9
@@ -233,7 +231,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Delete button triggers file deletion from CoreData, filesystem, and thumbnail cache")
-  func deleteRemovesFiles() async throws {
+  func deleteRemovesFiles() async {
     let coreDataDeleteCalled = LockIsolated(false)
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
@@ -257,7 +255,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Delete skips local file removal if not exists but still deletes thumbnail")
-  func deleteSkipsIfNotExists() async throws {
+  func deleteSkipsIfNotExists() async {
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
@@ -279,7 +277,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Delete with nil URL still removes from CoreData and thumbnail cache")
-  func deleteWithNilUrl() async throws {
+  func deleteWithNilUrl() async {
     let coreDataDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
@@ -302,7 +300,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Play button sends delegate action")
-  func playButtonSendsDelegate() async throws {
+  func playButtonSendsDelegate() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     }
@@ -315,14 +313,14 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("isPending is true when URL is nil")
-  func isPendingWhenNoUrl() async throws {
+  func isPendingWhenNoUrl() {
     let state = FileCellFeature.State(file: TestData.pendingFile)
     #expect(state.isPending == true)
   }
 
   @MainActor
   @Test("isPending is false when URL is present")
-  func isNotPendingWhenUrlPresent() async throws {
+  func isNotPendingWhenUrlPresent() {
     let state = FileCellFeature.State(file: TestData.sampleFile)
     #expect(state.isPending == false)
   }
@@ -331,7 +329,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("State ID matches file ID")
-  func stateIdMatchesFileId() async throws {
+  func stateIdMatchesFileId() {
     let state = FileCellFeature.State(file: TestData.sampleFile)
     #expect(state.id == TestData.sampleFile.fileId)
   }
@@ -340,7 +338,7 @@ struct FileCellFeatureTests {
 
   @MainActor
   @Test("Download progress updates correctly")
-  func downloadProgressUpdates() async throws {
+  func downloadProgressUpdates() async {
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
 

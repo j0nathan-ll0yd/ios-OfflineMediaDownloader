@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct FileCellFeature: Sendable {
+struct FileCellFeature {
   @ObservableState
   struct State: Equatable, Identifiable {
     var file: File

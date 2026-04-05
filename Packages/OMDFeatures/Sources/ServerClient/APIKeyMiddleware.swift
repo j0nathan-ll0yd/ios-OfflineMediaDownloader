@@ -1,10 +1,11 @@
 import ComposableArchitecture
 import Foundation
 import HTTPTypes
-import OpenAPIRuntime
 import LoggerClient
+import OpenAPIRuntime
 
 // MARK: - CRITICAL: API Key Authentication
+
 //
 // The API key MUST be sent as a QUERY PARAMETER, not a header.
 // The AWS API Gateway Lambda authorizer reads from query string `ApiKey`.
@@ -17,7 +18,7 @@ struct APIKeyMiddleware: ClientMiddleware {
     _ request: HTTPTypes.HTTPRequest,
     body: OpenAPIRuntime.HTTPBody?,
     baseURL: URL,
-    operationID: String,
+    operationID _: String,
     next: (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request

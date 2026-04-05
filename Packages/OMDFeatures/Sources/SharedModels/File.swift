@@ -15,12 +15,14 @@ public struct File: Equatable, Identifiable, Codable, Sendable {
   public var status: FileStatus?
   public var title: String?
   // Rich metadata fields (Issue #151)
-  public var duration: Int?        // Video duration in seconds
-  public var uploadDate: String?   // Upload date in YYYYMMDD format
-  public var viewCount: Int?       // Number of views
+  public var duration: Int? // Video duration in seconds
+  public var uploadDate: String? // Upload date in YYYYMMDD format
+  public var viewCount: Int? // Number of views
   public var thumbnailUrl: String? // URL to video thumbnail
 
-  public var id: String { fileId }
+  public var id: String {
+    fileId
+  }
 
   enum CodingKeys: String, CodingKey {
     case fileId, key, publishDate, size, url
