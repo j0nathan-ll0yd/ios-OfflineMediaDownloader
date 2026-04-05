@@ -1,9 +1,9 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
   name: "APITypes",
-  platforms: [.iOS(.v18), .macOS(.v13)],
+  platforms: [.iOS(.v26), .macOS(.v13)],
   products: [
     .library(name: "APITypes", targets: ["APITypes"]),
   ],
