@@ -2,6 +2,7 @@ import Foundation
 import ComposableArchitecture
 import UIKit
 import APITypes
+import HTTPTypes
 import OpenAPIURLSession
 
 enum FileStatusFilter: String {
@@ -128,6 +129,22 @@ private let pinnedURLSession: URLSession = {
   #endif
 }()
 
+/// Resolves the server base URL from Environment.basePath, trapping on malformed configuration.
+private func serverBaseURL() -> URL {
+  guard let url = URL(string: Environment.basePath) else {
+    fatalError("Environment.basePath is not a valid URL: \(Environment.basePath)")
+  }
+  return url
+}
+
+/// HTTP field name for AWS request ID header. Trapped at startup if header name is invalid.
+private let amznRequestIdField: HTTPField.Name = {
+  guard let field = HTTPField.Name("x-amzn-requestid") else {
+    fatalError("x-amzn-requestid is a valid HTTP field name")
+  }
+  return field
+}()
+
 /// Creates an authenticated API client with middleware for API key and JWT token injection
 private func makeAuthenticatedAPIClient() -> Client {
   @Dependency(\.keychainClient) var keychainClient
@@ -135,7 +152,7 @@ private func makeAuthenticatedAPIClient() -> Client {
   @Dependency(\.logger) var logger
 
   return Client(
-    serverURL: URL(string: Environment.basePath)!,
+    serverURL: serverBaseURL(),
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
@@ -151,7 +168,7 @@ private func makeUnauthenticatedAPIClient() -> Client {
   @Dependency(\.logger) var logger
 
   return Client(
-    serverURL: URL(string: Environment.basePath)!,
+    serverURL: serverBaseURL(),
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
@@ -205,7 +222,7 @@ extension ServerClient: DependencyKey {
           case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -251,7 +268,7 @@ extension ServerClient: DependencyKey {
           case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -302,7 +319,7 @@ extension ServerClient: DependencyKey {
           case .notFound(let r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .conflict(let r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -341,7 +358,7 @@ extension ServerClient: DependencyKey {
           switch response {
           case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -383,7 +400,7 @@ extension ServerClient: DependencyKey {
           case .unauthorized(let r): return (401, nil, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -430,7 +447,7 @@ extension ServerClient: DependencyKey {
           case .badRequest(let r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
           case .forbidden(let r): return (403, nil, try? r.body.json.requestId)
           case .internalServerError(let r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case .undocumented(let code, let p): return (code, nil, p.headerFields[.init("x-amzn-requestid")!])
+          case .undocumented(let code, let p): return (code, nil, p.headerFields[amznRequestIdField])
           default: return nil
           }
         },
@@ -461,7 +478,7 @@ extension ServerClient: DependencyKey {
       case .internalServerError(let r):
         throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
       case .undocumented(let code, let p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[amznRequestIdField])
       }
     }
   )

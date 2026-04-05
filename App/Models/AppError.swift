@@ -203,7 +203,10 @@ extension AppError {
     // Check for OpenAPI ClientError - extract requestId from response headers
     // Note: correlationId is tracked by the middleware, not available here
     if let clientError = error as? ClientError {
-      let requestId = clientError.response?.headerFields[.init("x-amzn-requestid")!]
+      guard let requestIdField = HTTPField.Name("x-amzn-requestid") else {
+        fatalError("x-amzn-requestid is a valid HTTP field name")
+      }
+      let requestId = clientError.response?.headerFields[requestIdField]
       let message = "Server error: \(clientError.causeDescription)"
       return .serverError(message: message, requestId: requestId, correlationId: nil)
     }

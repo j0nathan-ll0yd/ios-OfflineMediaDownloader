@@ -17,6 +17,10 @@ class ValetUtil {
   }()
 
   private init() {
+    guard let identifier = Identifier(nonEmpty: ValetUtil.identifier) else {
+      fatalError("ValetUtil.identifier is guaranteed non-empty by its computed fallback")
+    }
+
     // SecureEnclaveValet is not available in simulator environments
     // and may fail on devices without Secure Enclave hardware
     #if targetEnvironment(simulator)
@@ -25,13 +29,13 @@ class ValetUtil {
     // Try to create SecureEnclaveValet, but it may fail on older devices
     // or in certain CI environments
     secureEnclave = SecureEnclaveValet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      with: identifier,
       accessControl: .userPresence
     )
     #endif
 
     keychain = Valet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      with: identifier,
       accessibility: .whenUnlocked
     )
   }

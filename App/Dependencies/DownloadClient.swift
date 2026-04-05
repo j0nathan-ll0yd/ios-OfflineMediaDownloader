@@ -170,7 +170,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     // CRITICAL: Must move file synchronously before this callback returns!
     // The temp file is deleted immediately after this method returns.
     let fileManager = FileManager.default
-    let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let documentsPath = URL.documentsDirectory
     let destinationURL = documentsPath.appendingPathComponent(originalURL.lastPathComponent)
 
     print("📥 Download complete, moving file:")

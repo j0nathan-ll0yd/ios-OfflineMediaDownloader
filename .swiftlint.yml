@@ -27,7 +27,6 @@ opt_in_rules:
   - closure_spacing
 included:
   - App
-  - OfflineMediaDownloaderTests
 excluded:
   - APITypes/.build
   - .build

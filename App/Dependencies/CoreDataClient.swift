@@ -277,7 +277,9 @@ extension CoreDataClient: DependencyKey {
           metrics = existing
         } else {
           // Create singleton AppMetrics if doesn't exist
-          let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context)!
+          guard let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context) else {
+            fatalError("AppMetrics entity not found in model")
+          }
           metrics = NSManagedObject(entity: entity, insertInto: context)
           metrics.setValue(Int64(0), forKey: "playCount")
         }

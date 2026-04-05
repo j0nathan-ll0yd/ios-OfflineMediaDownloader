@@ -19,7 +19,10 @@ struct CorrelationMiddleware: ClientMiddleware {
 
     // Generate correlation ID and start tracking
     let correlationId = await correlationClient.startRequest(operationID, request.method.rawValue)
-    request.headerFields[.init("X-Correlation-ID")!] = correlationId.uuidString
+    guard let correlationIdField = HTTPField.Name("X-Correlation-ID") else {
+      fatalError("X-Correlation-ID is a valid HTTP field name")
+    }
+    request.headerFields[correlationIdField] = correlationId.uuidString
 
     // Log outgoing request
     logger.info(.network, "Request started: \(operationID)", metadata: [
@@ -33,7 +36,10 @@ struct CorrelationMiddleware: ClientMiddleware {
       let duration = Date().timeIntervalSince(startTime)
 
       // Extract server request ID from response headers if present
-      let serverRequestId = response.headerFields[.init("x-amzn-requestid")!]
+      guard let requestIdField = HTTPField.Name("x-amzn-requestid") else {
+        fatalError("x-amzn-requestid is a valid HTTP field name")
+      }
+      let serverRequestId = response.headerFields[requestIdField]
 
       // Record success
       await correlationClient.completeRequest(
