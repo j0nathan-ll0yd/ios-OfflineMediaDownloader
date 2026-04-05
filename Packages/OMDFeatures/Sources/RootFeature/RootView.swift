@@ -1,8 +1,8 @@
-import SwiftUI
 import ComposableArchitecture
 import DesignSystem
-import MainFeature
 import DiagnosticFeature
+import MainFeature
+import SwiftUI
 
 // MARK: - RootView
 
@@ -25,7 +25,8 @@ public struct RootView: View {
     .overlay {
       // Blocking overlay while waiting for download to start
       if store.isBlockingForDownloadInitiation,
-         let initiation = store.initiatingDownloads.first {
+         let initiation = store.initiatingDownloads.first
+      {
         DownloadInitiatingOverlay(title: initiation.title)
           .transition(.opacity)
           .animation(.easeInOut(duration: 0.3), value: store.isBlockingForDownloadInitiation)
@@ -33,17 +34,17 @@ public struct RootView: View {
     }
     #if DEBUG
     .sheet(item: $store.scope(state: \.diagnostic, action: \.diagnostic)) { diagnosticStore in
-      NavigationStack {
-        DiagnosticView(store: diagnosticStore)
-          .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-              Button("Done") {
-                store.send(.diagnostic(.dismiss))
+        NavigationStack {
+          DiagnosticView(store: diagnosticStore)
+            .toolbar {
+              ToolbarItem(placement: .topBarLeading) {
+                Button("Done") {
+                  store.send(.diagnostic(.dismiss))
+                }
               }
             }
-          }
+        }
       }
-    }
     #endif
   }
 }
@@ -52,8 +53,8 @@ public struct RootView: View {
 
 public struct LaunchView: View {
   let status: String
-  @State private var dotOffset: CGFloat = 0
-  @State private var showShapes = false
+  @State private var dotOffset: CGFloat = 0 // non-tca
+  @State private var showShapes = false // non-tca
 
   private let theme = DarkProfessionalTheme()
 
@@ -109,7 +110,7 @@ public struct LaunchView: View {
         // Animated loading dots
         VStack(spacing: 20) {
           HStack(spacing: 8) {
-            ForEach(0..<3, id: \.self) { index in
+            ForEach(0 ..< 3, id: \.self) { index in
               Circle()
                 .fill(
                   LinearGradient(
@@ -148,8 +149,8 @@ public struct LaunchView: View {
 
 public struct DownloadInitiatingOverlay: View {
   let title: String
-  @State private var pulseScale: CGFloat = 1.0
-  @State private var iconRotation: Double = 0
+  @State private var pulseScale: CGFloat = 1.0 // non-tca
+  @State private var iconRotation: Double = 0 // non-tca
 
   private let theme = DarkProfessionalTheme()
 
