@@ -5,7 +5,7 @@ import Foundation
 // MARK: - Analytics Events
 
 /// Predefined analytics events for the app
-enum AnalyticsEvent: String, Sendable {
+enum AnalyticsEvent: String {
   // Lifecycle
   case appLaunched = "app_launched"
   case appBackgrounded = "app_backgrounded"
@@ -53,7 +53,7 @@ enum AnalyticsEvent: String, Sendable {
 /// Placeholder analytics client for future integration with analytics services
 /// (e.g., Firebase Analytics, Mixpanel, Amplitude)
 @DependencyClient
-struct AnalyticsClient: Sendable {
+struct AnalyticsClient {
   var track: @Sendable (AnalyticsEvent, [String: String]?) -> Void = { _, _ in }
   var setUserId: @Sendable (String?) -> Void = { _ in }
   var setUserProperty: @Sendable (String, String?) -> Void = { _, _ in }
@@ -82,7 +82,7 @@ extension AnalyticsClient {
   func trackError(_ event: AnalyticsEvent, errorType: String, message: String) {
     track(event, [
       "error_type": errorType,
-      "error_message": message
+      "error_message": message,
     ])
   }
 }
@@ -92,10 +92,9 @@ extension AnalyticsClient {
 extension AnalyticsClient: DependencyKey {
   /// Placeholder implementation that logs to console in DEBUG
   /// Replace with actual analytics service integration when ready
-  static let liveValue: AnalyticsClient = {
-    return AnalyticsClient(
-      track: { event, properties in
-        #if DEBUG
+  static let liveValue: AnalyticsClient = .init(
+    track: { event, properties in
+      #if DEBUG
         let propsString = properties.map { dict in
           dict.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
         } ?? ""
@@ -104,35 +103,34 @@ extension AnalyticsClient: DependencyKey {
         } else {
           print("📈 [Analytics] \(event.rawValue) {\(propsString)}")
         }
-        #endif
+      #endif
 
-        // TODO: Replace with actual analytics SDK call
-        // Example with Firebase:
-        // Analytics.logEvent(event.rawValue, parameters: properties)
-        //
-        // Example with Mixpanel:
-        // Mixpanel.mainInstance().track(event: event.rawValue, properties: properties)
-      },
-      setUserId: { userId in
-        #if DEBUG
+      // TODO: Replace with actual analytics SDK call
+      // Example with Firebase:
+      // Analytics.logEvent(event.rawValue, parameters: properties)
+      //
+      // Example with Mixpanel:
+      // Mixpanel.mainInstance().track(event: event.rawValue, properties: properties)
+    },
+    setUserId: { userId in
+      #if DEBUG
         print("📈 [Analytics] Set user ID: \(userId ?? "nil")")
-        #endif
-        // TODO: Analytics.setUserID(userId)
-      },
-      setUserProperty: { name, value in
-        #if DEBUG
+      #endif
+      // TODO: Analytics.setUserID(userId)
+    },
+    setUserProperty: { name, value in
+      #if DEBUG
         print("📈 [Analytics] Set user property \(name): \(value ?? "nil")")
-        #endif
-        // TODO: Analytics.setUserProperty(value, forName: name)
-      },
-      screenView: { screenName in
-        #if DEBUG
+      #endif
+      // TODO: Analytics.setUserProperty(value, forName: name)
+    },
+    screenView: { screenName in
+      #if DEBUG
         print("📈 [Analytics] Screen view: \(screenName)")
-        #endif
-        // TODO: Analytics.logEvent(AnalyticsEventScreenView, parameters: [...])
-      }
-    )
-  }()
+      #endif
+      // TODO: Analytics.logEvent(AnalyticsEventScreenView, parameters: [...])
+    }
+  )
 
   static let testValue = AnalyticsClient()
 }

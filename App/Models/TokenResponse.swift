@@ -1,8 +1,8 @@
 import Foundation
 
-struct TokenResponse: Codable, Sendable {
+struct TokenResponse: Codable {
   var token: String
-  var expiresAt: String?  // ISO 8601 timestamp (e.g., "2026-02-18T16:14:58.812Z")
+  var expiresAt: String? // ISO 8601 timestamp (e.g., "2026-02-18T16:14:58.812Z")
   var sessionId: String?
   var userId: String?
 

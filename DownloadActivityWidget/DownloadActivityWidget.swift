@@ -18,7 +18,7 @@ struct DownloadActivityAttributes: ActivityAttributes {
     var authorName: String?
   }
 
-  // Only truly static attributes here
+  /// Only truly static attributes here
   var fileId: String
 }
 
@@ -187,7 +187,6 @@ struct LockScreenView: View {
     }
   }
 
-  @ViewBuilder
   private var statusBadge: some View {
     Text(context.state.status.rawValue)
       .font(.caption)

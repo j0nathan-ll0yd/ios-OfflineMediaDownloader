@@ -1,50 +1,47 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 import UserNotifications
 
 // MARK: - Shake Gesture Detection
 
 #if DEBUG
-extension NSNotification.Name {
-  static let deviceDidShake = NSNotification.Name("DeviceDidShakeNotification")
-}
+  extension NSNotification.Name {
+    static let deviceDidShake = NSNotification.Name("DeviceDidShakeNotification")
+  }
 
-extension UIWindow {
-  open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-    super.motionEnded(motion, with: event)
-    if motion == .motionShake {
-      NotificationCenter.default.post(name: .deviceDidShake, object: nil)
+  extension UIWindow {
+    override open func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+      super.motionEnded(motion, with: event)
+      if motion == .motionShake {
+        NotificationCenter.default.post(name: .deviceDidShake, object: nil)
+      }
     }
   }
-}
 
-struct ShakeDetectorModifier: ViewModifier {
-  let onShake: () -> Void
+  struct ShakeDetectorModifier: ViewModifier {
+    let onShake: () -> Void
 
-  func body(content: Content) -> some View {
-    content
-      .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
-        onShake()
-      }
+    func body(content: Content) -> some View {
+      content
+        .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+          onShake()
+        }
+    }
   }
-}
 
-extension View {
-  func onShake(perform action: @escaping () -> Void) -> some View {
-    modifier(ShakeDetectorModifier(onShake: action))
+  extension View {
+    func onShake(perform action: @escaping () -> Void) -> some View {
+      modifier(ShakeDetectorModifier(onShake: action))
+    }
   }
-}
 #endif
 
 // MARK: - RootView
+
 // Feature: App/Features/RootFeature.swift
 
 struct RootView: View {
   @Bindable var store: StoreOf<RootFeature>
-
-  init(store: StoreOf<RootFeature>) {
-    self.store = store
-  }
 
   var body: some View {
     Group {
@@ -58,7 +55,8 @@ struct RootView: View {
     .overlay {
       // Blocking overlay while waiting for download to start
       if store.isBlockingForDownloadInitiation,
-         let initiation = store.initiatingDownloads.first {
+         let initiation = store.initiatingDownloads.first
+      {
         DownloadInitiatingOverlay(title: initiation.title)
           .transition(.opacity)
           .animation(.easeInOut(duration: 0.3), value: store.isBlockingForDownloadInitiation)
@@ -66,29 +64,30 @@ struct RootView: View {
     }
     #if DEBUG
     .onShake {
-      store.send(.shakeDetected)
-    }
-    .sheet(item: $store.scope(state: \.diagnostic, action: \.diagnostic)) { diagnosticStore in
-      NavigationStack {
-        DiagnosticView(store: diagnosticStore)
-          .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-              Button("Done") {
-                store.send(.diagnostic(.dismiss))
+        store.send(.shakeDetected)
+      }
+      .sheet(item: $store.scope(state: \.diagnostic, action: \.diagnostic)) { diagnosticStore in
+        NavigationStack {
+          DiagnosticView(store: diagnosticStore)
+            .toolbar {
+              ToolbarItem(placement: .topBarLeading) {
+                Button("Done") {
+                  store.send(.diagnostic(.dismiss))
+                }
               }
             }
-          }
+        }
       }
-    }
     #endif
   }
 }
 
 // MARK: - Launch View (Pure SwiftUI - not TCA managed)
+
 struct LaunchView: View {
   let status: String
-  @State private var dotOffset: CGFloat = 0  // non-tca
-  @State private var showShapes = false  // non-tca
+  @State private var dotOffset: CGFloat = 0 // non-tca
+  @State private var showShapes = false // non-tca
 
   private let theme = DarkProfessionalTheme()
 
@@ -140,7 +139,7 @@ struct LaunchView: View {
         // Animated loading dots
         VStack(spacing: 20) {
           HStack(spacing: 8) {
-            ForEach(0..<3, id: \.self) { index in
+            ForEach(0 ..< 3, id: \.self) { index in
               Circle()
                 .fill(
                   LinearGradient(

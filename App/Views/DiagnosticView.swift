@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct DiagnosticView: View {
   @Bindable var store: StoreOf<DiagnosticFeature>
@@ -13,9 +13,10 @@ struct DiagnosticView: View {
       let value = userData.displayValue
       // Parse format: "FirstName LastName (email@example.com)"
       if let emailStart = value.lastIndex(of: "("),
-         let emailEnd = value.lastIndex(of: ")") {
+         let emailEnd = value.lastIndex(of: ")")
+      {
         let name = String(value[..<emailStart]).trimmingCharacters(in: .whitespaces)
-        let email = String(value[value.index(after: emailStart)..<emailEnd])
+        let email = String(value[value.index(after: emailStart) ..< emailEnd])
         return (name.isEmpty ? "User" : name, email.isEmpty ? "No email" : email)
       }
       // Fallback if format doesn't match
@@ -59,8 +60,8 @@ struct DiagnosticView: View {
             ])
 
             #if DEBUG
-            // Debug section
-            debugSection
+              // Debug section
+              debugSection
             #endif
           }
           .padding(.horizontal, 16)
@@ -183,7 +184,7 @@ struct DiagnosticView: View {
     if bytes == 0 {
       return "0 MB"
     } else if bytes < 1_000_000 {
-      return String(format: "%.0f KB", Double(bytes) / 1_000)
+      return String(format: "%.0f KB", Double(bytes) / 1000)
     } else if bytes < 1_000_000_000 {
       return String(format: "%.1f MB", Double(bytes) / 1_000_000)
     } else {
@@ -332,183 +333,183 @@ struct DiagnosticView: View {
   // MARK: - Debug Section
 
   #if DEBUG
-  private var debugSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Developer")
-        .font(.caption)
-        .fontWeight(.semibold)
-        .foregroundStyle(theme.textSecondary)
-        .textCase(.uppercase)
-        .padding(.leading, 4)
+    private var debugSection: some View {
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Developer")
+          .font(.caption)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.textSecondary)
+          .textCase(.uppercase)
+          .padding(.leading, 4)
 
-      VStack(spacing: 0) {
-        // Loading indicator
-        if store.isLoading {
-          HStack {
-            ProgressView()
-              .tint(theme.primaryColor)
-            Text("Loading...")
-              .font(.subheadline)
-              .foregroundStyle(theme.textSecondary)
+        VStack(spacing: 0) {
+          // Loading indicator
+          if store.isLoading {
+            HStack {
+              ProgressView()
+                .tint(theme.primaryColor)
+              Text("Loading...")
+                .font(.subheadline)
+                .foregroundStyle(theme.textSecondary)
+            }
+            .padding(16)
           }
-          .padding(16)
-        }
 
-        // Keychain items
-        ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
-          NavigationLink(destination: KeychainDetailView(item: item) {
-            store.send(.deleteKeychainItem(IndexSet(integer: index)))
-          }) {
-            keychainRow(item: item)
+          // Keychain items
+          ForEach(Array(store.keychainItems.enumerated()), id: \.element.id) { index, item in
+            NavigationLink(destination: KeychainDetailView(item: item) {
+              store.send(.deleteKeychainItem(IndexSet(integer: index)))
+            }) {
+              keychainRow(item: item)
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+              .background(DarkProfessionalTheme.divider)
+              .padding(.leading, 52)
+          }
+
+          // Token expiration row (tappable for debug actions)
+          NavigationLink(destination: TokenExpirationDetailView(
+            expiresAt: store.tokenExpiresAt,
+            onDelete: { store.send(.deleteTokenExpiration) },
+            onExpireSoon: { store.send(.setTokenExpiringSoon) }
+          )) {
+            tokenExpirationRow
           }
           .buttonStyle(.plain)
 
+          // Divider before Truncate button
           Divider()
             .background(DarkProfessionalTheme.divider)
             .padding(.leading, 52)
-        }
 
-        // Token expiration row (tappable for debug actions)
-        NavigationLink(destination: TokenExpirationDetailView(
-          expiresAt: store.tokenExpiresAt,
-          onDelete: { store.send(.deleteTokenExpiration) },
-          onExpireSoon: { store.send(.setTokenExpiringSoon) }
-        )) {
-          tokenExpirationRow
-        }
-        .buttonStyle(.plain)
+          // Truncate files button
+          Button(action: { store.send(.truncateFilesButtonTapped) }) {
+            HStack(spacing: 12) {
+              ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                  .fill(theme.errorColor.opacity(0.15))
+                  .frame(width: 36, height: 36)
 
-        // Divider before Truncate button
-        Divider()
-          .background(DarkProfessionalTheme.divider)
-          .padding(.leading, 52)
+                Image(systemName: "trash")
+                  .font(.system(size: 16))
+                  .foregroundStyle(theme.errorColor)
+              }
 
-        // Truncate files button
-        Button(action: { store.send(.truncateFilesButtonTapped) }) {
-          HStack(spacing: 12) {
-            ZStack {
-              RoundedRectangle(cornerRadius: 8)
-                .fill(theme.errorColor.opacity(0.15))
-                .frame(width: 36, height: 36)
-
-              Image(systemName: "trash")
-                .font(.system(size: 16))
+              Text("Truncate All Files")
+                .font(.body)
                 .foregroundStyle(theme.errorColor)
+
+              Spacer()
             }
-
-            Text("Truncate All Files")
-              .font(.body)
-              .foregroundStyle(theme.errorColor)
-
-            Spacer()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
           }
-          .padding(.horizontal, 12)
-          .padding(.vertical, 10)
         }
+        .background(DarkProfessionalTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
       }
-      .background(DarkProfessionalTheme.cardBackground)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
     }
-  }
 
-  private func keychainRow(item: KeychainItem) -> some View {
-    HStack(spacing: 12) {
-      ZStack {
-        RoundedRectangle(cornerRadius: 8)
-          .fill(theme.primaryColor.opacity(0.15))
-          .frame(width: 36, height: 36)
+    private func keychainRow(item: KeychainItem) -> some View {
+      HStack(spacing: 12) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 8)
+            .fill(theme.primaryColor.opacity(0.15))
+            .frame(width: 36, height: 36)
 
-        Image(systemName: "key")
-          .font(.system(size: 16))
-          .foregroundStyle(theme.primaryColor)
-      }
+          Image(systemName: "key")
+            .font(.system(size: 16))
+            .foregroundStyle(theme.primaryColor)
+        }
 
-      VStack(alignment: .leading, spacing: 2) {
-        Text(item.name)
-          .font(.body)
-          .foregroundStyle(.white)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(item.name)
+            .font(.body)
+            .foregroundStyle(.white)
 
-        Text(item.displayValue.count > 30 ? String(item.displayValue.prefix(30)) + "..." : item.displayValue)
-          .font(.caption)
-          .foregroundStyle(theme.textSecondary)
-          .lineLimit(1)
-      }
-
-      Spacer()
-
-      Image(systemName: "chevron.right")
-        .font(.system(size: 14, weight: .medium))
-        .foregroundStyle(theme.textSecondary.opacity(0.5))
-    }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 10)
-    .contentShape(Rectangle())
-  }
-
-  private var tokenExpirationRow: some View {
-    HStack(spacing: 12) {
-      ZStack {
-        RoundedRectangle(cornerRadius: 8)
-          .fill(theme.warningColor.opacity(0.15))
-          .frame(width: 36, height: 36)
-
-        Image(systemName: "clock")
-          .font(.system(size: 16))
-          .foregroundStyle(theme.warningColor)
-      }
-
-      VStack(alignment: .leading, spacing: 2) {
-        Text("Token Expires")
-          .font(.body)
-          .foregroundStyle(.white)
-
-        if let expiresAt = store.tokenExpiresAt {
-          Text(formattedExpiration(expiresAt))
-            .font(.caption)
-            .foregroundStyle(expirationTextColor(expiresAt))
-            .lineLimit(1)
-        } else {
-          Text("Not set")
+          Text(item.displayValue.count > 30 ? String(item.displayValue.prefix(30)) + "..." : item.displayValue)
             .font(.caption)
             .foregroundStyle(theme.textSecondary)
+            .lineLimit(1)
         }
+
+        Spacer()
+
+        Image(systemName: "chevron.right")
+          .font(.system(size: 14, weight: .medium))
+          .foregroundStyle(theme.textSecondary.opacity(0.5))
       }
-
-      Spacer()
-
-      Image(systemName: "chevron.right")
-        .font(.system(size: 14, weight: .medium))
-        .foregroundStyle(theme.textSecondary.opacity(0.5))
+      .padding(.horizontal, 12)
+      .padding(.vertical, 10)
+      .contentShape(Rectangle())
     }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 10)
-    .contentShape(Rectangle())
-  }
 
-  private func formattedExpiration(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .short
-    let timeUntil = date.timeIntervalSinceNow
-    if timeUntil < 0 {
-      return "Expired: \(formatter.string(from: date))"
-    } else if timeUntil < 300 {
-      return "Expiring soon: \(formatter.string(from: date))"
-    } else {
-      return formatter.string(from: date)
-    }
-  }
+    private var tokenExpirationRow: some View {
+      HStack(spacing: 12) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 8)
+            .fill(theme.warningColor.opacity(0.15))
+            .frame(width: 36, height: 36)
 
-  private func expirationTextColor(_ date: Date) -> Color {
-    let timeUntil = date.timeIntervalSinceNow
-    if timeUntil < 0 {
-      return theme.errorColor
-    } else if timeUntil < 300 {
-      return theme.warningColor
-    } else {
-      return theme.successColor
+          Image(systemName: "clock")
+            .font(.system(size: 16))
+            .foregroundStyle(theme.warningColor)
+        }
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Token Expires")
+            .font(.body)
+            .foregroundStyle(.white)
+
+          if let expiresAt = store.tokenExpiresAt {
+            Text(formattedExpiration(expiresAt))
+              .font(.caption)
+              .foregroundStyle(expirationTextColor(expiresAt))
+              .lineLimit(1)
+          } else {
+            Text("Not set")
+              .font(.caption)
+              .foregroundStyle(theme.textSecondary)
+          }
+        }
+
+        Spacer()
+
+        Image(systemName: "chevron.right")
+          .font(.system(size: 14, weight: .medium))
+          .foregroundStyle(theme.textSecondary.opacity(0.5))
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 10)
+      .contentShape(Rectangle())
     }
-  }
+
+    private func formattedExpiration(_ date: Date) -> String {
+      let formatter = DateFormatter()
+      formatter.dateStyle = .medium
+      formatter.timeStyle = .short
+      let timeUntil = date.timeIntervalSinceNow
+      if timeUntil < 0 {
+        return "Expired: \(formatter.string(from: date))"
+      } else if timeUntil < 300 {
+        return "Expiring soon: \(formatter.string(from: date))"
+      } else {
+        return formatter.string(from: date)
+      }
+    }
+
+    private func expirationTextColor(_ date: Date) -> Color {
+      let timeUntil = date.timeIntervalSinceNow
+      if timeUntil < 0 {
+        return theme.errorColor
+      } else if timeUntil < 300 {
+        return theme.warningColor
+      } else {
+        return theme.successColor
+      }
+    }
   #endif
 }
 
@@ -762,13 +763,15 @@ struct TokenExpirationDetailView: View {
               .fontWeight(.semibold)
               .foregroundStyle(theme.textSecondary)
 
-            Text("1. Tap \"Set Expiring Soon\" to set expiration to 2 minutes from now\n2. Close the app completely (swipe up from app switcher)\n3. Relaunch the app\n4. The app will detect the token expires within 5 minutes and automatically refresh it")
-              .font(.caption)
-              .foregroundStyle(theme.textSecondary)
-              .padding(16)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .background(DarkProfessionalTheme.cardBackground)
-              .clipShape(RoundedRectangle(cornerRadius: 12))
+            Text(
+              "1. Tap \"Set Expiring Soon\" to set expiration to 2 minutes from now\n2. Close the app completely (swipe up from app switcher)\n3. Relaunch the app\n4. The app will detect the token expires within 5 minutes and automatically refresh it"
+            )
+            .font(.caption)
+            .foregroundStyle(theme.textSecondary)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DarkProfessionalTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
           }
           .padding(.top, 8)
         }

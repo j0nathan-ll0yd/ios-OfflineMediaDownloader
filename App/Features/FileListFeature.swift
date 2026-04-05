@@ -22,7 +22,7 @@ struct FileListFeature {
     /// URL to share via activity sheet
     var sharingFileURL: URL?
     /// Child feature for unauthenticated users to preview default files
-    var defaultFiles: DefaultFilesFeature.State = DefaultFilesFeature.State()
+    var defaultFiles: DefaultFilesFeature.State = .init()
   }
 
   enum Action {
@@ -44,14 +44,14 @@ struct FileListFeature {
     case alert(PresentationAction<Alert>)
     case detail(PresentationAction<FileDetailFeature.Action>)
     case fileTapped(FileCellFeature.State)
-    // Child feature for unauthenticated users
+    /// Child feature for unauthenticated users
     case defaultFiles(DefaultFilesFeature.Action)
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
-    case refreshFileState(String)  // fileId
+    case refreshFileState(String) // fileId
     case fileFailed(fileId: String, error: String)
-    case clearAllFiles  // Clears state and CoreData (used on registration)
+    case clearAllFiles // Clears state and CoreData (used on registration)
     case delegate(Delegate)
 
     @CasePathable
@@ -252,7 +252,8 @@ struct FileListFeature {
           let result = await Task.detached {
             guard UIPasteboard.general.hasStrings,
                   let urlString = UIPasteboard.general.string,
-                  let url = URL(string: urlString) else {
+                  let url = URL(string: urlString)
+            else {
               return nil as (URL, String?)?
             }
             return (url, urlString.youtubeID)
@@ -321,6 +322,7 @@ struct FileListFeature {
         return .none
 
       // MARK: - Push Notification Actions
+
       case let .fileAddedFromPush(file):
         // Add or update file in the list
         let isNewFile = state.files[id: file.fileId] == nil
@@ -413,6 +415,7 @@ struct FileListFeature {
         return .none
 
       // MARK: - Download Tracking Delegates (forward to parent for in-app banner)
+
       case let .files(.element(id: _, action: .delegate(.downloadStarted(file)))):
         return .send(.delegate(.downloadStarted(file)))
 

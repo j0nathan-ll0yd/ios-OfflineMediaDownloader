@@ -1,6 +1,6 @@
 import Foundation
 
-struct LoginResponse: Codable, Sendable {
+struct LoginResponse: Codable {
   var body: TokenResponse?
   var error: ErrorDetail?
   var requestId: String

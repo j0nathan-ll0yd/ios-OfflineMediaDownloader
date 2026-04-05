@@ -1,11 +1,10 @@
 import Foundation
-import OpenAPIRuntime
 import HTTPTypes
+import OpenAPIRuntime
 
 /// Unified error type for user-facing alerts throughout the app.
 /// Provides structured error handling with titles, messages, and retry capabilities.
 enum AppError: Error, Equatable {
-
   // MARK: - Network Errors
 
   /// No internet connection available
@@ -88,7 +87,7 @@ enum AppError: Error, Equatable {
   /// The request ID for server errors, useful for debugging
   var requestId: String? {
     switch self {
-    case .serverError(_, let requestId, _), .unauthorized(let requestId, _):
+    case let .serverError(_, requestId, _), let .unauthorized(requestId, _):
       return requestId
     default:
       return nil
@@ -98,7 +97,7 @@ enum AppError: Error, Equatable {
   /// The correlation ID for request tracing
   var correlationId: String? {
     switch self {
-    case .serverError(_, _, let correlationId), .unauthorized(_, let correlationId):
+    case let .serverError(_, _, correlationId), let .unauthorized(_, correlationId):
       return correlationId
     default:
       return nil
@@ -110,7 +109,7 @@ enum AppError: Error, Equatable {
     switch self {
     case .networkUnavailable:
       return "Please check your internet connection and try again."
-    case .serverError(let message, let requestId, let correlationId):
+    case let .serverError(message, requestId, correlationId):
       var result = message
       if correlationId != nil || requestId != nil {
         result += "\n"
@@ -122,7 +121,7 @@ enum AppError: Error, Equatable {
         result += "\nRequest ID: \(requestId)"
       }
       return result
-    case .unauthorized(let requestId, let correlationId):
+    case let .unauthorized(requestId, correlationId):
       var result = "Your session has expired. Please sign in again."
       if correlationId != nil || requestId != nil {
         result += "\n"
@@ -138,21 +137,21 @@ enum AppError: Error, Equatable {
       return "Your session has expired. Please sign in again."
     case .timeout:
       return "The request took too long. Please try again."
-    case .downloadFailed(let fileName, let reason):
+    case let .downloadFailed(fileName, reason):
       return "Failed to download \"\(fileName)\": \(reason)"
-    case .deleteFailed(let fileName):
+    case let .deleteFailed(fileName):
       return "Failed to delete \"\(fileName)\". Please try again."
     case .invalidClipboardUrl:
       return "The clipboard does not contain a valid URL."
-    case .loginFailed(let reason):
+    case let .loginFailed(reason):
       return reason
-    case .registrationFailed(let reason):
+    case let .registrationFailed(reason):
       return reason
     case .invalidAppleCredential:
       return "Could not verify your Apple ID credentials. Please try again."
-    case .keychainError(let operation):
+    case let .keychainError(operation):
       return "Failed to \(operation) secure data."
-    case .storageError(let operation):
+    case let .storageError(operation):
       return "Failed to \(operation) local data."
     }
   }
@@ -183,19 +182,18 @@ enum AppError: Error, Equatable {
 // MARK: - Error Conversion
 
 extension AppError {
-
   /// Creates an AppError from any Error, mapping known error types appropriately
   static func from(_ error: Error) -> AppError {
     // Check for ServerClientError
     if let serverError = error as? ServerClientError {
       switch serverError {
-      case .unauthorized(let requestId, let correlationId):
+      case let .unauthorized(requestId, correlationId):
         return .unauthorized(requestId: requestId, correlationId: correlationId)
-      case .internalServerError(let message, let requestId, let correlationId):
+      case let .internalServerError(message, requestId, correlationId):
         return .serverError(message: message, requestId: requestId, correlationId: correlationId)
-      case .badRequest(let message, let requestId, let correlationId):
+      case let .badRequest(message, requestId, correlationId):
         return .serverError(message: message, requestId: requestId, correlationId: correlationId)
-      case .networkError(let message, let requestId, let correlationId):
+      case let .networkError(message, requestId, correlationId):
         return .serverError(message: message, requestId: requestId, correlationId: correlationId)
       }
     }
@@ -203,7 +201,10 @@ extension AppError {
     // Check for OpenAPI ClientError - extract requestId from response headers
     // Note: correlationId is tracked by the middleware, not available here
     if let clientError = error as? ClientError {
-      let requestId = clientError.response?.headerFields[.init("x-amzn-requestid")!]
+      guard let requestIdField = HTTPField.Name("x-amzn-requestid") else {
+        fatalError("x-amzn-requestid is a valid HTTP field name")
+      }
+      let requestId = clientError.response?.headerFields[requestIdField]
       let message = "Server error: \(clientError.causeDescription)"
       return .serverError(message: message, requestId: requestId, correlationId: nil)
     }
@@ -224,11 +225,11 @@ extension AppError {
     // Check for CoreDataError
     if let coreDataError = error as? CoreDataError {
       switch coreDataError {
-      case .fetchFailed(let message):
+      case let .fetchFailed(message):
         return .storageError(operation: "fetch: \(message)")
-      case .saveFailed(let message):
+      case let .saveFailed(message):
         return .storageError(operation: "save: \(message)")
-      case .deleteFailed(let message):
+      case let .deleteFailed(message):
         return .storageError(operation: "delete: \(message)")
       }
     }
@@ -241,9 +242,9 @@ extension AppError {
     // Check for FileClientError
     if let fileError = error as? FileClientError {
       switch fileError {
-      case .deletionFailed(let path):
+      case let .deletionFailed(path):
         return .deleteFailed(fileName: URL(fileURLWithPath: path).lastPathComponent)
-      case .moveFailed(let message):
+      case let .moveFailed(message):
         return .storageError(operation: "move file: \(message)")
       }
     }

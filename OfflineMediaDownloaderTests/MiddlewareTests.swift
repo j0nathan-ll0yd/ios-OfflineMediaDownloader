@@ -1,19 +1,15 @@
 import Foundation
-import Testing
 import HTTPTypes
-import OpenAPIRuntime
 @testable import OfflineMediaDownloader
+import OpenAPIRuntime
+import Testing
 
-@Suite("Middleware Tests")
-struct MiddlewareTests {
-
+enum MiddlewareTests {
   // MARK: - APIKeyMiddleware Tests
 
-  @Suite("APIKeyMiddleware")
   struct APIKeyMiddlewareTests {
-
     @Test("Adds API key as query parameter to path without existing query")
-    func addsApiKeyToCleanPath() async throws {
+    func addsApiKeyToCleanPath() async {
       let middleware = APIKeyMiddleware(apiKey: "test-api-key-123")
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
@@ -23,7 +19,7 @@ struct MiddlewareTests {
     }
 
     @Test("Appends API key to path with existing query parameter")
-    func appendsApiKeyToExistingQuery() async throws {
+    func appendsApiKeyToExistingQuery() async {
       let middleware = APIKeyMiddleware(apiKey: "my-secret-key")
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files?limit=10")
@@ -33,7 +29,7 @@ struct MiddlewareTests {
     }
 
     @Test("Handles special characters in API key")
-    func handlesSpecialCharactersInApiKey() async throws {
+    func handlesSpecialCharactersInApiKey() async {
       let middleware = APIKeyMiddleware(apiKey: "key+with=special/chars")
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
@@ -43,7 +39,7 @@ struct MiddlewareTests {
     }
 
     @Test("Works with POST requests")
-    func worksWithPostRequests() async throws {
+    func worksWithPostRequests() async {
       let middleware = APIKeyMiddleware(apiKey: "post-key")
 
       var request = HTTPRequest(method: .post, scheme: "https", authority: "example.com", path: "/api/login")
@@ -53,7 +49,7 @@ struct MiddlewareTests {
     }
 
     @Test("Handles nil path gracefully")
-    func handlesNilPathGracefully() async throws {
+    func handlesNilPathGracefully() async {
       let middleware = APIKeyMiddleware(apiKey: "test-key")
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: nil)
@@ -63,7 +59,7 @@ struct MiddlewareTests {
       #expect(capturedPath == nil)
     }
 
-    // Helper to capture the modified request path
+    /// Helper to capture the modified request path
     private func captureRequestPath(middleware: APIKeyMiddleware, request: inout HTTPRequest) async -> String? {
       var capturedPath: String?
 
@@ -87,11 +83,9 @@ struct MiddlewareTests {
 
   // MARK: - AuthenticationMiddleware Tests
 
-  @Suite("AuthenticationMiddleware")
   struct AuthenticationMiddlewareTests {
-
     @Test("Adds Bearer token header when token exists")
-    func addsBearerTokenWhenExists() async throws {
+    func addsBearerTokenWhenExists() async {
       let testToken = "jwt-token-abc123"
       let keychainClient = KeychainClient(
         getUserData: { throw KeychainError.itemNotFound },
@@ -103,10 +97,10 @@ struct MiddlewareTests {
         setJwtToken: { _ in },
         setTokenExpiresAt: { _ in },
         setDeviceData: { _ in },
-        deleteUserData: { },
-        deleteJwtToken: { },
-        deleteTokenExpiresAt: { },
-        deleteDeviceData: { }
+        deleteUserData: {},
+        deleteJwtToken: {},
+        deleteTokenExpiresAt: {},
+        deleteDeviceData: {}
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -118,7 +112,7 @@ struct MiddlewareTests {
     }
 
     @Test("Does not add header when no token in keychain")
-    func noHeaderWhenNoToken() async throws {
+    func noHeaderWhenNoToken() async {
       let keychainClient = KeychainClient(
         getUserData: { throw KeychainError.itemNotFound },
         getJwtToken: { nil },
@@ -129,10 +123,10 @@ struct MiddlewareTests {
         setJwtToken: { _ in },
         setTokenExpiresAt: { _ in },
         setDeviceData: { _ in },
-        deleteUserData: { },
-        deleteJwtToken: { },
-        deleteTokenExpiresAt: { },
-        deleteDeviceData: { }
+        deleteUserData: {},
+        deleteJwtToken: {},
+        deleteTokenExpiresAt: {},
+        deleteDeviceData: {}
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -144,7 +138,7 @@ struct MiddlewareTests {
     }
 
     @Test("Handles keychain error gracefully")
-    func handlesKeychainError() async throws {
+    func handlesKeychainError() async {
       let keychainClient = KeychainClient(
         getUserData: { throw KeychainError.itemNotFound },
         getJwtToken: { throw KeychainError.unableToStore },
@@ -155,10 +149,10 @@ struct MiddlewareTests {
         setJwtToken: { _ in },
         setTokenExpiresAt: { _ in },
         setDeviceData: { _ in },
-        deleteUserData: { },
-        deleteJwtToken: { },
-        deleteTokenExpiresAt: { },
-        deleteDeviceData: { }
+        deleteUserData: {},
+        deleteJwtToken: {},
+        deleteTokenExpiresAt: {},
+        deleteDeviceData: {}
       )
 
       let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
@@ -170,7 +164,7 @@ struct MiddlewareTests {
       #expect(capturedAuthHeader == nil)
     }
 
-    // Helper to capture the Authorization header from modified request
+    /// Helper to capture the Authorization header from modified request
     private func captureAuthorizationHeader(middleware: AuthenticationMiddleware, request: inout HTTPRequest) async -> String? {
       var capturedHeader: String?
 
@@ -194,11 +188,9 @@ struct MiddlewareTests {
 
   // MARK: - CorrelationMiddleware Tests
 
-  @Suite("CorrelationMiddleware")
   struct CorrelationMiddlewareTests {
-
     @Test("Adds X-Correlation-ID header to request")
-    func addsCorrelationIdHeader() async throws {
+    func addsCorrelationIdHeader() async {
       let testCorrelationId = UUID()
       let correlationClient = CorrelationClient(
         startRequest: { _, _ in testCorrelationId },
@@ -206,13 +198,13 @@ struct MiddlewareTests {
         failRequest: { _, _, _ in },
         getMostRecent: { nil },
         getRecentRequests: { _ in [] },
-        clearHistory: { }
+        clearHistory: {}
       )
 
       let loggerClient = LoggerClient(
         log: { _, _, _, _, _, _ in },
         getRecentLogs: { _ in [] },
-        clearLogs: { },
+        clearLogs: {},
         exportLogs: { Data() },
         setMinLevel: { _ in }
       )
@@ -240,13 +232,13 @@ struct MiddlewareTests {
         failRequest: { _, _, _ in },
         getMostRecent: { nil },
         getRecentRequests: { _ in [] },
-        clearHistory: { }
+        clearHistory: {}
       )
 
       let loggerClient = LoggerClient(
         log: { _, _, _, _, _, _ in },
         getRecentLogs: { _ in [] },
-        clearLogs: { },
+        clearLogs: {},
         exportLogs: { Data() },
         setMinLevel: { _ in }
       )
@@ -259,7 +251,7 @@ struct MiddlewareTests {
         _ = try await middleware.intercept(
           request,
           body: nil,
-          baseURL: URL(string: "https://example.com")!,
+          baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
         ) { _, _, _ in
           (HTTPResponse(status: .ok), nil)
@@ -287,13 +279,13 @@ struct MiddlewareTests {
         },
         getMostRecent: { nil },
         getRecentRequests: { _ in [] },
-        clearHistory: { }
+        clearHistory: {}
       )
 
       let loggerClient = LoggerClient(
         log: { _, _, _, _, _, _ in },
         getRecentLogs: { _ in [] },
-        clearLogs: { },
+        clearLogs: {},
         exportLogs: { Data() },
         setMinLevel: { _ in }
       )
@@ -303,14 +295,16 @@ struct MiddlewareTests {
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
 
       struct TestError: Error, LocalizedError {
-        var errorDescription: String? { "Test network failure" }
+        var errorDescription: String? {
+          "Test network failure"
+        }
       }
 
       do {
         _ = try await middleware.intercept(
           request,
           body: nil,
-          baseURL: URL(string: "https://example.com")!,
+          baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
         ) { _, _, _ in
           throw TestError()
@@ -323,7 +317,7 @@ struct MiddlewareTests {
       #expect(failedErrorMessage == "Test network failure")
     }
 
-    // Helper to capture the X-Correlation-ID header from modified request
+    /// Helper to capture the X-Correlation-ID header from modified request
     private func captureCorrelationIdHeader(middleware: CorrelationMiddleware, request: inout HTTPRequest) async -> String? {
       var capturedHeader: String?
 

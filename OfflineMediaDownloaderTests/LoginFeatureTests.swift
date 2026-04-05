@@ -1,22 +1,20 @@
-import Foundation
-import Testing
 import ComposableArchitecture
+import Foundation
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("LoginFeature Tests")
 struct LoginFeatureTests {
-
   // MARK: - Login Success Tests
 
   @MainActor
   @Test("Login success stores token and notifies delegate")
   func loginSuccess() async throws {
-    let expectedToken = TestData.validLoginResponse.body!.token
+    let expectedToken = try #require(TestData.validLoginResponse.body?.token)
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     } withDependencies: {
       $0.keychainClient.setJwtToken = { _ in }
-      $0.keychainClient.getJwtToken = { expectedToken }  // For verification
+      $0.keychainClient.getJwtToken = { expectedToken } // For verification
     }
 
     await store.send(.loginResponse(.success(TestData.validLoginResponse))) {
@@ -28,7 +26,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Login response with nil body shows alert")
-  func loginResponseNilBody() async throws {
+  func loginResponseNilBody() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
@@ -52,7 +50,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Login failure shows alert")
-  func loginFailure() async throws {
+  func loginFailure() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
@@ -74,7 +72,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Network error during login shows connection alert")
-  func loginNetworkError() async throws {
+  func loginNetworkError() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
@@ -102,12 +100,12 @@ struct LoginFeatureTests {
     var state = LoginFeature.State()
     state.pendingUserData = TestData.sampleUser
 
-    let expectedToken = TestData.validLoginResponse.body!.token
+    let expectedToken = try #require(TestData.validLoginResponse.body?.token)
     let store = TestStore(initialState: state) {
       LoginFeature()
     } withDependencies: {
       $0.keychainClient.setJwtToken = { _ in }
-      $0.keychainClient.getJwtToken = { expectedToken }  // For verification
+      $0.keychainClient.getJwtToken = { expectedToken } // For verification
       $0.keychainClient.setUserData = { _ in }
     }
 
@@ -122,7 +120,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Registration response with nil body shows alert")
-  func registrationResponseNilBody() async throws {
+  func registrationResponseNilBody() async {
     var state = LoginFeature.State()
     state.pendingUserData = TestData.sampleUser
 
@@ -149,7 +147,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Registration failure preserves pending user data")
-  func registrationFailurePreservesData() async throws {
+  func registrationFailurePreservesData() async {
     var state = LoginFeature.State()
     state.pendingUserData = TestData.sampleUser
 
@@ -176,11 +174,12 @@ struct LoginFeatureTests {
   }
 
   // MARK: - Sign in with Apple Error Tests
+
   // Note: ASAuthorization cannot be easily mocked, so we only test error handling
 
   @MainActor
   @Test("Sign in with Apple failure shows alert")
-  func signInWithAppleFailure() async throws {
+  func signInWithAppleFailure() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
@@ -204,7 +203,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Login button clears alert")
-  func loginButtonClearsAlert() async throws {
+  func loginButtonClearsAlert() async {
     var state = LoginFeature.State()
     state.alert = AlertState {
       TextState("Previous Error")
@@ -228,7 +227,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Initial state is unauthenticated and unregistered")
-  func initialState() async throws {
+  func initialState() {
     let state = LoginFeature.State()
     #expect(state.loginStatus == .unauthenticated)
     #expect(state.registrationStatus == .unregistered)
@@ -240,7 +239,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("ShowError action creates alert state")
-  func showErrorCreatesAlert() async throws {
+  func showErrorCreatesAlert() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     }
@@ -260,7 +259,7 @@ struct LoginFeatureTests {
 
   @MainActor
   @Test("Alert dismiss clears alert state")
-  func alertDismissClearsState() async throws {
+  func alertDismissClearsState() async {
     var state = LoginFeature.State()
     state.alert = AlertState {
       TextState("Test")

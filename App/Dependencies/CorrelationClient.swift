@@ -5,26 +5,34 @@ import Foundation
 // MARK: - Request Record
 
 /// A record of an API request with its correlation ID and metadata
-struct RequestRecord: Equatable, Sendable, Identifiable {
-  let id: UUID  // This IS the correlation ID
+struct RequestRecord: Equatable, Identifiable {
+  let id: UUID // This IS the correlation ID
   let timestamp: Date
   let endpoint: String
   let method: String
   var statusCode: Int?
   var duration: TimeInterval?
   var error: String?
-  var serverRequestId: String?  // The x-amzn-requestid from response
+  var serverRequestId: String? // The x-amzn-requestid from response
 
-  var isCompleted: Bool { statusCode != nil || error != nil }
-  var isSuccess: Bool { statusCode.map { $0 >= 200 && $0 < 300 } ?? false }
-  var isError: Bool { error != nil || statusCode.map { $0 >= 400 } ?? false }
+  var isCompleted: Bool {
+    statusCode != nil || error != nil
+  }
+
+  var isSuccess: Bool {
+    statusCode.map { $0 >= 200 && $0 < 300 } ?? false
+  }
+
+  var isError: Bool {
+    error != nil || statusCode.map { $0 >= 400 } ?? false
+  }
 }
 
 // MARK: - Correlation Client
 
 /// Client for generating and tracking correlation IDs across API requests
 @DependencyClient
-struct CorrelationClient: Sendable {
+struct CorrelationClient {
   /// Start tracking a new request, returns the correlation ID
   var startRequest: @Sendable (_ endpoint: String, _ method: String) async -> UUID = { _, _ in UUID() }
 

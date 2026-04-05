@@ -2,13 +2,16 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-struct KeychainItem: Equatable, Identifiable, Sendable {
-  var id: String { name }
+struct KeychainItem: Equatable, Identifiable {
+  var id: String {
+    name
+  }
+
   var name: String
   var displayValue: String
   var itemType: KeychainItemType
 
-  enum KeychainItemType: Equatable, Sendable {
+  enum KeychainItemType: Equatable {
     case token
     case userData
     case deviceData
@@ -27,10 +30,10 @@ struct DiagnosticFeature {
     var downloadCount: Int = 0
     var totalStorageBytes: Int64 = 0
     var playCount: Int = 0
-    // Token expiration
+    /// Token expiration
     var tokenExpiresAt: Date?
-    // Download settings
-    var downloadSettings: DownloadSettingsFeature.State = DownloadSettingsFeature.State()
+    /// Download settings
+    var downloadSettings: DownloadSettingsFeature.State = .init()
   }
 
   enum Action {
@@ -55,7 +58,7 @@ struct DiagnosticFeature {
     // Sign-out
     case signOutButtonTapped
     case signOutCompleted
-    // Download settings
+    /// Download settings
     case downloadSettings(DownloadSettingsFeature.Action)
 
     @CasePathable

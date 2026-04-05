@@ -3,7 +3,7 @@ import CoreData
 import Foundation
 
 @DependencyClient
-struct CoreDataClient: Sendable {
+struct CoreDataClient {
   var getFiles: @Sendable () async throws -> [File] = { [] }
   var getFile: @Sendable (_ fileId: String) async throws -> File? = { _ in nil }
   var cacheFiles: @Sendable ([File]) async throws -> Void
@@ -42,6 +42,7 @@ struct FileMetrics: Equatable {
 }
 
 // MARK: - Live API implementation
+
 extension CoreDataClient: DependencyKey {
   static let liveValue = CoreDataClient(
     getFiles: {
@@ -71,7 +72,7 @@ extension CoreDataClient: DependencyKey {
       // Use background context for heavy write operations to avoid blocking main thread
       let context = PersistenceController.shared.container.newBackgroundContext()
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-      
+
       try await context.perform {
         // Upsert each file (update existing or create new)
         for file in files {
@@ -85,7 +86,7 @@ extension CoreDataClient: DependencyKey {
       // Use background context for write operations
       let context = PersistenceController.shared.container.newBackgroundContext()
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-      
+
       try await context.perform {
         _ = FileMapper.toEntity(file, in: context)
         try context.save()
@@ -161,7 +162,7 @@ extension CoreDataClient: DependencyKey {
       // Also clear all FileEntity records from CoreData (use background context)
       let context = PersistenceController.shared.container.newBackgroundContext()
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-      
+
       do {
         try await context.perform {
           let request = NSFetchRequest<NSFetchRequestResult>(entityName: "FileEntity")
@@ -223,10 +224,12 @@ extension CoreDataClient: DependencyKey {
         var totalBytes: Int64 = 0
         for entity in downloadedFiles {
           if let urlString = entity.url,
-             let url = URL(string: urlString) {
+             let url = URL(string: urlString)
+          {
             let localURL = documentsPath.appendingPathComponent(url.lastPathComponent)
             if let attrs = try? FileManager.default.attributesOfItem(atPath: localURL.path),
-               let size = attrs[.size] as? Int64 {
+               let size = attrs[.size] as? Int64
+            {
               totalBytes += size
             }
           }
@@ -277,7 +280,9 @@ extension CoreDataClient: DependencyKey {
           metrics = existing
         } else {
           // Create singleton AppMetrics if doesn't exist
-          let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context)!
+          guard let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context) else {
+            fatalError("AppMetrics entity not found in model")
+          }
           metrics = NSManagedObject(entity: entity, insertInto: context)
           metrics.setValue(Int64(0), forKey: "playCount")
         }
@@ -315,6 +320,7 @@ extension CoreDataClient: DependencyKey {
 }
 
 // MARK: - Test/Preview implementation
+
 extension CoreDataClient {
   static let testValue = CoreDataClient(
     getFiles: { [] },
@@ -323,12 +329,12 @@ extension CoreDataClient {
     cacheFile: { _ in },
     updateFileUrl: { _, _ in },
     updateFileStatus: { _, _ in },
-    saveContext: { },
-    truncateFiles: { },
+    saveContext: {},
+    truncateFiles: {},
     deleteFile: { _ in },
     getMetrics: { .zero },
     markFileDownloaded: { _ in },
-    incrementPlayCount: { },
-    resetMetrics: { }
+    incrementPlayCount: {},
+    resetMetrics: {}
   )
 }

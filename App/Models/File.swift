@@ -1,7 +1,7 @@
 import CustomDump
 import Foundation
 
-struct File: Equatable, Identifiable, Codable, Sendable {
+struct File: Equatable, Identifiable, Codable {
   var fileId: String
   var key: String
   var publishDate: Date?
@@ -15,12 +15,14 @@ struct File: Equatable, Identifiable, Codable, Sendable {
   var status: FileStatus?
   var title: String?
   // Rich metadata fields (Issue #151)
-  var duration: Int?        // Video duration in seconds
-  var uploadDate: String?   // Upload date in YYYYMMDD format
-  var viewCount: Int?       // Number of views
+  var duration: Int? // Video duration in seconds
+  var uploadDate: String? // Upload date in YYYYMMDD format
+  var viewCount: Int? // Number of views
   var thumbnailUrl: String? // URL to video thumbnail
 
-  var id: String { fileId }
+  var id: String {
+    fileId
+  }
 
   enum CodingKeys: String, CodingKey {
     case fileId, key, publishDate, size, url
@@ -130,4 +132,3 @@ extension File: CustomDumpReflectable {
     )
   }
 }
-

@@ -1,0 +1,7 @@
+--swiftversion 5.0
+--indent 2
+--maxwidth 160
+--wraparguments before-first
+--wrapcollections before-first
+--trimwhitespace always
+--exclude APITypes/.build,.build,DerivedData,SourcePackages

@@ -1,7 +1,7 @@
-import UIKit
-import SwiftUI
 import AuthenticationServices
 import ComposableArchitecture
+import SwiftUI
+import UIKit
 import Valet
 
 // MARK: - Models
@@ -20,7 +20,8 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
   // Extract ID token (JWT) instead of authorization code
   // This reduces latency by 200-500ms by eliminating server-side token exchange
   guard let identityTokenData = credential.identityToken,
-        let idToken = String(data: identityTokenData, encoding: .utf8) else {
+        let idToken = String(data: identityTokenData, encoding: .utf8)
+  else {
     throw LoginFeatureError.invalidAuthorizationCredential
   }
 
@@ -35,8 +36,7 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
       lastName: credential.fullName?.familyName ?? ""
     )
     return (idToken, userData)
-  }
-  else {
+  } else {
     return (idToken, nil)
   }
 }
@@ -81,7 +81,7 @@ struct LoginFeature {
 
   private enum CancelID { case signIn }
 
-  func dispatchAuthCode(send: Send<Action>, result: ASAuthorization) async throws -> Void {
+  func dispatchAuthCode(send: Send<Action>, result: ASAuthorization) async throws {
     let data = try handleLoginSuccess(authorization: result)
     if let userData = data.userData {
       await send(.registrationResponse(Result {
@@ -136,7 +136,7 @@ struct LoginFeature {
       case let .registrationResponse(.success(response)):
         debugPrint("LoginFeature: registrationResponse success, body: \(String(describing: response.body))")
         state.isSigningIn = false
-        state.isCompletingRegistration = true  // Keep loading visible during token storage
+        state.isCompletingRegistration = true // Keep loading visible during token storage
         guard let token = response.body?.token else {
           state.isCompletingRegistration = false
           return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))

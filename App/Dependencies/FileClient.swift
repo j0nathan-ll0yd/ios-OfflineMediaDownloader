@@ -4,12 +4,14 @@ import Foundation
 @DependencyClient
 struct FileClient {
   var documentsDirectory: @Sendable () -> URL = {
-    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    URL.documentsDirectory
   }
+
   var filePath: @Sendable (_ url: URL) -> URL = { url in
-    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let documentsPath = URL.documentsDirectory
     return documentsPath.appendingPathComponent(url.lastPathComponent)
   }
+
   var fileExists: @Sendable (_ url: URL) -> Bool = { _ in false }
   var deleteFile: @Sendable (_ url: URL) async throws -> Void
   var moveFile: @Sendable (_ from: URL, _ to: URL) throws -> Void
@@ -28,22 +30,23 @@ enum FileClientError: Error {
 }
 
 // MARK: - Live API implementation
+
 extension FileClient: DependencyKey {
   static let liveValue = FileClient(
     documentsDirectory: {
-      FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      URL.documentsDirectory
     },
     filePath: { url in
-      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let documentsPath = URL.documentsDirectory
       return documentsPath.appendingPathComponent(url.lastPathComponent)
     },
     fileExists: { url in
-      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let documentsPath = URL.documentsDirectory
       let fileURL = documentsPath.appendingPathComponent(url.lastPathComponent)
       return FileManager.default.fileExists(atPath: fileURL.path)
     },
     deleteFile: { url in
-      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let documentsPath = URL.documentsDirectory
       let fileURL = documentsPath.appendingPathComponent(url.lastPathComponent)
       if FileManager.default.fileExists(atPath: fileURL.path) {
         do {

@@ -1,19 +1,17 @@
-import Foundation
-import Testing
 import ComposableArchitecture
+import Foundation
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("FileListFeature Tests")
 struct FileListFeatureTests {
-
   // MARK: - Loading Tests
 
   @MainActor
   @Test("onAppear loads files from CoreData without loading indicator")
-  func onAppearLoadsFiles() async throws {
+  func onAppearLoadsFiles() async {
     var state = FileListFeature.State()
-    state.isAuthenticated = true  // User is authenticated
-    state.isRegistered = true     // Prevent auto-refresh (only unregistered users auto-refresh)
+    state.isAuthenticated = true // User is authenticated
+    state.isRegistered = true // Prevent auto-refresh (only unregistered users auto-refresh)
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -33,10 +31,10 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Local files preserve download state on reload")
-  func preserveDownloadStateOnReload() async throws {
+  func preserveDownloadStateOnReload() async {
     var state = FileListFeature.State()
-    state.isAuthenticated = true  // User is authenticated
-    state.isRegistered = true     // Prevent auto-refresh (only unregistered users auto-refresh)
+    state.isAuthenticated = true // User is authenticated
+    state.isRegistered = true // Prevent auto-refresh (only unregistered users auto-refresh)
     var existingCellState = FileCellFeature.State(file: TestData.sampleFile)
     existingCellState.isDownloaded = true
     existingCellState.downloadProgress = 1.0
@@ -62,7 +60,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Refresh fetches from server and caches")
-  func refreshFetchesFromServer() async throws {
+  func refreshFetchesFromServer() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
@@ -91,7 +89,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Refresh removes pending IDs for available files")
-  func refreshRemovesPendingIds() async throws {
+  func refreshRemovesPendingIds() async {
     var state = FileListFeature.State()
     state.pendingFileIds = [TestData.sampleFile.fileId, "other-pending-id"]
 
@@ -127,7 +125,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Network error shows alert with retry button")
-  func networkErrorShowsAlert() async throws {
+  func networkErrorShowsAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
@@ -174,7 +172,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Unauthorized error triggers auth required delegate")
-  func unauthorizedTriggersDel() async throws {
+  func unauthorizedTriggersDel() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
@@ -208,11 +206,15 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Server error with message shows alert")
-  func serverErrorShowsAlert() async throws {
+  func serverErrorShowsAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(message: "Database unavailable", requestId: "test-request-id", correlationId: "test-correlation-id") }
+      $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(
+        message: "Database unavailable",
+        requestId: "test-request-id",
+        correlationId: "test-correlation-id"
+      ) }
     }
 
     await store.send(.refreshButtonTapped) {
@@ -252,7 +254,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("ShowError action creates alert state")
-  func showErrorCreatesAlert() async throws {
+  func showErrorCreatesAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     }
@@ -272,7 +274,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Alert dismiss clears alert state")
-  func alertDismissClearsState() async throws {
+  func alertDismissClearsState() async {
     var state = FileListFeature.State()
     state.alert = AlertState {
       TextState("Test")
@@ -293,7 +295,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Alert retry triggers refresh")
-  func alertRetryTriggersRefresh() async throws {
+  func alertRetryTriggersRefresh() async {
     var state = FileListFeature.State()
     state.alert = AlertState {
       TextState("No Connection")
@@ -337,7 +339,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Add button shows confirmation dialog when authenticated")
-  func addButtonShowsConfirmation() async throws {
+  func addButtonShowsConfirmation() async {
     var state = FileListFeature.State()
     state.isAuthenticated = true
 
@@ -356,7 +358,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Add file success adds pending file ID")
-  func addFileAddsPendingId() async throws {
+  func addFileAddsPendingId() async {
     var state = FileListFeature.State()
     state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
 
@@ -378,7 +380,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Add file auth error triggers delegate")
-  func addFileAuthError() async throws {
+  func addFileAuthError() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     }
@@ -389,12 +391,16 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Add file server error shows alert")
-  func addFileServerError() async throws {
+  func addFileServerError() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(message: "Invalid URL", requestId: "test-request-id", correlationId: "test-correlation-id"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(
+      message: "Invalid URL",
+      requestId: "test-request-id",
+      correlationId: "test-correlation-id"
+    ))))
 
     await store.receive(\.showError) {
       $0.alert = AlertState {
@@ -413,13 +419,13 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("File added from push inserts and sorts by date")
-  func fileAddedFromPushSorted() async throws {
+  func fileAddedFromPushSorted() async {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.downloadedFile)]
 
     // New file with more recent date
     var newFile = TestData.sampleFile
-    newFile.publishDate = Date()  // Now
+    newFile.publishDate = Date() // Now
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -440,7 +446,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("File added from push removes from pending IDs")
-  func fileAddedRemovesPending() async throws {
+  func fileAddedRemovesPending() async {
     var state = FileListFeature.State()
     state.pendingFileIds = [TestData.sampleFile.fileId, "other-id"]
 
@@ -462,7 +468,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("File added from push updates existing file metadata")
-  func fileAddedUpdatesExisting() async throws {
+  func fileAddedUpdatesExisting() async {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
@@ -485,7 +491,7 @@ struct FileListFeatureTests {
     let pendingFile = TestData.pendingFile
     state.files = [FileCellFeature.State(file: pendingFile)]
 
-    let newUrl = URL(string: "https://example.com/new-url.mp4")!
+    let newUrl = try #require(URL(string: "https://example.com/new-url.mp4"))
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -498,7 +504,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Refresh file state triggers onAppear for specific cell")
-  func refreshFileState() async throws {
+  func refreshFileState() async {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
@@ -523,7 +529,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Delete files removes from state")
-  func deleteFilesRemoves() async throws {
+  func deleteFilesRemoves() async {
     var state = FileListFeature.State()
     state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
       FileCellFeature.State(file: $0)
@@ -540,7 +546,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("File deleted delegate removes file from list", .disabled("Flaky test - passes alone but fails in suite, TCA/Swift Testing interaction issue"))
-  func fileDeletedDelegate() async throws {
+  func fileDeletedDelegate() async {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.downloadedFile)]
 
@@ -557,14 +563,14 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Play file delegate sets playing file")
-  func playFileDelegate() async throws {
+  func playFileDelegate() async {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
-      $0.coreDataClient.incrementPlayCount = { }
+      $0.coreDataClient.incrementPlayCount = {}
     }
 
     await store.send(.files(.element(id: TestData.sampleFile.fileId, action: .delegate(.playFile(TestData.sampleFile))))) {
@@ -578,7 +584,7 @@ struct FileListFeatureTests {
 
   @MainActor
   @Test("Dismiss player clears playing file")
-  func dismissPlayerClears() async throws {
+  func dismissPlayerClears() async {
     var state = FileListFeature.State()
     state.playingFile = TestData.sampleFile
 

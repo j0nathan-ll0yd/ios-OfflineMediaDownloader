@@ -1,5 +1,5 @@
 import Foundation
 
-struct Device: Equatable, Codable, Sendable {
+struct Device: Equatable, Codable {
   let endpointArn: String
 }

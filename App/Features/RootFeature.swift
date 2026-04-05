@@ -1,12 +1,12 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 import UserNotifications
 
 // MARK: - Notification Setup Helper
 
 func setupNotifications() {
   let center = UNUserNotificationCenter.current()
-  center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+  center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
     guard granted else { return }
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       guard settings.authorizationStatus == .authorized else { return }
@@ -17,8 +17,8 @@ func setupNotifications() {
   }
 }
 
-// Token refresh threshold - refresh if token expires within this time
-private let tokenRefreshThreshold: TimeInterval = 5 * 60  // 5 minutes
+/// Token refresh threshold - refresh if token expires within this time
+private let tokenRefreshThreshold: TimeInterval = 5 * 60 // 5 minutes
 
 // MARK: - RootFeature
 
@@ -32,21 +32,26 @@ struct RootFeature {
     var isLaunching: Bool = true
     var launchStatus: String = "Starting..."
     var isAuthenticated: Bool = false
-    var login: LoginFeature.State = LoginFeature.State()
-    var main: MainFeature.State = MainFeature.State()
+    var login: LoginFeature.State = .init()
+    var main: MainFeature.State = .init()
 
     // Download initiation tracking - blocks UI until first progress received
     var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
-    var isBlockingForDownloadInitiation: Bool { !initiatingDownloads.isEmpty }
+    var isBlockingForDownloadInitiation: Bool {
+      !initiatingDownloads.isEmpty
+    }
 
     struct DownloadInitiation: Equatable, Identifiable {
-      var id: String { fileId }
+      var id: String {
+        fileId
+      }
+
       let fileId: String
       let title: String
     }
 
     #if DEBUG
-    @Presents var diagnostic: DiagnosticFeature.State?
+      @Presents var diagnostic: DiagnosticFeature.State?
     #endif
   }
 
@@ -73,8 +78,8 @@ struct RootFeature {
     case main(MainFeature.Action)
     case requestDeviceRegistration
     #if DEBUG
-    case shakeDetected
-    case diagnostic(PresentationAction<DiagnosticFeature.Action>)
+      case shakeDetected
+      case diagnostic(PresentationAction<DiagnosticFeature.Action>)
     #endif
   }
 
@@ -106,9 +111,9 @@ struct RootFeature {
       case let .authStateResponse(authState):
         logger.info(.lifecycle, "Auth state determined", metadata: [
           "loginStatus": "\(authState.loginStatus)",
-          "registrationStatus": "\(authState.registrationStatus)"
+          "registrationStatus": "\(authState.registrationStatus)",
         ])
-        state.isLaunching = false  // Now safe to show main view
+        state.isLaunching = false // Now safe to show main view
         state.login.registrationStatus = authState.registrationStatus
         state.isAuthenticated = authState.isAuthenticated
         // Propagate auth state to MainFeature
@@ -147,7 +152,8 @@ struct RootFeature {
       case let .deviceRegistrationResponse(.failure(error)):
         // Check if this is an auth error - user can continue browsing as guest
         if let serverError = error as? ServerClientError,
-           case .unauthorized = serverError {
+           case .unauthorized = serverError
+        {
           state.isAuthenticated = false
           state.main.isAuthenticated = false
           state.main.fileList.isAuthenticated = false
@@ -203,7 +209,8 @@ struct RootFeature {
       case let .tokenRefreshResponse(.failure(error)):
         // If refresh fails with 401, token is invalid - trigger re-auth
         if let serverError = error as? ServerClientError,
-           case .unauthorized = serverError {
+           case .unauthorized = serverError
+        {
           logger.warning(.auth, "Token refresh failed with 401 - session expired")
           return .send(.main(.delegate(.authenticationRequired)))
         }
@@ -262,6 +269,7 @@ struct RootFeature {
         return .none
 
       // MARK: - Push Notification Handling
+
       case let .receivedPushNotification(userInfo):
         let notificationType = PushNotificationType.parse(from: userInfo)
         return .send(.processedPushNotification(notificationType))
@@ -399,20 +407,20 @@ struct RootFeature {
         return .none
 
       #if DEBUG
-      case .shakeDetected:
-        state.diagnostic = DiagnosticFeature.State()
-        return .none
+        case .shakeDetected:
+          state.diagnostic = DiagnosticFeature.State()
+          return .none
 
-      case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
-        state.isAuthenticated = false
-        state.main.isAuthenticated = false
-        state.main.fileList.isAuthenticated = false
-        state.login.loginStatus = .unauthenticated
-        state.diagnostic = nil  // Dismiss the diagnostic sheet
-        return .send(.main(.fileList(.clearAllFiles)))
+        case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
+          state.isAuthenticated = false
+          state.main.isAuthenticated = false
+          state.main.fileList.isAuthenticated = false
+          state.login.loginStatus = .unauthenticated
+          state.diagnostic = nil // Dismiss the diagnostic sheet
+          return .send(.main(.fileList(.clearAllFiles)))
 
-      case .diagnostic:
-        return .none
+        case .diagnostic:
+          return .none
       #endif
       }
     }
@@ -421,8 +429,8 @@ struct RootFeature {
     }
     #if DEBUG
     .ifLet(\.$diagnostic, action: \.diagnostic) {
-      DiagnosticFeature()
-    }
+        DiagnosticFeature()
+      }
     #endif
   }
 }

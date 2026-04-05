@@ -1,6 +1,6 @@
 import Foundation
-import OpenAPIRuntime
 import HTTPTypes
+import OpenAPIRuntime
 
 /// Middleware that adds correlation ID header to requests and tracks request lifecycle
 struct CorrelationMiddleware: ClientMiddleware {
@@ -19,13 +19,16 @@ struct CorrelationMiddleware: ClientMiddleware {
 
     // Generate correlation ID and start tracking
     let correlationId = await correlationClient.startRequest(operationID, request.method.rawValue)
-    request.headerFields[.init("X-Correlation-ID")!] = correlationId.uuidString
+    guard let correlationIdField = HTTPField.Name("X-Correlation-ID") else {
+      fatalError("X-Correlation-ID is a valid HTTP field name")
+    }
+    request.headerFields[correlationIdField] = correlationId.uuidString
 
     // Log outgoing request
     logger.info(.network, "Request started: \(operationID)", metadata: [
       "correlationId": correlationId.uuidString,
       "method": request.method.rawValue,
-      "path": request.path ?? "unknown"
+      "path": request.path ?? "unknown",
     ])
 
     do {
@@ -33,7 +36,10 @@ struct CorrelationMiddleware: ClientMiddleware {
       let duration = Date().timeIntervalSince(startTime)
 
       // Extract server request ID from response headers if present
-      let serverRequestId = response.headerFields[.init("x-amzn-requestid")!]
+      guard let requestIdField = HTTPField.Name("x-amzn-requestid") else {
+        fatalError("x-amzn-requestid is a valid HTTP field name")
+      }
+      let serverRequestId = response.headerFields[requestIdField]
 
       // Record success
       await correlationClient.completeRequest(
@@ -48,7 +54,7 @@ struct CorrelationMiddleware: ClientMiddleware {
         "correlationId": correlationId.uuidString,
         "statusCode": "\(response.status.code)",
         "duration": String(format: "%.2fs", duration),
-        "serverRequestId": serverRequestId ?? "none"
+        "serverRequestId": serverRequestId ?? "none",
       ])
 
       return (response, responseBody)
@@ -67,7 +73,7 @@ struct CorrelationMiddleware: ClientMiddleware {
       logger.error(.network, "Request failed: \(operationID)", metadata: [
         "correlationId": correlationId.uuidString,
         "error": error.localizedDescription,
-        "duration": String(format: "%.2fs", duration)
+        "duration": String(format: "%.2fs", duration),
       ])
 
       throw error

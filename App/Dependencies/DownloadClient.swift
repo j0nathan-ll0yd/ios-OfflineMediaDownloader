@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
 
-enum DownloadProgress: Equatable, Sendable {
+enum DownloadProgress: Equatable {
   case progress(percent: Int)
   case completed(localURL: URL)
   case failed(String)
@@ -12,6 +12,7 @@ struct DownloadClient {
   var downloadFile: @Sendable (_ url: URL, _ expectedSize: Int64) -> AsyncStream<DownloadProgress> = { _, _ in
     AsyncStream { _ in }
   }
+
   var cancelDownload: @Sendable (_ url: URL) async -> Void
 }
 
@@ -23,6 +24,7 @@ extension DependencyValues {
 }
 
 // MARK: - Download Manager (handles URLSession delegate)
+
 actor DownloadManager: NSObject {
   static let shared = DownloadManager()
 
@@ -113,7 +115,7 @@ actor DownloadManager: NSObject {
   // MARK: - Background Session Support
 
   func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
-    self.backgroundCompletionHandler = handler
+    backgroundCompletionHandler = handler
   }
 
   private func callCompletionHandler() {
@@ -123,16 +125,19 @@ actor DownloadManager: NSObject {
 }
 
 // MARK: - URLSession Delegate
+
 extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   // MARK: Authentication Challenge (Certificate Pinning)
+
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     didReceive challenge: URLAuthenticationChallenge,
     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
   ) {
     // Only handle server trust challenges
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-          let serverTrust = challenge.protectionSpace.serverTrust else {
+          let serverTrust = challenge.protectionSpace.serverTrust
+    else {
       completionHandler(.performDefaultHandling, nil)
       return
     }
@@ -160,8 +165,9 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   }
 
   // MARK: Download Completion
+
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     downloadTask: URLSessionDownloadTask,
     didFinishDownloadingTo location: URL
   ) {
@@ -170,7 +176,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     // CRITICAL: Must move file synchronously before this callback returns!
     // The temp file is deleted immediately after this method returns.
     let fileManager = FileManager.default
-    let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let documentsPath = URL.documentsDirectory
     let destinationURL = documentsPath.appendingPathComponent(originalURL.lastPathComponent)
 
     print("📥 Download complete, moving file:")
@@ -197,7 +203,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   }
 
   nonisolated func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     task: URLSessionTask,
     didCompleteWithError error: Error?
   ) {
@@ -209,7 +215,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     }
   }
 
-  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
     print("📥 URLSession background events finished")
     Task {
       await self.callCompletionHandler()
@@ -218,6 +224,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
 }
 
 // MARK: - Live API implementation
+
 extension DownloadClient: DependencyKey {
   static let liveValue = DownloadClient(
     downloadFile: { url, expectedSize in
@@ -238,6 +245,7 @@ extension DownloadClient: DependencyKey {
 }
 
 // MARK: - Test implementation
+
 extension DownloadClient {
   static let testValue = DownloadClient(
     downloadFile: { _, _ in

@@ -1,16 +1,14 @@
-import Foundation
-import Testing
 import ComposableArchitecture
+import Foundation
 @testable import OfflineMediaDownloader
+import Testing
 
-@Suite("MainFeature Tests")
 struct MainFeatureTests {
-
   // MARK: - Tab Selection Tests
 
   @MainActor
   @Test("Tab selection updates selected tab to account")
-  func tabSelectionAccount() async throws {
+  func tabSelectionAccount() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
     }
@@ -22,7 +20,7 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("Tab selection updates selected tab to files")
-  func tabSelectionFiles() async throws {
+  func tabSelectionFiles() async {
     var state = MainFeature.State()
     state.selectedTab = .account
 
@@ -39,7 +37,7 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("Auth required from file list propagates to delegate")
-  func authRequiredFromFileList() async throws {
+  func authRequiredFromFileList() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
     }
@@ -52,7 +50,7 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("FileList actions pass through without state change")
-  func fileListActionsPassThrough() async throws {
+  func fileListActionsPassThrough() async {
     var state = MainFeature.State()
     state.isAuthenticated = true
     state.fileList.isAuthenticated = true
@@ -69,7 +67,7 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("Diagnostic actions pass through without state change")
-  func diagnosticActionsPassThrough() async throws {
+  func diagnosticActionsPassThrough() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
     }
@@ -83,21 +81,21 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("Initial state has files tab selected")
-  func initialStateFilesTab() async throws {
+  func initialStateFilesTab() {
     let state = MainFeature.State()
     #expect(state.selectedTab == .files)
   }
 
   @MainActor
   @Test("Initial state has empty file list")
-  func initialStateEmptyFileList() async throws {
+  func initialStateEmptyFileList() {
     let state = MainFeature.State()
     #expect(state.fileList.files.isEmpty)
   }
 
   @MainActor
   @Test("Initial state has empty keychain items in diagnostic")
-  func initialStateEmptyDiagnostic() async throws {
+  func initialStateEmptyDiagnostic() {
     let state = MainFeature.State()
     #expect(state.diagnostic.keychainItems.isEmpty)
   }
@@ -106,7 +104,7 @@ struct MainFeatureTests {
 
   @MainActor
   @Test("Tab enum is Equatable and Sendable")
-  func tabEnumConformance() async throws {
+  func tabEnumConformance() {
     let tab1: MainFeature.State.Tab = .files
     let tab2: MainFeature.State.Tab = .files
     let tab3: MainFeature.State.Tab = .account

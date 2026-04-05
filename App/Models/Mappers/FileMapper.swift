@@ -1,11 +1,10 @@
-import Foundation
-import CoreData
 import APITypes
+import CoreData
+import Foundation
 
 /// FileMapper handles conversion between different representations of File data.
 /// This keeps the domain File model clean and independent of infrastructure concerns.
 enum FileMapper {
-
   // MARK: - CoreData Mapping
 
   /// Convert a CoreData FileEntity to domain File model

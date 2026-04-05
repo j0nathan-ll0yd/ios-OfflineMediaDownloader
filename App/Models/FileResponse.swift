@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct ErrorDetail: Codable, Sendable {
+struct ErrorDetail: Codable {
   var message: String
   var code: String?
 }
 
-struct FileResponse: Codable, Sendable {
+struct FileResponse: Codable {
   var body: FileList?
   var error: ErrorDetail?
   var requestId: String

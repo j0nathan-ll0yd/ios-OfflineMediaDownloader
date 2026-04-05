@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct EndpointResponse: Codable, Sendable {
+struct EndpointResponse: Codable {
   var endpointArn: String
 }
 

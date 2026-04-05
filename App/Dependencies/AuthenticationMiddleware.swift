@@ -1,7 +1,7 @@
-import Foundation
-import OpenAPIRuntime
-import HTTPTypes
 import ComposableArchitecture
+import Foundation
+import HTTPTypes
+import OpenAPIRuntime
 
 /// Middleware that intercepts API requests and adds JWT authentication headers
 struct AuthenticationMiddleware: ClientMiddleware {
@@ -11,7 +11,7 @@ struct AuthenticationMiddleware: ClientMiddleware {
     _ request: HTTPTypes.HTTPRequest,
     body: OpenAPIRuntime.HTTPBody?,
     baseURL: URL,
-    operationID: String,
+    operationID _: String,
     next: (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request

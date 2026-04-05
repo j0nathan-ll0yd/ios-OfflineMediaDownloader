@@ -3,7 +3,7 @@ import UIKit
 
 /// Client for caching thumbnail images to disk
 @DependencyClient
-struct ThumbnailCacheClient: Sendable {
+struct ThumbnailCacheClient {
   /// Get thumbnail for a file, fetching from network if not cached
   var getThumbnail: @Sendable (_ fileId: String, _ url: URL) async -> UIImage?
   /// Check if thumbnail exists in cache
@@ -34,7 +34,8 @@ extension ThumbnailCacheClient: DependencyKey {
       // Check if cached
       if fileManager.fileExists(atPath: cachedPath.path) {
         if let data = try? Data(contentsOf: cachedPath),
-           let image = UIImage(data: data) {
+           let image = UIImage(data: data)
+        {
           return image
         }
       }
@@ -45,7 +46,8 @@ extension ThumbnailCacheClient: DependencyKey {
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200,
-              let image = UIImage(data: data) else {
+              let image = UIImage(data: data)
+        else {
           return nil
         }
 
@@ -85,14 +87,14 @@ extension ThumbnailCacheClient {
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: { }
+    clearCache: {}
   )
 
   static let previewValue = ThumbnailCacheClient(
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: { }
+    clearCache: {}
   )
 }
 

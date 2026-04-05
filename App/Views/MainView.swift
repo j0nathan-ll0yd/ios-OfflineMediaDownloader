@@ -1,5 +1,5 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct MainView: View {
   @Bindable var store: StoreOf<MainFeature>
@@ -29,7 +29,7 @@ struct MainView: View {
         ActiveDownloadsBanner(
           store: store.scope(state: \.activeDownloads, action: \.activeDownloads)
         )
-        .padding(.bottom, 49)  // Tab bar height
+        .padding(.bottom, 49) // Tab bar height
       }
     }
     .preferredColorScheme(.dark)

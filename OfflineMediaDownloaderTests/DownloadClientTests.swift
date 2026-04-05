@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 import ComposableArchitecture
+import Foundation
 @testable import OfflineMediaDownloader
+import Testing
 
 // MARK: - Mock URLProtocol for Testing
 
@@ -10,7 +10,7 @@ final class MockURLProtocol: URLProtocol {
   nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data?))?
   nonisolated(unsafe) static var progressHandler: ((URLRequest, @escaping (Int64, Int64) -> Void) -> Void)?
 
-  override class func canInit(with request: URLRequest) -> Bool {
+  override class func canInit(with _: URLRequest) -> Bool {
     return true
   }
 
@@ -46,15 +46,13 @@ enum MockDownloadError: Error {
   case cancelled
 }
 
-@Suite("DownloadClient Tests")
 struct DownloadClientTests {
-
   // MARK: - DownloadProgress Enum Tests
 
   @Test("DownloadProgress.progress stores correct percent")
   func downloadProgressPercent() {
     let progress = DownloadProgress.progress(percent: 50)
-    if case .progress(let percent) = progress {
+    if case let .progress(percent) = progress {
       #expect(percent == 50)
     } else {
       Issue.record("Expected progress case")
@@ -65,7 +63,7 @@ struct DownloadClientTests {
   func downloadProgressCompleted() {
     let url = URL(fileURLWithPath: "/tmp/test.mp4")
     let progress = DownloadProgress.completed(localURL: url)
-    if case .completed(let localURL) = progress {
+    if case let .completed(localURL) = progress {
       #expect(localURL == url)
     } else {
       Issue.record("Expected completed case")
@@ -75,7 +73,7 @@ struct DownloadClientTests {
   @Test("DownloadProgress.failed stores error message")
   func downloadProgressFailed() {
     let progress = DownloadProgress.failed("Network error")
-    if case .failed(let message) = progress {
+    if case let .failed(message) = progress {
       #expect(message == "Network error")
     } else {
       Issue.record("Expected failed case")
@@ -104,9 +102,9 @@ struct DownloadClientTests {
   // MARK: - DownloadClient testValue Tests
 
   @Test("DownloadClient testValue emits expected progress sequence")
-  func testValueProgressSequence() async {
+  func valueProgressSequence() async throws {
     let client = DownloadClient.testValue
-    let url = URL(string: "https://example.com/video.mp4")!
+    let url = try #require(URL(string: "https://example.com/video.mp4"))
 
     var progressValues: [DownloadProgress] = []
     for await progress in client.downloadFile(url, 1000) {
@@ -116,21 +114,21 @@ struct DownloadClientTests {
     #expect(progressValues.count == 3)
 
     // Check first progress (50%)
-    if case .progress(let percent) = progressValues[0] {
+    if case let .progress(percent) = progressValues[0] {
       #expect(percent == 50)
     } else {
       Issue.record("Expected progress at index 0")
     }
 
     // Check second progress (100%)
-    if case .progress(let percent) = progressValues[1] {
+    if case let .progress(percent) = progressValues[1] {
       #expect(percent == 100)
     } else {
       Issue.record("Expected progress at index 1")
     }
 
     // Check completed
-    if case .completed(let localURL) = progressValues[2] {
+    if case let .completed(localURL) = progressValues[2] {
       #expect(localURL.path == "/tmp/test.mp4")
     } else {
       Issue.record("Expected completed at index 2")
@@ -138,9 +136,9 @@ struct DownloadClientTests {
   }
 
   @Test("DownloadClient testValue cancelDownload does not throw")
-  func testValueCancelDownload() async {
+  func valueCancelDownload() async throws {
     let client = DownloadClient.testValue
-    let url = URL(string: "https://example.com/video.mp4")!
+    let url = try #require(URL(string: "https://example.com/video.mp4"))
 
     // Should complete without error
     await client.cancelDownload(url)
@@ -166,7 +164,7 @@ struct DownloadClientTests {
   // MARK: - Custom Mock Client Tests
 
   @Test("Custom mock client can simulate failure")
-  func customMockClientFailure() async {
+  func customMockClientFailure() async throws {
     let mockClient = DownloadClient(
       downloadFile: { _, _ in
         AsyncStream { continuation in
@@ -178,7 +176,7 @@ struct DownloadClientTests {
       cancelDownload: { _ in }
     )
 
-    let url = URL(string: "https://example.com/video.mp4")!
+    let url = try #require(URL(string: "https://example.com/video.mp4"))
     var progressValues: [DownloadProgress] = []
 
     for await progress in mockClient.downloadFile(url, 1000) {
@@ -187,7 +185,7 @@ struct DownloadClientTests {
 
     #expect(progressValues.count == 2)
 
-    if case .failed(let message) = progressValues[1] {
+    if case let .failed(message) = progressValues[1] {
       #expect(message == "Connection lost")
     } else {
       Issue.record("Expected failed case")
@@ -195,7 +193,7 @@ struct DownloadClientTests {
   }
 
   @Test("Custom mock client can simulate slow progress")
-  func customMockClientSlowProgress() async {
+  func customMockClientSlowProgress() async throws {
     let mockClient = DownloadClient(
       downloadFile: { _, _ in
         AsyncStream { continuation in
@@ -209,7 +207,7 @@ struct DownloadClientTests {
       cancelDownload: { _ in }
     )
 
-    let url = URL(string: "https://example.com/video.mp4")!
+    let url = try #require(URL(string: "https://example.com/video.mp4"))
     var progressValues: [DownloadProgress] = []
 
     for await progress in mockClient.downloadFile(url, 1000) {
@@ -254,12 +252,12 @@ struct DownloadClientTests {
 }
 
 // MARK: - URLProtocol Based Integration Tests
+
 // Note: These tests use .serialized to ensure they run sequentially,
 // avoiding conflicts with URLProtocol's static handler pattern.
 
-@Suite("DownloadManager Integration Tests", .serialized)
+@Suite(.serialized)
 struct DownloadManagerIntegrationTests {
-
   @Test("MockURLProtocol can intercept requests")
   func mockURLProtocolIntercepts() async throws {
     defer {
@@ -284,17 +282,17 @@ struct DownloadManagerIntegrationTests {
     let session = URLSession(configuration: config)
 
     // Make request
-    let url = URL(string: "https://example.com/test.mp4")!
+    let url = try #require(URL(string: "https://example.com/test.mp4"))
     let (data, response) = try await session.data(from: url)
 
     // Verify
-    let httpResponse = response as! HTTPURLResponse
+    let httpResponse = try #require(response as? HTTPURLResponse)
     #expect(httpResponse.statusCode == 200)
     #expect(String(data: data, encoding: .utf8) == "test content")
   }
 
   @Test("MockURLProtocol can simulate errors")
-  func mockURLProtocolSimulatesError() async {
+  func mockURLProtocolSimulatesError() async throws {
     defer {
       MockURLProtocol.requestHandler = nil
       MockURLProtocol.progressHandler = nil
@@ -311,7 +309,7 @@ struct DownloadManagerIntegrationTests {
     let session = URLSession(configuration: config)
 
     // Make request and expect error
-    let url = URL(string: "https://example.com/test.mp4")!
+    let url = try #require(URL(string: "https://example.com/test.mp4"))
     do {
       _ = try await session.data(from: url)
       Issue.record("Expected error to be thrown")
