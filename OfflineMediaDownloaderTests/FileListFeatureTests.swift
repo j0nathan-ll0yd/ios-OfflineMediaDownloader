@@ -4,6 +4,7 @@ import Foundation
 import OrderedCollections
 import Testing
 
+@Suite(.serialized)
 struct FileListFeatureTests {
   // MARK: - Loading Tests
 

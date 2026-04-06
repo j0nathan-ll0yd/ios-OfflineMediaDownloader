@@ -4,6 +4,7 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct DefaultFilesFeatureTests {
   // MARK: - onAppear Tests
 

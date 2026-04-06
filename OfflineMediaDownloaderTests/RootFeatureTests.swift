@@ -4,6 +4,7 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct RootFeatureTests {
   // MARK: - Launch Flow Tests
 

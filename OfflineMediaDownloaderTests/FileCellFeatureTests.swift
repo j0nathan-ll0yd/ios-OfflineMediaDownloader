@@ -4,6 +4,7 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct FileCellFeatureTests {
   // MARK: - File Existence Tests
 

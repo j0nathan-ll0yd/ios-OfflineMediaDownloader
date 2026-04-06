@@ -3,6 +3,7 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct LoginFeatureTests {
   // MARK: - Login Success Tests
 
