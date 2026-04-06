@@ -8,6 +8,7 @@ import Testing
 enum MiddlewareTests {
   // MARK: - APIKeyMiddleware Tests
 
+  @MainActor
   struct APIKeyMiddlewareTests {
     @Test("Adds API key as query parameter to path without existing query")
     func addsApiKeyToCleanPath() async {
@@ -84,6 +85,7 @@ enum MiddlewareTests {
 
   // MARK: - AuthenticationMiddleware Tests
 
+  @MainActor
   struct AuthenticationMiddlewareTests {
     @Test("Adds Bearer token header when token exists")
     func addsBearerTokenWhenExists() async {
@@ -189,6 +191,7 @@ enum MiddlewareTests {
 
   // MARK: - CorrelationMiddleware Tests
 
+  @MainActor
   struct CorrelationMiddlewareTests {
     @Test("Adds X-Correlation-ID header to request")
     func addsCorrelationIdHeader() async {
