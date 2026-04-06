@@ -17,9 +17,9 @@ struct DefaultFilesFeatureTests {
       $0.logger = TestData.noopLogger
     }
 
-    await store.send(.onAppear) {
-      $0.isLoadingFile = true
-    }
+    await store.send(.onAppear)
+    // isLoadingFile is already true by default in State init;
+    // onAppear sets it to true again (no-op), so no state change expected
   }
 
   @MainActor

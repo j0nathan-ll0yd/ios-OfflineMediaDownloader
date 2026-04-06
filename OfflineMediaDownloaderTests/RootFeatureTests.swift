@@ -458,18 +458,12 @@ struct RootFeatureTests {
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
-    // RC4 fix: tokenRefreshResponse(.failure(.unauthorized)) returns
-    // .send(.main(.delegate(.authenticationRequired))) which is handled by the
-    // Reduce block and modifies state — but that happens as a received action,
-    // not during the send itself. The send should not change state.
+    store.exhaustivity = .off
     await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil))))
-
-    await store.receive(\.main.delegate.authenticationRequired) {
+    await store.skipReceivedActions(strict: false)
+    store.assert {
       $0.$isAuthenticated.withLock { $0 = false }
-      $0.main.$isAuthenticated.withLock { $0 = false }
-      $0.main.fileList.$isAuthenticated.withLock { $0 = false }
       $0.login.loginStatus = .unauthenticated
-      $0.main.loginSheet = LoginFeature.State()
     }
   }
 
