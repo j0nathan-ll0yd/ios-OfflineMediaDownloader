@@ -2,7 +2,7 @@ import CorrelationClient
 import Foundation
 import HTTPTypes
 import LoggerClient
-import OpenAPIRuntime
+@preconcurrency import OpenAPIRuntime
 
 /// Middleware that adds correlation ID header to requests and tracks request lifecycle
 struct CorrelationMiddleware: ClientMiddleware {

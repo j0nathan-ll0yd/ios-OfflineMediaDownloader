@@ -19,7 +19,6 @@ enum MiddlewareTests {
 
   // MARK: - APIKeyMiddleware Tests
 
-  @MainActor
   struct APIKeyMiddlewareTests {
     @Test("Adds API key as query parameter to path without existing query")
     func addsApiKeyToCleanPath() async {
@@ -82,7 +81,7 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
+        ) { @Sendable modifiedRequest, _, _ in
           capturedPath.setValue(modifiedRequest.path)
           return (HTTPResponse(status: .ok), nil)
         }
@@ -96,7 +95,6 @@ enum MiddlewareTests {
 
   // MARK: - AuthenticationMiddleware Tests
 
-  @MainActor
   struct AuthenticationMiddlewareTests {
     @Test("Adds Bearer token header when token exists")
     func addsBearerTokenWhenExists() async {
@@ -188,7 +186,7 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
+        ) { @Sendable modifiedRequest, _, _ in
           capturedHeader.setValue(modifiedRequest.headerFields[.authorization])
           return (HTTPResponse(status: .ok), nil)
         }
@@ -202,7 +200,6 @@ enum MiddlewareTests {
 
   // MARK: - CorrelationMiddleware Tests
 
-  @MainActor
   struct CorrelationMiddlewareTests {
     @Test("Adds X-Correlation-ID header to request")
     func addsCorrelationIdHeader() async {
@@ -268,7 +265,7 @@ enum MiddlewareTests {
           body: nil,
           baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
-        ) { _, _, _ in
+        ) { @Sendable _, _, _ in
           (HTTPResponse(status: .ok), nil)
         }
       } catch {
@@ -321,7 +318,7 @@ enum MiddlewareTests {
           body: nil,
           baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
-        ) { _, _, _ in
+        ) { @Sendable _, _, _ in
           throw TestError()
         }
       } catch {
@@ -342,7 +339,7 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
+        ) { @Sendable modifiedRequest, _, _ in
           capturedHeader.setValue(modifiedRequest.headerFields[.init("X-Correlation-ID")!])
           return (HTTPResponse(status: .ok), nil)
         }

@@ -1,8 +1,7 @@
-import ComposableArchitecture
 import Foundation
 import HTTPTypes
 import LoggerClient
-import OpenAPIRuntime
+@preconcurrency import OpenAPIRuntime
 
 // MARK: - CRITICAL: API Key Authentication
 
@@ -13,6 +12,7 @@ import OpenAPIRuntime
 /// Middleware that adds the API key as a query parameter to all requests.
 struct APIKeyMiddleware: ClientMiddleware {
   let apiKey: String
+  let logger: LoggerClient
 
   func intercept(
     _ request: HTTPTypes.HTTPRequest,
@@ -28,7 +28,6 @@ struct APIKeyMiddleware: ClientMiddleware {
       request.path = "\(currentPath)\(separator)ApiKey=\(apiKey)"
     }
 
-    @Dependency(\.logger) var logger
     logger.debug(.network, "APIKeyMiddleware: Added API key as query parameter to path: \(request.path ?? "nil")")
 
     return try await next(request, body, baseURL)

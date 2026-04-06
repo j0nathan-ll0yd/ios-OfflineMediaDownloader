@@ -139,8 +139,8 @@ private func makeAuthenticatedAPIClient() -> Client {
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
-      APIKeyMiddleware(apiKey: Environment.apiKey),
-      AuthenticationMiddleware(keychainClient: keychainClient),
+      APIKeyMiddleware(apiKey: Environment.apiKey, logger: logger),
+      AuthenticationMiddleware(keychainClient: keychainClient, logger: logger),
     ]
   )
 }
@@ -154,7 +154,7 @@ private func makeUnauthenticatedAPIClient() -> Client {
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
-      APIKeyMiddleware(apiKey: Environment.apiKey),
+      APIKeyMiddleware(apiKey: Environment.apiKey, logger: logger),
     ]
   )
 }
