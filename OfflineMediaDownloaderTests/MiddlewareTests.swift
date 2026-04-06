@@ -1,3 +1,4 @@
+import ConcurrencyExtras
 import Foundation
 import HTTPTypes
 @testable import OfflineMediaDownloader
@@ -219,15 +220,15 @@ enum MiddlewareTests {
 
     @Test("Calls completeRequest on success")
     func callsCompleteRequestOnSuccess() async throws {
-      var completedCorrelationId: UUID?
-      var completedStatusCode: Int?
+      let completedCorrelationId = LockIsolated<UUID?>(nil)
+      let completedStatusCode = LockIsolated<Int?>(nil)
 
       let testCorrelationId = UUID()
       let correlationClient = CorrelationClient(
         startRequest: { _, _ in testCorrelationId },
         completeRequest: { correlationId, statusCode, _, _ in
-          completedCorrelationId = correlationId
-          completedStatusCode = statusCode
+          completedCorrelationId.setValue(correlationId)
+          completedStatusCode.setValue(statusCode)
         },
         failRequest: { _, _, _ in },
         getMostRecent: { nil },
@@ -245,7 +246,7 @@ enum MiddlewareTests {
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
 
-      var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
+      let request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
 
       do {
         _ = try await middleware.intercept(
@@ -260,22 +261,22 @@ enum MiddlewareTests {
         // Ignore
       }
 
-      #expect(completedCorrelationId == testCorrelationId)
-      #expect(completedStatusCode == 200)
+      #expect(completedCorrelationId.value == testCorrelationId)
+      #expect(completedStatusCode.value == 200)
     }
 
     @Test("Calls failRequest on error")
     func callsFailRequestOnError() async throws {
-      var failedCorrelationId: UUID?
-      var failedErrorMessage: String?
+      let failedCorrelationId = LockIsolated<UUID?>(nil)
+      let failedErrorMessage = LockIsolated<String?>(nil)
 
       let testCorrelationId = UUID()
       let correlationClient = CorrelationClient(
         startRequest: { _, _ in testCorrelationId },
         completeRequest: { _, _, _, _ in },
         failRequest: { correlationId, errorMessage, _ in
-          failedCorrelationId = correlationId
-          failedErrorMessage = errorMessage
+          failedCorrelationId.setValue(correlationId)
+          failedErrorMessage.setValue(errorMessage)
         },
         getMostRecent: { nil },
         getRecentRequests: { _ in [] },
@@ -292,7 +293,7 @@ enum MiddlewareTests {
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
 
-      var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
+      let request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
 
       struct TestError: Error, LocalizedError {
         var errorDescription: String? {
@@ -313,8 +314,8 @@ enum MiddlewareTests {
         // Expected to throw
       }
 
-      #expect(failedCorrelationId == testCorrelationId)
-      #expect(failedErrorMessage == "Test network failure")
+      #expect(failedCorrelationId.value == testCorrelationId)
+      #expect(failedErrorMessage.value == "Test network failure")
     }
 
     /// Helper to capture the X-Correlation-ID header from modified request
