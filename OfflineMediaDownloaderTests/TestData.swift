@@ -139,6 +139,24 @@ enum TestData {
 
   static let shortToken = "short-token-for-display"
 
+  // MARK: - Noop Dependencies
+
+  /// Noop logger that does nothing — safe to use in all TestStores on Xcode 26.3+
+  /// where @DependencyClient generates crashing unimplemented closures for testValue.
+  static let noopLogger = LoggerClient(
+    log: { _, _, _, _, _, _ in },
+    getRecentLogs: { _ in [] },
+    clearLogs: {},
+    exportLogs: { Data() },
+    setMinLevel: { _ in }
+  )
+
+  /// Noop pasteboard that returns no content — safe to use in all TestStores.
+  static let noopPasteboardClient = PasteboardClient(
+    hasStrings: { false },
+    string: { nil }
+  )
+
   // MARK: - Error Helpers
 
   struct TestNetworkError: Error, LocalizedError {

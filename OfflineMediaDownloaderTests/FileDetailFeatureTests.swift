@@ -14,6 +14,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -33,6 +34,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -48,6 +50,8 @@ struct FileDetailFeatureTests {
   func onAppearWithNoUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.onAppear)
@@ -61,6 +65,8 @@ struct FileDetailFeatureTests {
   func checkFileExistenceTrue() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.checkFileExistence(true)) {
@@ -76,6 +82,8 @@ struct FileDetailFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.checkFileExistence(false)) {
@@ -93,6 +101,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.progress(percent: 30))
@@ -125,6 +134,8 @@ struct FileDetailFeatureTests {
   func downloadWithNoUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadButtonTapped)
@@ -186,6 +197,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.completed(localURL: URL(fileURLWithPath: "/tmp/test.mp4")))
@@ -225,6 +237,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.cancelDownload = { _ in cancelCalled.setValue(true) }
     }
 
@@ -245,6 +258,8 @@ struct FileDetailFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.cancelDownloadButtonTapped) {
@@ -263,6 +278,8 @@ struct FileDetailFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgressUpdated(0.65)) {
@@ -277,6 +294,8 @@ struct FileDetailFeatureTests {
   func playButtonTappedSendsDelegate() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.playButtonTapped)
@@ -290,6 +309,8 @@ struct FileDetailFeatureTests {
   func deleteButtonTappedShowsAlert() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.deleteButtonTapped) {
@@ -317,10 +338,24 @@ struct FileDetailFeatureTests {
 
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloaded = true
+    // RC3 fix: set alert state before sending confirmDelete presentation action
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure you want to delete \"Test Video.mp4\"? This action cannot be undone.")
+    }
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in true }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -344,9 +379,25 @@ struct FileDetailFeatureTests {
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
-    let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
+    // RC3 fix: set alert state before sending confirmDelete presentation action
+    var state = FileDetailFeature.State(file: TestData.sampleFile)
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure you want to delete \"Test Video.mp4\"? This action cannot be undone.")
+    }
+
+    let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -382,6 +433,8 @@ struct FileDetailFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.presented(.dismiss))) {
@@ -399,6 +452,7 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.filePath = { _ in localURL }
     }
 
@@ -411,6 +465,8 @@ struct FileDetailFeatureTests {
   func shareButtonTappedWithNoUrl() async {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.pendingFile)) {
       FileDetailFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.shareButtonTapped)

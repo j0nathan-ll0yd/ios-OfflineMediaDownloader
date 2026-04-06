@@ -13,6 +13,8 @@ struct DefaultFilesFeatureTests {
   func onAppearWithNoFileSetsLoading() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.onAppear) {
@@ -29,6 +31,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.onAppear)
@@ -43,6 +47,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -58,6 +63,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -73,6 +79,8 @@ struct DefaultFilesFeatureTests {
   func parentProvidedFileWithNilFile() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.parentProvidedFile(nil)) {
@@ -89,6 +97,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -104,6 +113,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -121,6 +131,8 @@ struct DefaultFilesFeatureTests {
   func fileFetchFailedShowsAlert() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.fileFetchFailed("Could not load files.")) {
@@ -148,6 +160,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
@@ -181,6 +194,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -194,6 +208,8 @@ struct DefaultFilesFeatureTests {
   func downloadButtonTappedWithNoFile() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadButtonTapped)
@@ -208,6 +224,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadButtonTapped)
@@ -223,6 +241,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
@@ -264,6 +283,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgress(75)) {
@@ -283,6 +304,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadCompleted(URL(fileURLWithPath: "/tmp/test.mp4"))) {
@@ -303,6 +326,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.incrementPlayCount = {}
     }
 
@@ -324,6 +348,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.setPlaying(false)) {
@@ -340,6 +366,7 @@ struct DefaultFilesFeatureTests {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.incrementPlayCount = { incrementCalled.setValue(true) }
     }
 
@@ -357,6 +384,8 @@ struct DefaultFilesFeatureTests {
   func toggleBenefitsFlips() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.toggleBenefits) {
@@ -375,6 +404,8 @@ struct DefaultFilesFeatureTests {
   func registerButtonTappedIsNoOp() async {
     let store = TestStore(initialState: DefaultFilesFeature.State()) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.registerButtonTapped)
@@ -399,6 +430,8 @@ struct DefaultFilesFeatureTests {
 
     let store = TestStore(initialState: state) {
       DefaultFilesFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.presented(.dismiss))) {

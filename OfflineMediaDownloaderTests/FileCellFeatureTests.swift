@@ -14,6 +14,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -34,6 +35,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: initialState) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -49,6 +51,8 @@ struct FileCellFeatureTests {
   func onAppearNilUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.onAppear)
@@ -63,6 +67,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.progress(percent: 25))
@@ -151,6 +156,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: state) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.completed(localURL: URL(fileURLWithPath: "/tmp/test.mp4")))
@@ -187,6 +193,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: state) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.cancelDownload = { _ in }
     }
 
@@ -201,6 +208,8 @@ struct FileCellFeatureTests {
   func downloadWithoutUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadButtonTapped)
@@ -216,6 +225,8 @@ struct FileCellFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadCompleted(URL(fileURLWithPath: "/tmp/test.mp4"))) {
@@ -238,6 +249,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in true }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -261,6 +273,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -283,6 +296,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in false }
       $0.thumbnailCacheClient.deleteThumbnail = { _ in thumbnailDeleteCalled.setValue(true) }
@@ -302,6 +316,8 @@ struct FileCellFeatureTests {
   func playButtonSendsDelegate() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.playButtonTapped)
@@ -343,6 +359,8 @@ struct FileCellFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgressUpdated(0.5)) {

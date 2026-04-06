@@ -12,6 +12,9 @@ struct MainFeatureTests {
   func tabSelectionAccount() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.tabSelected(.account)) {
@@ -27,6 +30,9 @@ struct MainFeatureTests {
 
     let store = TestStore(initialState: state) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.tabSelected(.files)) {
@@ -41,6 +47,9 @@ struct MainFeatureTests {
   func authRequiredFromFileList() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileList(.delegate(.authenticationRequired)))
@@ -58,6 +67,9 @@ struct MainFeatureTests {
 
     let store = TestStore(initialState: state) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     // Non-delegate actions should pass through (when authenticated)
@@ -71,6 +83,9 @@ struct MainFeatureTests {
   func diagnosticActionsPassThrough() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.diagnostic(.toggleDebugMode)) {

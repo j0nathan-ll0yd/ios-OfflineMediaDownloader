@@ -14,6 +14,7 @@ struct LoginFeatureTests {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.setJwtToken = { _ in }
       $0.keychainClient.getJwtToken = { expectedToken } // For verification
     }
@@ -30,6 +31,8 @@ struct LoginFeatureTests {
   func loginResponseNilBody() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.loginResponse(.success(TestData.loginResponseNilBody)))
@@ -54,6 +57,8 @@ struct LoginFeatureTests {
   func loginFailure() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.loginResponse(.failure(TestData.TestNetworkError.serverError)))
@@ -76,6 +81,8 @@ struct LoginFeatureTests {
   func loginNetworkError() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.loginResponse(.failure(TestData.TestNetworkError.notConnected)))
@@ -105,6 +112,7 @@ struct LoginFeatureTests {
     let store = TestStore(initialState: state) {
       LoginFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.setJwtToken = { _ in }
       $0.keychainClient.getJwtToken = { expectedToken } // For verification
       $0.keychainClient.setUserData = { _ in }
@@ -127,6 +135,8 @@ struct LoginFeatureTests {
 
     let store = TestStore(initialState: state) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.registrationResponse(.success(TestData.loginResponseNilBody)))
@@ -154,6 +164,8 @@ struct LoginFeatureTests {
 
     let store = TestStore(initialState: state) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.registrationResponse(.failure(TestData.TestNetworkError.serverError)))
@@ -183,6 +195,8 @@ struct LoginFeatureTests {
   func signInWithAppleFailure() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.signInWithAppleButtonTapped(.failure(TestData.TestNetworkError.serverError)))
@@ -216,6 +230,8 @@ struct LoginFeatureTests {
 
     let store = TestStore(initialState: state) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.loginButtonTapped) {
@@ -243,6 +259,8 @@ struct LoginFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: LoginFeature.State()) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.showError(.invalidAppleCredential)) {
@@ -272,6 +290,8 @@ struct LoginFeatureTests {
 
     let store = TestStore(initialState: state) {
       LoginFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.dismiss)) {

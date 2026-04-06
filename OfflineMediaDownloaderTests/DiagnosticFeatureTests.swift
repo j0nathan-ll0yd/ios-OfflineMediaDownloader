@@ -16,6 +16,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { TestData.sampleUser }
       $0.keychainClient.getDeviceData = { TestData.sampleDevice }
@@ -55,6 +56,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.getJwtToken = { testToken }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
@@ -85,6 +87,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.getJwtToken = { nil }
       $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
       $0.keychainClient.getDeviceData = { nil }
@@ -114,6 +117,8 @@ struct DiagnosticFeatureTests {
   func toggleDebugModeOn() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.toggleDebugMode) {
@@ -129,6 +134,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.toggleDebugMode) {
@@ -151,6 +158,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteJwtToken = { deleteTokenCalled.setValue(true) }
     }
 
@@ -175,6 +183,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteUserData = { deleteUserDataCalled.setValue(true) }
     }
 
@@ -199,6 +208,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteDeviceData = { deleteDeviceDataCalled.setValue(true) }
     }
 
@@ -220,6 +230,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.deleteKeychainItem(IndexSet()))
@@ -236,6 +248,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
       $0.coreDataClient.resetMetrics = {}
       $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
@@ -262,6 +275,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteJwtToken = { throw KeychainError.unableToStore }
     }
 
@@ -288,6 +302,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.truncateFiles = { throw CoreDataError.deleteFailed("Permission denied") }
     }
 
@@ -311,6 +326,8 @@ struct DiagnosticFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.showError(.keychainError(operation: "read"))) {
@@ -340,6 +357,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.dismiss)) {

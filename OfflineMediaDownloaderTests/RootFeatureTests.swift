@@ -216,6 +216,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.registerDevice = { _ in TestData.validRegisterDeviceResponse }
       $0.keychainClient.setDeviceData = { _ in }
     }
@@ -234,6 +235,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.registerDevice = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
       $0.keychainClient.deleteJwtToken = {}
       $0.keychainClient.deleteTokenExpiresAt = {}
@@ -258,6 +260,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.registerDevice = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
@@ -272,6 +275,8 @@ struct RootFeatureTests {
   func failedToRegisterNotifications() async {
     let store = TestStore(initialState: RootFeature.State()) {
       RootFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.didFailToRegisterForRemoteNotificationsWithError(TestData.TestNetworkError.serverError))
@@ -326,6 +331,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.cacheFile = { _ in }
     }
 
@@ -452,6 +458,10 @@ struct RootFeatureTests {
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
+    // RC4 fix: tokenRefreshResponse(.failure(.unauthorized)) returns
+    // .send(.main(.delegate(.authenticationRequired))) which is handled by the
+    // Reduce block and modifies state — but that happens as a received action,
+    // not during the send itself. The send should not change state.
     await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil))))
 
     await store.receive(\.main.delegate.authenticationRequired) {

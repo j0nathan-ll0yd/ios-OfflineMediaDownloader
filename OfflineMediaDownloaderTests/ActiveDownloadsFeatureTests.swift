@@ -12,6 +12,8 @@ struct ActiveDownloadsFeatureTests {
   func downloadStartedAddsDownload() async {
     let store = TestStore(initialState: ActiveDownloadsFeature.State()) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: true)) {
@@ -31,6 +33,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false))
@@ -49,6 +53,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgressUpdated(fileId: "file1", percent: 45)) {
@@ -61,6 +67,8 @@ struct ActiveDownloadsFeatureTests {
   func downloadProgressNonExistent() async {
     let store = TestStore(initialState: ActiveDownloadsFeature.State()) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgressUpdated(fileId: "file1", percent: 45))
@@ -79,6 +87,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
     store.exhaustivity = .off
 
@@ -101,6 +111,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
     store.exhaustivity = .off
 
@@ -124,6 +136,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.clearCompleted) {
@@ -145,6 +159,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.clearAll) {
@@ -165,6 +181,8 @@ struct ActiveDownloadsFeatureTests {
 
     let store = TestStore(initialState: state) {
       ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.removeDownload(fileId: "file1")) {

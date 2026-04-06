@@ -18,6 +18,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
     }
 
@@ -45,6 +47,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
     }
 
@@ -66,6 +70,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -98,6 +104,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -131,6 +139,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
@@ -178,6 +188,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
@@ -212,6 +224,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(
         message: "Database unavailable",
         requestId: "test-request-id",
@@ -259,6 +273,9 @@ struct FileListFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.showError(.invalidClipboardUrl)) {
@@ -290,6 +307,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.alert(.presented(.dismiss))) {
@@ -314,6 +334,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -351,6 +373,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addButtonTapped) {
@@ -371,6 +396,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
@@ -393,6 +421,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
@@ -410,6 +441,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id")))) {
@@ -428,6 +462,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(
@@ -458,6 +495,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.failure(TestData.TestNetworkError.notConnected))) {
@@ -497,6 +537,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
     }
 
@@ -520,6 +562,9 @@ struct FileListFeatureTests {
   func prepareAddFileSetsState() async throws {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     let url = try #require(URL(string: "https://youtube.com/watch?v=abc123"))
@@ -544,6 +589,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -567,6 +614,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -591,6 +640,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileAddedFromPush(updatedFile)) {
@@ -609,6 +661,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.updateFileUrl(fileId: pendingFile.fileId, url: newUrl)) {
@@ -625,6 +680,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -651,6 +708,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.deleteFiles(IndexSet(integer: 0))) {
@@ -666,6 +726,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.files(.element(id: TestData.downloadedFile.fileId, action: .delegate(.fileDeleted(TestData.downloadedFile))))) {
@@ -684,6 +747,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.incrementPlayCount = {}
     }
 
@@ -704,6 +769,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.dismissPlayer) {
@@ -721,6 +789,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addPendingFileId("existing-id"))
@@ -738,6 +809,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileFailed(fileId: "failing-id", error: "Server error")) {
@@ -762,6 +836,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileFailed(fileId: "unknown-id", error: "Error")) {
