@@ -7,6 +7,7 @@
 
 import XCTest
 
+@MainActor
 final class OfflineMediaDownloaderUITests: XCTestCase {
   override func setUpWithError() throws {
     continueAfterFailure = false
