@@ -176,7 +176,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 120 \
-            -parallel-testing-enabled YES \
+            -parallel-testing-enabled NO \
             -only-testing:OfflineMediaDownloaderTests \
             -skipPackagePluginValidation \
             -skipMacroValidation \
