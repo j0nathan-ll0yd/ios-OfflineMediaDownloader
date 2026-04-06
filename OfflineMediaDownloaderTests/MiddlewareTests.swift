@@ -62,7 +62,7 @@ enum MiddlewareTests {
 
     /// Helper to capture the modified request path
     private func captureRequestPath(middleware: APIKeyMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedPath: String?
+      let capturedPath = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -71,14 +71,14 @@ enum MiddlewareTests {
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
         ) { modifiedRequest, _, _ in
-          capturedPath = modifiedRequest.path
+          capturedPath.setValue(modifiedRequest.path)
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedPath
+      return capturedPath.value
     }
   }
 
@@ -167,7 +167,7 @@ enum MiddlewareTests {
 
     /// Helper to capture the Authorization header from modified request
     private func captureAuthorizationHeader(middleware: AuthenticationMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedHeader: String?
+      let capturedHeader = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -176,14 +176,14 @@ enum MiddlewareTests {
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
         ) { modifiedRequest, _, _ in
-          capturedHeader = modifiedRequest.headerFields[.authorization]
+          capturedHeader.setValue(modifiedRequest.headerFields[.authorization])
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedHeader
+      return capturedHeader.value
     }
   }
 
@@ -320,7 +320,7 @@ enum MiddlewareTests {
 
     /// Helper to capture the X-Correlation-ID header from modified request
     private func captureCorrelationIdHeader(middleware: CorrelationMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedHeader: String?
+      let capturedHeader = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -329,14 +329,14 @@ enum MiddlewareTests {
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
         ) { modifiedRequest, _, _ in
-          capturedHeader = modifiedRequest.headerFields[.init("X-Correlation-ID")!]
+          capturedHeader.setValue(modifiedRequest.headerFields[.init("X-Correlation-ID")!])
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedHeader
+      return capturedHeader.value
     }
   }
 }
