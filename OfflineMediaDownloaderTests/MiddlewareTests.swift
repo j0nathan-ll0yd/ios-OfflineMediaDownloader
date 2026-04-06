@@ -2,17 +2,28 @@ import ConcurrencyExtras
 import Foundation
 import HTTPTypes
 @testable import OfflineMediaDownloader
-import OpenAPIRuntime
+@preconcurrency import OpenAPIRuntime
 import Testing
 
 enum MiddlewareTests {
+  /// Shared noop logger for middleware tests
+  private static var noopLogger: LoggerClient {
+    LoggerClient(
+      log: { _, _, _, _, _, _ in },
+      getRecentLogs: { _ in [] },
+      clearLogs: {},
+      exportLogs: { Data() },
+      setMinLevel: { _ in }
+    )
+  }
+
   // MARK: - APIKeyMiddleware Tests
 
   @MainActor
   struct APIKeyMiddlewareTests {
     @Test("Adds API key as query parameter to path without existing query")
     func addsApiKeyToCleanPath() async {
-      let middleware = APIKeyMiddleware(apiKey: "test-api-key-123")
+      let middleware = APIKeyMiddleware(apiKey: "test-api-key-123", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -22,7 +33,7 @@ enum MiddlewareTests {
 
     @Test("Appends API key to path with existing query parameter")
     func appendsApiKeyToExistingQuery() async {
-      let middleware = APIKeyMiddleware(apiKey: "my-secret-key")
+      let middleware = APIKeyMiddleware(apiKey: "my-secret-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files?limit=10")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -32,7 +43,7 @@ enum MiddlewareTests {
 
     @Test("Handles special characters in API key")
     func handlesSpecialCharactersInApiKey() async {
-      let middleware = APIKeyMiddleware(apiKey: "key+with=special/chars")
+      let middleware = APIKeyMiddleware(apiKey: "key+with=special/chars", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -42,7 +53,7 @@ enum MiddlewareTests {
 
     @Test("Works with POST requests")
     func worksWithPostRequests() async {
-      let middleware = APIKeyMiddleware(apiKey: "post-key")
+      let middleware = APIKeyMiddleware(apiKey: "post-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .post, scheme: "https", authority: "example.com", path: "/api/login")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -52,7 +63,7 @@ enum MiddlewareTests {
 
     @Test("Handles nil path gracefully")
     func handlesNilPathGracefully() async {
-      let middleware = APIKeyMiddleware(apiKey: "test-key")
+      let middleware = APIKeyMiddleware(apiKey: "test-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: nil)
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -106,7 +117,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
@@ -132,7 +143,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
@@ -158,7 +169,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
