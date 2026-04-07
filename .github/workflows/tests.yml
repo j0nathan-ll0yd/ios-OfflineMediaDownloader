@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate iOS version targets
         run: bash Scripts/validate-ios-version.sh
@@ -112,7 +112,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-xcode-env
       - name: Build APITypes package
         run: xcrun swift build --package-path APITypes --disable-sandbox
@@ -125,7 +125,7 @@ jobs:
     env:
       SNAPSHOT_TESTING_RECORD: never
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-xcode-env
         id: env
@@ -231,7 +231,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-xcode-env
 
