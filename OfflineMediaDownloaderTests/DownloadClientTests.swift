@@ -11,11 +11,11 @@ final class MockURLProtocol: URLProtocol {
   nonisolated(unsafe) static var progressHandler: ((URLRequest, @escaping (Int64, Int64) -> Void) -> Void)?
 
   override class func canInit(with _: URLRequest) -> Bool {
-    return true
+    true
   }
 
   override class func canonicalRequest(for request: URLRequest) -> URLRequest {
-    return request
+    request
   }
 
   override func startLoading() {
@@ -26,7 +26,7 @@ final class MockURLProtocol: URLProtocol {
     do {
       let (response, data) = try handler(request)
       client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-      if let data = data {
+      if let data {
         client?.urlProtocol(self, didLoad: data)
       }
       client?.urlProtocolDidFinishLoading(self)

@@ -38,7 +38,7 @@ enum DownloadBehavior {
     url: URL?,
     fileClient: FileClient
   ) -> Effect<DownloadAction> {
-    guard let url = url else { return .none }
+    guard let url else { return .none }
     return .run { send in
       let exists = fileClient.fileExists(url)
       await send(.checkFileExistence(exists))
@@ -87,7 +87,7 @@ enum DownloadBehavior {
     downloadClient: DownloadClient,
     cancelId: some Hashable & Sendable
   ) -> Effect<DownloadAction> {
-    guard let url = url else { return .cancel(id: cancelId) }
+    guard let url else { return .cancel(id: cancelId) }
     return .run { _ in
       await downloadClient.cancelDownload(url)
     }

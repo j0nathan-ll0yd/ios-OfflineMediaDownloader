@@ -127,7 +127,8 @@ extension AuthenticationClient: DependencyKey {
         @unknown default: return .unauthenticated
         }
       case let .failure(error):
-        print("Error checking credential state: \(error)")
+        @Dependency(\.logger) var logger
+        logger.error(.auth, "Error checking credential state: \(error)")
         return .unauthenticated
       }
     }

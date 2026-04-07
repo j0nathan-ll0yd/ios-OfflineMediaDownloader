@@ -78,6 +78,7 @@ struct LoginFeature {
 
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
+  @Dependency(\.logger) var logger
 
   private enum CancelID { case signIn }
 
@@ -85,11 +86,11 @@ struct LoginFeature {
     let data = try handleLoginSuccess(authorization: result)
     if let userData = data.userData {
       await send(.registrationResponse(Result {
-        try await self.serverClient.registerUser(userData, data.idToken)
+        try await serverClient.registerUser(userData, data.idToken)
       }))
     } else {
       await send(.loginResponse(Result {
-        try await self.serverClient.loginUser(data.idToken)
+        try await serverClient.loginUser(data.idToken)
       }))
     }
   }
@@ -109,7 +110,7 @@ struct LoginFeature {
           return .send(.showError(.loginFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
         state.loginStatus = .authenticated
         let expirationDate = response.body?.expirationDate
         return .run { send in
@@ -117,7 +118,7 @@ struct LoginFeature {
           try await keychainClient.setJwtToken(token)
 
           // Store expiration if provided
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
             debugPrint("LoginFeature: expiration stored: \(expirationDate)")
           }
@@ -142,7 +143,7 @@ struct LoginFeature {
           return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        print("🔑 LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
         state.registrationStatus = .registered
         state.loginStatus = .authenticated
         let userData = state.pendingUserData
@@ -152,7 +153,7 @@ struct LoginFeature {
           try await keychainClient.setJwtToken(token)
 
           // Store expiration if provided
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
             debugPrint("LoginFeature: expiration stored: \(expirationDate)")
           }
@@ -166,7 +167,7 @@ struct LoginFeature {
           }
           debugPrint("LoginFeature: token stored and verified ✓")
 
-          if let userData = userData {
+          if let userData {
             try await keychainClient.setUserData(userData)
             debugPrint("LoginFeature: userData stored")
           }

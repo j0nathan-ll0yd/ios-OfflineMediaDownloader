@@ -14,17 +14,17 @@ enum AuthProvider: CaseIterable, Identifiable {
 
   var name: String {
     switch self {
-    case .apple: return "Apple"
-    case .google: return "Google"
-    case .email: return "Email"
+    case .apple: "Apple"
+    case .google: "Google"
+    case .email: "Email"
     }
   }
 
   var buttonLabel: String {
     switch self {
-    case .apple: return "Sign in with Apple"
-    case .google: return "Continue with Google"
-    case .email: return "Continue with Email"
+    case .apple: "Sign in with Apple"
+    case .google: "Continue with Google"
+    case .email: "Continue with Email"
     }
   }
 }
@@ -74,9 +74,9 @@ struct AuthButton: View {
   private var iconColor: Color {
     switch provider {
     case .apple:
-      return style == .dark ? .white : .black
+      style == .dark ? .white : .black
     case .google, .email:
-      return theme.primaryColor
+      theme.primaryColor
     }
   }
 

@@ -112,10 +112,10 @@ struct DownloadActivityWidget: Widget {
 
   private func progressColor(for status: DownloadActivityStatus) -> Color {
     switch status {
-    case .queued: return .orange
-    case .downloading: return .blue
-    case .downloaded: return .green
-    case .failed: return .red
+    case .queued: .orange
+    case .downloading: .blue
+    case .downloaded: .green
+    case .failed: .red
     }
   }
 }
@@ -200,10 +200,10 @@ struct LockScreenView: View {
 
   private var badgeColor: Color {
     switch context.state.status {
-    case .queued: return .orange
-    case .downloading: return .blue
-    case .downloaded: return .green
-    case .failed: return .red
+    case .queued: .orange
+    case .downloading: .blue
+    case .downloaded: .green
+    case .failed: .red
     }
   }
 }

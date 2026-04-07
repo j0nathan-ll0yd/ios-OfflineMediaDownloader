@@ -18,21 +18,21 @@ enum LogLevel: Int, Comparable {
 
   var osLogType: OSLogType {
     switch self {
-    case .debug: return .debug
-    case .info: return .info
-    case .warning: return .default
-    case .error: return .error
-    case .critical: return .fault
+    case .debug: .debug
+    case .info: .info
+    case .warning: .default
+    case .error: .error
+    case .critical: .fault
     }
   }
 
   var emoji: String {
     switch self {
-    case .debug: return "🔍"
-    case .info: return "ℹ️"
-    case .warning: return "⚠️"
-    case .error: return "❌"
-    case .critical: return "🔥"
+    case .debug: "🔍"
+    case .info: "ℹ️"
+    case .warning: "⚠️"
+    case .error: "❌"
+    case .critical: "🔥"
     }
   }
 }

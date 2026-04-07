@@ -2,10 +2,10 @@ import ComposableArchitecture
 import Foundation
 import Valet
 
-class ValetUtil {
-  static var shared: ValetUtil = .init()
-  var secureEnclave: SecureEnclaveValet?
-  var keychain: Valet
+final class ValetUtil: Sendable {
+  static let shared = ValetUtil()
+  let secureEnclave: SecureEnclaveValet?
+  let keychain: Valet
 
   /// Use a safe identifier that works in both app and test environments
   static let identifier: String = {
@@ -102,61 +102,65 @@ extension KeychainClient: DependencyKey {
       )
     },
     getJwtToken: {
+      @Dependency(\.logger) var logger
       do {
         // JWT tokens use regular keychain with .whenUnlocked accessibility
         // SecureEnclaveValet requires biometric prompt per-access which isn't appropriate for frequent token checks
         let token = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtToken.rawValue)
         let preview = String(token.prefix(20)) + "..."
-        print("🔑 KeychainClient.getJwtToken: found token (\(preview))")
+        logger.debug(.auth, "KeychainClient.getJwtToken: found token (\(preview))")
         return token
       } catch {
         // itemNotFound is expected when token doesn't exist - only log unexpected errors
         if isItemNotFoundError(error) {
-          print("🔑 KeychainClient.getJwtToken: no token found (itemNotFound)")
+          logger.debug(.auth, "KeychainClient.getJwtToken: no token found (itemNotFound)")
         } else {
-          print("⚠️ KeychainClient.getJwtToken unexpected error: \(error)")
+          logger.warning(.auth, "KeychainClient.getJwtToken unexpected error: \(error)")
         }
         return nil
       }
     },
     getTokenExpiresAt: {
+      @Dependency(\.logger) var logger
       do {
         let timestamp = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
         guard let timeInterval = Double(timestamp) else {
-          print("⚠️ KeychainClient.getTokenExpiresAt: invalid timestamp format")
+          logger.warning(.auth, "KeychainClient.getTokenExpiresAt: invalid timestamp format")
           return nil
         }
         let date = Date(timeIntervalSince1970: timeInterval)
-        print("🔑 KeychainClient.getTokenExpiresAt: found expiration \(date)")
+        logger.debug(.auth, "KeychainClient.getTokenExpiresAt: found expiration \(date)")
         return date
       } catch {
         if isItemNotFoundError(error) {
-          print("🔑 KeychainClient.getTokenExpiresAt: no expiration found (itemNotFound)")
+          logger.debug(.auth, "KeychainClient.getTokenExpiresAt: no expiration found (itemNotFound)")
         } else {
-          print("⚠️ KeychainClient.getTokenExpiresAt unexpected error: \(error)")
+          logger.warning(.auth, "KeychainClient.getTokenExpiresAt unexpected error: \(error)")
         }
         return nil
       }
     },
     getDeviceData: {
+      @Dependency(\.logger) var logger
       do {
         let endpointArn = try ValetUtil.shared.keychain.string(forKey: KeychainKeys.endpointArn.rawValue)
         return Device(endpointArn: endpointArn)
       } catch {
         // itemNotFound is expected when device data doesn't exist
         if !isItemNotFoundError(error) {
-          print("⚠️ KeychainClient.getDeviceData unexpected error: \(error)")
+          logger.warning(.auth, "KeychainClient.getDeviceData unexpected error: \(error)")
         }
         return nil
       }
     },
     getUserIdentifier: {
+      @Dependency(\.logger) var logger
       do {
         return try ValetUtil.shared.keychain.string(forKey: KeychainKeys.identifier.rawValue)
       } catch {
         // itemNotFound is expected when user hasn't registered
         if !isItemNotFoundError(error) {
-          print("⚠️ KeychainClient.getUserIdentifier unexpected error: \(error)")
+          logger.warning(.auth, "KeychainClient.getUserIdentifier unexpected error: \(error)")
         }
         return nil
       }
@@ -172,22 +176,24 @@ extension KeychainClient: DependencyKey {
       }
     },
     setJwtToken: { token in
+      @Dependency(\.logger) var logger
       let preview = String(token.prefix(20)) + "..."
-      print("🔑 KeychainClient.setJwtToken: storing token (\(token.count) chars, \(preview))")
+      logger.debug(.auth, "KeychainClient.setJwtToken: storing token (\(token.count) chars, \(preview))")
       do {
         // JWT tokens use regular keychain with .whenUnlocked accessibility
         try ValetUtil.shared.keychain.setString(token, forKey: KeychainKeys.jwtToken.rawValue)
-        print("🔑 KeychainClient.setJwtToken: succeeded")
+        logger.debug(.auth, "KeychainClient.setJwtToken: succeeded")
       } catch {
-        print("⚠️ KeychainClient.setJwtToken: failed with error: \(error)")
+        logger.warning(.auth, "KeychainClient.setJwtToken: failed with error: \(error)")
         throw error
       }
     },
     setTokenExpiresAt: { expiresAt in
+      @Dependency(\.logger) var logger
       let timestamp = String(expiresAt.timeIntervalSince1970)
-      print("🔑 KeychainClient.setTokenExpiresAt: storing expiration \(expiresAt)")
+      logger.debug(.auth, "KeychainClient.setTokenExpiresAt: storing expiration \(expiresAt)")
       try ValetUtil.shared.keychain.setString(timestamp, forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
-      print("🔑 KeychainClient.setTokenExpiresAt: succeeded")
+      logger.debug(.auth, "KeychainClient.setTokenExpiresAt: succeeded")
     },
     setDeviceData: { deviceData in
       try ValetUtil.shared.keychain.setString(deviceData.endpointArn, forKey: KeychainKeys.endpointArn.rawValue)
@@ -199,14 +205,16 @@ extension KeychainClient: DependencyKey {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.lastName.rawValue)
     },
     deleteJwtToken: {
-      print("🔑 KeychainClient.deleteJwtToken: removing token from keychain")
+      @Dependency(\.logger) var logger
+      logger.debug(.auth, "KeychainClient.deleteJwtToken: removing token from keychain")
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtToken.rawValue)
-      print("🔑 KeychainClient.deleteJwtToken: token removed")
+      logger.debug(.auth, "KeychainClient.deleteJwtToken: token removed")
     },
     deleteTokenExpiresAt: {
-      print("🔑 KeychainClient.deleteTokenExpiresAt: removing expiration from keychain")
+      @Dependency(\.logger) var logger
+      logger.debug(.auth, "KeychainClient.deleteTokenExpiresAt: removing expiration from keychain")
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
-      print("🔑 KeychainClient.deleteTokenExpiresAt: expiration removed")
+      logger.debug(.auth, "KeychainClient.deleteTokenExpiresAt: expiration removed")
     },
     deleteDeviceData: {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.endpointArn.rawValue)

@@ -5,6 +5,7 @@ import SnapshotTesting
 import SwiftUI
 import Testing
 
+@Suite(.serialized)
 struct FileCellSnapshotTests {
   // MARK: - Test Helpers
 

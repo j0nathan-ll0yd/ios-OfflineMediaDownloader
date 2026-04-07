@@ -6,8 +6,8 @@ struct MainFeature {
   @ObservableState
   struct State: Equatable {
     var selectedTab: Tab = .files
-    var isAuthenticated: Bool = false
-    var isRegistered: Bool = false
+    @Shared(.inMemory("isAuthenticated")) var isAuthenticated = false
+    @Shared(.inMemory("isRegistered")) var isRegistered = false
     var fileList: FileListFeature.State = .init()
     var diagnostic: DiagnosticFeature.State = .init()
     var accountLogin: LoginFeature.State = .init()
@@ -76,10 +76,10 @@ struct MainFeature {
         // Clear default files (including CoreData) and switch to Files tab
         // No need to refresh - new user has no files yet
         state.selectedTab = .files
-        return .concatenate(
-          .send(.delegate(.registrationCompleted)),
-          .send(.fileList(.clearAllFiles))
-        )
+        return .run { send in
+          await send(.delegate(.registrationCompleted))
+          await send(.fileList(.clearAllFiles))
+        }
 
       case .loginSheet:
         return .none
@@ -92,10 +92,10 @@ struct MainFeature {
         // Clear default files (including CoreData) and switch to Files tab
         // No need to refresh - new user has no files yet
         state.selectedTab = .files
-        return .concatenate(
-          .send(.delegate(.registrationCompleted)),
-          .send(.fileList(.clearAllFiles))
-        )
+        return .run { send in
+          await send(.delegate(.registrationCompleted))
+          await send(.fileList(.clearAllFiles))
+        }
 
       case .accountLogin:
         return .none
@@ -127,18 +127,14 @@ struct MainFeature {
         return .none
 
       case .diagnostic(.delegate(.authenticationInvalidated)):
-        state.isAuthenticated = false
-        state.fileList.isAuthenticated = false
-        // Keep isRegistered - user is still registered, just needs to re-authenticate
-        return .concatenate(
-          .send(.fileList(.clearAllFiles)),
-          .send(.delegate(.authenticationRequired))
-        )
+        state.$isAuthenticated.withLock { $0 = false }
+        return .run { send in
+          await send(.fileList(.clearAllFiles))
+          await send(.delegate(.authenticationRequired))
+        }
 
       case .diagnostic(.delegate(.signedOut)):
-        state.isAuthenticated = false
-        state.fileList.isAuthenticated = false
-        // Keep isRegistered - user is still registered, just signed out
+        state.$isAuthenticated.withLock { $0 = false }
         // Do NOT clear files - user keeps local content
         return .send(.delegate(.signedOut))
 

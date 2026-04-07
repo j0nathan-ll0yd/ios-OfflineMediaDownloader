@@ -8,7 +8,8 @@ public enum Environment {
       NSClassFromString("XCTestCase") != nil
   }
 
-  private static let infoDictionary: [String: Any] = // In test environments, Bundle.main.infoDictionary may be nil or missing keys
+  /// In test environments, Bundle.main.infoDictionary may be nil or missing keys
+  private nonisolated(unsafe) static let infoDictionary: [String: Any] =
     Bundle.main.infoDictionary ?? [:]
 
   static let basePath: String = {

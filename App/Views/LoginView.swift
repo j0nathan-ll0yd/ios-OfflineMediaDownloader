@@ -17,9 +17,9 @@ struct LoginView: View {
   private var welcomeSubtitle: String {
     if store.registrationStatus == .registered {
       // Could show user name here if we had it in state
-      return "Welcome back"
+      "Welcome back"
     } else {
-      return "Sign in to get started"
+      "Sign in to get started"
     }
   }
 

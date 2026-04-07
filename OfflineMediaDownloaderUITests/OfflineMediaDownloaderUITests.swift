@@ -7,6 +7,7 @@
 
 import XCTest
 
+@MainActor
 final class OfflineMediaDownloaderUITests: XCTestCase {
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -55,7 +56,7 @@ final class OfflineMediaDownloaderUITests: XCTestCase {
         add(attachment)
       } else {
         // Log available buttons for debugging
-        let availableButtons = actualPicker.buttons.allElementsBoundByIndex.map { $0.label }
+        let availableButtons = actualPicker.buttons.allElementsBoundByIndex.map(\.label)
         XCTFail("Could not find picker button for '\(screenName)'. Available buttons: \(availableButtons)")
       }
     }

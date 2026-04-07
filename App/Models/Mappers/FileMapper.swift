@@ -36,11 +36,10 @@ enum FileMapper {
     request.predicate = NSPredicate(format: "fileId == %@", file.fileId)
     request.fetchLimit = 1
 
-    let entity: FileEntity
-    if let existing = try? context.fetch(request).first {
-      entity = existing
+    let entity: FileEntity = if let existing = try? context.fetch(request).first {
+      existing
     } else {
-      entity = FileEntity(context: context)
+      FileEntity(context: context)
     }
 
     entity.fileId = file.fileId
@@ -70,11 +69,12 @@ enum FileMapper {
     let publishDate: Date? = api.publishDate.flatMap { DateFormatters.parse($0) }
 
     let status: FileStatus?
-    // The generator wraps allOf references in a payload struct with value1
-    if let apiStatus = api.status?.value1 {
-      status = FileStatus(from: apiStatus)
+      // The generator wraps allOf references in a payload struct with value1
+      = if let apiStatus = api.status?.value1
+    {
+      FileStatus(from: apiStatus)
     } else {
-      status = nil
+      nil
     }
 
     return File(
@@ -115,16 +115,16 @@ extension File {
     thumbnailUrl: String? = nil
   ) -> File {
     var copy = self
-    if let authorName = authorName { copy.authorName = authorName }
-    if let authorUser = authorUser { copy.authorUser = authorUser }
-    if let contentType = contentType { copy.contentType = contentType }
-    if let description = description { copy.description = description }
-    if let status = status { copy.status = status }
-    if let title = title { copy.title = title }
-    if let duration = duration { copy.duration = duration }
-    if let uploadDate = uploadDate { copy.uploadDate = uploadDate }
-    if let viewCount = viewCount { copy.viewCount = viewCount }
-    if let thumbnailUrl = thumbnailUrl { copy.thumbnailUrl = thumbnailUrl }
+    if let authorName { copy.authorName = authorName }
+    if let authorUser { copy.authorUser = authorUser }
+    if let contentType { copy.contentType = contentType }
+    if let description { copy.description = description }
+    if let status { copy.status = status }
+    if let title { copy.title = title }
+    if let duration { copy.duration = duration }
+    if let uploadDate { copy.uploadDate = uploadDate }
+    if let viewCount { copy.viewCount = viewCount }
+    if let thumbnailUrl { copy.thumbnailUrl = thumbnailUrl }
     return copy
   }
 }

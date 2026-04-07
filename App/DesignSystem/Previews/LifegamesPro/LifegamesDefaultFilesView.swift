@@ -177,14 +177,13 @@ struct LifegamesDefaultFilesView: View {
   private func startDownload() {
     isDownloading = true
     downloadProgress = 0
-    Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-      if downloadProgress >= 1.0 {
-        timer.invalidate()
-        isDownloading = false
-        isDownloaded = true
-      } else {
+    Task {
+      while downloadProgress < 1.0 {
+        try? await Task.sleep(for: .milliseconds(50))
         downloadProgress += 0.02
       }
+      isDownloading = false
+      isDownloaded = true
     }
   }
 }

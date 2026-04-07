@@ -176,7 +176,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 120 \
-            -parallel-testing-enabled YES \
+            -parallel-testing-enabled NO \
             -only-testing:OfflineMediaDownloaderTests \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -226,6 +226,7 @@ jobs:
 
   release-build:
     name: Release Archive (no codesign)
+    if: github.event_name == 'push'
     needs: lint
     runs-on: macos-15
     timeout-minutes: 30

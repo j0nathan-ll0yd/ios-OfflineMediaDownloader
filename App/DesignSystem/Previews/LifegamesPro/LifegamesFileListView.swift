@@ -17,7 +17,7 @@ struct LifegamesFileListView: View {
         theme.backgroundColor
           .ignoresSafeArea()
 
-        if isLoading && files.isEmpty {
+        if isLoading, files.isEmpty {
           loadingView
         } else if files.isEmpty {
           emptyView
@@ -171,7 +171,7 @@ struct LifegamesFileCard: View {
           if let viewCount = file.viewCount {
             Text(MetadataFormatters.formatViewCount(viewCount))
           }
-          if file.viewCount != nil && file.size != nil {
+          if file.viewCount != nil, file.size != nil {
             Text("•")
           }
           if file.size != nil {
@@ -281,7 +281,7 @@ struct LifegamesFileItem: Identifiable {
   }
 
   var formattedSize: String {
-    guard let size = size else { return "" }
+    guard let size else { return "" }
     let formatter = ByteCountFormatter()
     formatter.countStyle = .file
     return formatter.string(fromByteCount: Int64(size))

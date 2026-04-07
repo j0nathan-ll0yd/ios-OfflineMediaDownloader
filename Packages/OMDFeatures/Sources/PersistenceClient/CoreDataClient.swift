@@ -1,0 +1,356 @@
+import ComposableArchitecture
+@preconcurrency import CoreData
+import Foundation
+import LoggerClient
+import SharedModels
+
+@DependencyClient
+public struct CoreDataClient: Sendable {
+  public var getFiles: @Sendable () async throws -> [File] = { [] }
+  public var getFile: @Sendable (_ fileId: String) async throws -> File? = { _ in nil }
+  public var cacheFiles: @Sendable ([File]) async throws -> Void
+  public var cacheFile: @Sendable (File) async throws -> Void
+  public var updateFileUrl: @Sendable (_ fileId: String, _ url: URL) async throws -> Void
+  public var updateFileStatus: @Sendable (_ fileId: String, _ status: FileStatus) async throws -> Void
+  public var saveContext: @Sendable () async throws -> Void
+  public var truncateFiles: @Sendable () async throws -> Void
+  public var deleteFile: @Sendable (File) async throws -> Void
+  // Metrics
+  public var getMetrics: @Sendable () async throws -> FileMetrics = { .zero }
+  public var markFileDownloaded: @Sendable (_ fileId: String) async throws -> Void
+  public var incrementPlayCount: @Sendable () async throws -> Void
+  public var resetMetrics: @Sendable () async throws -> Void
+}
+
+public extension DependencyValues {
+  var coreDataClient: CoreDataClient {
+    get { self[CoreDataClient.self] }
+    set { self[CoreDataClient.self] = newValue }
+  }
+}
+
+public enum CoreDataError: Error {
+  case fetchFailed(String)
+  case saveFailed(String)
+  case deleteFailed(String)
+}
+
+public struct FileMetrics: Equatable, Sendable {
+  public var downloadCount: Int
+  public var totalStorageBytes: Int64
+  public var playCount: Int
+
+  public static let zero = FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0)
+
+  public init(downloadCount: Int, totalStorageBytes: Int64, playCount: Int) {
+    self.downloadCount = downloadCount
+    self.totalStorageBytes = totalStorageBytes
+    self.playCount = playCount
+  }
+}
+
+// MARK: - Live API implementation
+
+extension CoreDataClient: DependencyKey {
+  public static let liveValue = CoreDataClient(
+    getFiles: {
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.viewContext
+      return try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \FileEntity.publishDate, ascending: false)]
+        let entities = try context.fetch(request)
+        let files = entities.map { FileMapper.fromEntity($0) }
+        logger.debug(.storage, "Loaded \(files.count) files from CoreData")
+        return files
+      }
+    },
+    getFile: { fileId in
+      let context = PersistenceController.shared.container.viewContext
+      return try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          return nil
+        }
+        return FileMapper.fromEntity(entity)
+      }
+    },
+    cacheFiles: { files in
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        for file in files {
+          _ = FileMapper.toEntity(file, in: context)
+        }
+        try context.save()
+        logger.debug(.storage, "Cached \(files.count) files to CoreData (background context)")
+      }
+    },
+    cacheFile: { file in
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        _ = FileMapper.toEntity(file, in: context)
+        try context.save()
+        logger.debug(.storage, "Cached file to CoreData: \(file.fileId)")
+      }
+    },
+    updateFileUrl: { fileId, url in
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          logger.warning(.storage, "File not found for URL update: \(fileId)")
+          return
+        }
+        entity.url = url.absoluteString
+        try context.save()
+        logger.debug(.storage, "Updated URL for file: \(fileId)")
+      }
+    },
+    updateFileStatus: { fileId, status in
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          logger.warning(.storage, "File not found for status update: \(fileId)")
+          return
+        }
+        entity.status = status.rawValue
+        try context.save()
+        logger.debug(.storage, "Updated status for file: \(fileId) to \(status.rawValue)")
+      }
+    },
+    saveContext: {
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.viewContext
+      try await context.perform {
+        if context.hasChanges {
+          try context.save()
+          logger.debug(.storage, "CoreData context saved")
+        }
+      }
+    },
+    truncateFiles: {
+      @Dependency(\.logger) var logger
+      let fileManager = FileManager.default
+      guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        return
+      }
+
+      do {
+        let files = try fileManager.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: nil)
+        for file in files {
+          let ext = file.pathExtension.lowercased()
+          if ["mp4", "mp3", "m4a", "mov", "m4v", "wav", "webm"].contains(ext) {
+            logger.debug(.storage, "Deleting file: \(file.lastPathComponent)")
+            try fileManager.removeItem(at: file)
+          }
+        }
+      } catch {
+        logger.error(.storage, "Error deleting media files: \(error)")
+      }
+
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      do {
+        try await context.perform {
+          let request = NSFetchRequest<NSFetchRequestResult>(entityName: "FileEntity")
+          let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
+          try context.execute(deleteRequest)
+          try context.save()
+          logger.debug(.storage, "Cleared all FileEntity records from CoreData")
+        }
+        logger.debug(.storage, "Truncate complete")
+      } catch {
+        logger.error(.storage, "Error clearing CoreData: \(error)")
+      }
+    },
+    deleteFile: { file in
+      @Dependency(\.logger) var logger
+      guard let remoteURL = file.url else { return }
+      let fileManager = FileManager.default
+      guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        return
+      }
+      let localURL = documentsPath.appendingPathComponent(remoteURL.lastPathComponent)
+      if fileManager.fileExists(atPath: localURL.path) {
+        logger.debug(.storage, "Deleting file: \(localURL.lastPathComponent)")
+        try fileManager.removeItem(at: localURL)
+      }
+
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", file.fileId)
+        if let entity = try context.fetch(request).first {
+          context.delete(entity)
+          try context.save()
+          logger.debug(.storage, "Deleted FileEntity from CoreData: \(file.fileId)")
+        }
+      }
+    },
+    getMetrics: {
+      @Dependency(\.logger) var logger
+      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+      let context = PersistenceController.shared.container.viewContext
+
+      guard let documentsPath else {
+        return .zero
+      }
+
+      return try await context.perform {
+        let fileRequest = FileEntity.fetchRequest()
+        fileRequest.predicate = NSPredicate(format: "isDownloaded == YES")
+        let downloadedFiles = try context.fetch(fileRequest)
+        let downloadCount = downloadedFiles.count
+
+        var totalBytes: Int64 = 0
+        for entity in downloadedFiles {
+          if let urlString = entity.url,
+             let url = URL(string: urlString)
+          {
+            let localURL = documentsPath.appendingPathComponent(url.lastPathComponent)
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: localURL.path),
+               let size = attrs[.size] as? Int64
+            {
+              totalBytes += size
+            }
+          }
+        }
+
+        let metricsRequest = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        metricsRequest.fetchLimit = 1
+        let metricsResults = try context.fetch(metricsRequest)
+        let playCount = metricsResults.first?.value(forKey: "playCount") as? Int64 ?? 0
+
+        logger.debug(.storage, "Metrics: \(downloadCount) downloads, \(totalBytes) bytes, \(playCount) plays")
+        return FileMetrics(
+          downloadCount: downloadCount,
+          totalStorageBytes: totalBytes,
+          playCount: Int(playCount)
+        )
+      }
+    },
+    markFileDownloaded: { fileId in
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = FileEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "fileId == %@", fileId)
+        request.fetchLimit = 1
+        guard let entity = try context.fetch(request).first else {
+          logger.warning(.storage, "File not found for marking downloaded: \(fileId)")
+          return
+        }
+        entity.isDownloaded = true
+        try context.save()
+        logger.debug(.storage, "Marked file as downloaded: \(fileId)")
+      }
+    },
+    incrementPlayCount: {
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        request.fetchLimit = 1
+        let results = try context.fetch(request)
+
+        let metrics: NSManagedObject
+        if let existing = results.first {
+          metrics = existing
+        } else {
+          let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context)!
+          metrics = NSManagedObject(entity: entity, insertInto: context)
+          metrics.setValue(Int64(0), forKey: "playCount")
+        }
+
+        let currentCount = metrics.value(forKey: "playCount") as? Int64 ?? 0
+        metrics.setValue(currentCount + 1, forKey: "playCount")
+        try context.save()
+        logger.debug(.storage, "Incremented play count to \(currentCount + 1)")
+      }
+    },
+    resetMetrics: {
+      @Dependency(\.logger) var logger
+      let context = PersistenceController.shared.container.newBackgroundContext()
+      context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+      try await context.perform {
+        let fileRequest = FileEntity.fetchRequest()
+        let files = try context.fetch(fileRequest)
+        for file in files {
+          file.isDownloaded = false
+        }
+
+        let metricsRequest = NSFetchRequest<NSManagedObject>(entityName: "AppMetrics")
+        let metricsResults = try context.fetch(metricsRequest)
+        if let metrics = metricsResults.first {
+          metrics.setValue(Int64(0), forKey: "playCount")
+        }
+
+        try context.save()
+        logger.debug(.storage, "Reset all metrics")
+      }
+    }
+  )
+}
+
+// MARK: - Test/Preview implementation
+
+public extension CoreDataClient {
+  static let testValue = CoreDataClient(
+    getFiles: { [] },
+    getFile: { _ in nil },
+    cacheFiles: { _ in },
+    cacheFile: { _ in },
+    updateFileUrl: { _, _ in },
+    updateFileStatus: { _, _ in },
+    saveContext: {},
+    truncateFiles: {},
+    deleteFile: { _ in },
+    getMetrics: { .zero },
+    markFileDownloaded: { _ in },
+    incrementPlayCount: {},
+    resetMetrics: {}
+  )
+
+  static let previewValue = CoreDataClient(
+    getFiles: { [] },
+    getFile: { _ in nil },
+    cacheFiles: { _ in },
+    cacheFile: { _ in },
+    updateFileUrl: { _, _ in },
+    updateFileStatus: { _, _ in },
+    saveContext: {},
+    truncateFiles: {},
+    deleteFile: { _ in },
+    getMetrics: { .zero },
+    markFileDownloaded: { _ in },
+    incrementPlayCount: {},
+    resetMetrics: {}
+  )
+}

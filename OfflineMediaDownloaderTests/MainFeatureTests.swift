@@ -3,6 +3,7 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct MainFeatureTests {
   // MARK: - Tab Selection Tests
 
@@ -11,6 +12,9 @@ struct MainFeatureTests {
   func tabSelectionAccount() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.tabSelected(.account)) {
@@ -26,6 +30,9 @@ struct MainFeatureTests {
 
     let store = TestStore(initialState: state) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.tabSelected(.files)) {
@@ -40,6 +47,9 @@ struct MainFeatureTests {
   func authRequiredFromFileList() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileList(.delegate(.authenticationRequired)))
@@ -52,11 +62,14 @@ struct MainFeatureTests {
   @Test("FileList actions pass through without state change")
   func fileListActionsPassThrough() async {
     var state = MainFeature.State()
-    state.isAuthenticated = true
-    state.fileList.isAuthenticated = true
+    state.$isAuthenticated.withLock { $0 = true }
+    state.fileList.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     // Non-delegate actions should pass through (when authenticated)
@@ -70,6 +83,9 @@ struct MainFeatureTests {
   func diagnosticActionsPassThrough() async {
     let store = TestStore(initialState: MainFeature.State()) {
       MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.diagnostic(.toggleDebugMode)) {

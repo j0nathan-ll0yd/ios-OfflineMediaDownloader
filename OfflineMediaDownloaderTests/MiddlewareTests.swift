@@ -1,16 +1,28 @@
+import ConcurrencyExtras
 import Foundation
 import HTTPTypes
 @testable import OfflineMediaDownloader
-import OpenAPIRuntime
+@preconcurrency import OpenAPIRuntime
 import Testing
 
 enum MiddlewareTests {
+  /// Shared noop logger for middleware tests
+  private static var noopLogger: LoggerClient {
+    LoggerClient(
+      log: { _, _, _, _, _, _ in },
+      getRecentLogs: { _ in [] },
+      clearLogs: {},
+      exportLogs: { Data() },
+      setMinLevel: { _ in }
+    )
+  }
+
   // MARK: - APIKeyMiddleware Tests
 
   struct APIKeyMiddlewareTests {
     @Test("Adds API key as query parameter to path without existing query")
     func addsApiKeyToCleanPath() async {
-      let middleware = APIKeyMiddleware(apiKey: "test-api-key-123")
+      let middleware = APIKeyMiddleware(apiKey: "test-api-key-123", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -20,7 +32,7 @@ enum MiddlewareTests {
 
     @Test("Appends API key to path with existing query parameter")
     func appendsApiKeyToExistingQuery() async {
-      let middleware = APIKeyMiddleware(apiKey: "my-secret-key")
+      let middleware = APIKeyMiddleware(apiKey: "my-secret-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files?limit=10")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -30,7 +42,7 @@ enum MiddlewareTests {
 
     @Test("Handles special characters in API key")
     func handlesSpecialCharactersInApiKey() async {
-      let middleware = APIKeyMiddleware(apiKey: "key+with=special/chars")
+      let middleware = APIKeyMiddleware(apiKey: "key+with=special/chars", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -40,7 +52,7 @@ enum MiddlewareTests {
 
     @Test("Works with POST requests")
     func worksWithPostRequests() async {
-      let middleware = APIKeyMiddleware(apiKey: "post-key")
+      let middleware = APIKeyMiddleware(apiKey: "post-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .post, scheme: "https", authority: "example.com", path: "/api/login")
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -50,7 +62,7 @@ enum MiddlewareTests {
 
     @Test("Handles nil path gracefully")
     func handlesNilPathGracefully() async {
-      let middleware = APIKeyMiddleware(apiKey: "test-key")
+      let middleware = APIKeyMiddleware(apiKey: "test-key", logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: nil)
       let capturedPath = await captureRequestPath(middleware: middleware, request: &request)
@@ -61,7 +73,7 @@ enum MiddlewareTests {
 
     /// Helper to capture the modified request path
     private func captureRequestPath(middleware: APIKeyMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedPath: String?
+      let capturedPath = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -69,15 +81,15 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
-          capturedPath = modifiedRequest.path
+        ) { @Sendable modifiedRequest, _, _ in
+          capturedPath.setValue(modifiedRequest.path)
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedPath
+      return capturedPath.value
     }
   }
 
@@ -103,7 +115,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
@@ -129,7 +141,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
@@ -155,7 +167,7 @@ enum MiddlewareTests {
         deleteDeviceData: {}
       )
 
-      let middleware = AuthenticationMiddleware(keychainClient: keychainClient)
+      let middleware = AuthenticationMiddleware(keychainClient: keychainClient, logger: MiddlewareTests.noopLogger)
 
       var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/files")
       let capturedAuthHeader = await captureAuthorizationHeader(middleware: middleware, request: &request)
@@ -166,7 +178,7 @@ enum MiddlewareTests {
 
     /// Helper to capture the Authorization header from modified request
     private func captureAuthorizationHeader(middleware: AuthenticationMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedHeader: String?
+      let capturedHeader = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -174,15 +186,15 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
-          capturedHeader = modifiedRequest.headerFields[.authorization]
+        ) { @Sendable modifiedRequest, _, _ in
+          capturedHeader.setValue(modifiedRequest.headerFields[.authorization])
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedHeader
+      return capturedHeader.value
     }
   }
 
@@ -219,15 +231,15 @@ enum MiddlewareTests {
 
     @Test("Calls completeRequest on success")
     func callsCompleteRequestOnSuccess() async throws {
-      var completedCorrelationId: UUID?
-      var completedStatusCode: Int?
+      let completedCorrelationId = LockIsolated<UUID?>(nil)
+      let completedStatusCode = LockIsolated<Int?>(nil)
 
       let testCorrelationId = UUID()
       let correlationClient = CorrelationClient(
         startRequest: { _, _ in testCorrelationId },
         completeRequest: { correlationId, statusCode, _, _ in
-          completedCorrelationId = correlationId
-          completedStatusCode = statusCode
+          completedCorrelationId.setValue(correlationId)
+          completedStatusCode.setValue(statusCode)
         },
         failRequest: { _, _, _ in },
         getMostRecent: { nil },
@@ -245,7 +257,7 @@ enum MiddlewareTests {
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
 
-      var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
+      let request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
 
       do {
         _ = try await middleware.intercept(
@@ -253,29 +265,29 @@ enum MiddlewareTests {
           body: nil,
           baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
-        ) { _, _, _ in
+        ) { @Sendable _, _, _ in
           (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore
       }
 
-      #expect(completedCorrelationId == testCorrelationId)
-      #expect(completedStatusCode == 200)
+      #expect(completedCorrelationId.value == testCorrelationId)
+      #expect(completedStatusCode.value == 200)
     }
 
     @Test("Calls failRequest on error")
     func callsFailRequestOnError() async throws {
-      var failedCorrelationId: UUID?
-      var failedErrorMessage: String?
+      let failedCorrelationId = LockIsolated<UUID?>(nil)
+      let failedErrorMessage = LockIsolated<String?>(nil)
 
       let testCorrelationId = UUID()
       let correlationClient = CorrelationClient(
         startRequest: { _, _ in testCorrelationId },
         completeRequest: { _, _, _, _ in },
         failRequest: { correlationId, errorMessage, _ in
-          failedCorrelationId = correlationId
-          failedErrorMessage = errorMessage
+          failedCorrelationId.setValue(correlationId)
+          failedErrorMessage.setValue(errorMessage)
         },
         getMostRecent: { nil },
         getRecentRequests: { _ in [] },
@@ -292,7 +304,7 @@ enum MiddlewareTests {
 
       let middleware = CorrelationMiddleware(correlationClient: correlationClient, logger: loggerClient)
 
-      var request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
+      let request = HTTPRequest(method: .get, scheme: "https", authority: "example.com", path: "/api/test")
 
       struct TestError: Error, LocalizedError {
         var errorDescription: String? {
@@ -306,20 +318,20 @@ enum MiddlewareTests {
           body: nil,
           baseURL: #require(URL(string: "https://example.com")),
           operationID: "testOperation"
-        ) { _, _, _ in
+        ) { @Sendable _, _, _ in
           throw TestError()
         }
       } catch {
         // Expected to throw
       }
 
-      #expect(failedCorrelationId == testCorrelationId)
-      #expect(failedErrorMessage == "Test network failure")
+      #expect(failedCorrelationId.value == testCorrelationId)
+      #expect(failedErrorMessage.value == "Test network failure")
     }
 
     /// Helper to capture the X-Correlation-ID header from modified request
     private func captureCorrelationIdHeader(middleware: CorrelationMiddleware, request: inout HTTPRequest) async -> String? {
-      var capturedHeader: String?
+      let capturedHeader = LockIsolated<String?>(nil)
 
       do {
         _ = try await middleware.intercept(
@@ -327,15 +339,15 @@ enum MiddlewareTests {
           body: nil,
           baseURL: URL(string: "https://example.com")!,
           operationID: "test"
-        ) { modifiedRequest, _, _ in
-          capturedHeader = modifiedRequest.headerFields[.init("X-Correlation-ID")!]
+        ) { @Sendable modifiedRequest, _, _ in
+          capturedHeader.setValue(modifiedRequest.headerFields[.init("X-Correlation-ID")!])
           return (HTTPResponse(status: .ok), nil)
         }
       } catch {
         // Ignore errors for this test
       }
 
-      return capturedHeader
+      return capturedHeader.value
     }
   }
 }

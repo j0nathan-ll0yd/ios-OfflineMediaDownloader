@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import OrderedCollections
 import UIKit
 
 @Reducer
@@ -7,10 +8,10 @@ struct FileListFeature {
   @ObservableState
   struct State: Equatable {
     var files: IdentifiedArrayOf<FileCellFeature.State> = []
-    var pendingFileIds: [String] = []
+    var pendingFileIds: OrderedSet<String> = []
     var isLoading: Bool = false
-    var isAuthenticated: Bool = false
-    var isRegistered: Bool = false
+    @Shared(.inMemory("isAuthenticated")) var isAuthenticated = false
+    @Shared(.inMemory("isRegistered")) var isRegistered = false
     @Presents var alert: AlertState<Action.Alert>?
     @Presents var selectedFile: FileDetailFeature.State?
     var showAddConfirmation: Bool = false
@@ -19,6 +20,8 @@ struct FileListFeature {
     var isPreparingToPlay: Bool = false
     /// Stores the pending URL for retry actions
     var pendingAddUrl: URL?
+    /// Stores the youtube ID between add-file request and response (for deferred LiveActivity)
+    var pendingYoutubeId: String?
     /// URL to share via activity sheet
     var sharingFileURL: URL?
     /// Child feature for unauthenticated users to preview default files
@@ -30,6 +33,7 @@ struct FileListFeature {
     case refreshButtonTapped
     case addButtonTapped
     case addFromClipboard
+    case prepareAddFile(url: URL, youtubeId: String?)
     case confirmationDismissed
     case showError(AppError)
     case addPendingFileId(String)
@@ -75,6 +79,14 @@ struct FileListFeature {
 
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
+  @Dependency(\.logger) var logger
+  @Dependency(\.liveActivityClient) var liveActivityClient
+  @Dependency(\.pasteboardClient) var pasteboardClient
+
+  private enum CancelID {
+    case loadFiles
+    case addFile
+  }
 
   var body: some ReducerOf<Self> {
     Reduce { state, action in
@@ -83,17 +95,24 @@ struct FileListFeature {
         // Load cached files immediately for instant display
         let isAuthenticated = state.isAuthenticated
         let isRegistered = state.isRegistered
-        print("📋 FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
-        return .run { send in
-          let files = try await coreDataClient.getFiles()
-          await send(.localFilesLoaded(files))
-          // Only auto-refresh for UNREGISTERED users (to show default files for demo)
-          // Registered users (authenticated or not) should pull-to-refresh manually
-          if !isRegistered {
-            print("📋 FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
-            await send(.refreshButtonTapped)
+        logger.debug(.lifecycle, "FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
+        let pasteboard = pasteboardClient
+        return .merge(
+          .run { send in
+            let files = try await coreDataClient.getFiles()
+            await send(.localFilesLoaded(files))
+            // Only auto-refresh for UNREGISTERED users (to show default files for demo)
+            // Registered users (authenticated or not) should pull-to-refresh manually
+            if !isRegistered {
+              logger.debug(.lifecycle, "FileListFeature.onAppear: triggering auto-refresh for unregistered guest user")
+              await send(.refreshButtonTapped)
+            }
+          },
+          // Pre-warm pasteboard access (triggers permission dialog if needed)
+          .run { _ in
+            _ = await Task.detached(priority: .background) { pasteboard.hasStrings() }.value
           }
-        }
+        )
 
       case let .localFilesLoaded(files):
         // Preserve existing UI state (download status) when reloading
@@ -124,7 +143,7 @@ struct FileListFeature {
 
       case .refreshButtonTapped:
         // Registered but unauthenticated users need to login first
-        if state.isRegistered && !state.isAuthenticated {
+        if state.isRegistered, !state.isAuthenticated {
           return .send(.delegate(.authenticationRequired))
         }
         state.isLoading = true
@@ -133,6 +152,7 @@ struct FileListFeature {
             try await serverClient.getFiles(.all)
           }))
         }
+        .cancellable(id: CancelID.loadFiles, cancelInFlight: true)
 
       case let .remoteFilesResponse(.success(response)):
         if let fileList = response.body {
@@ -153,7 +173,7 @@ struct FileListFeature {
             return newState
           })
           // Remove pending IDs that are now available
-          let availableIds = Set(fileList.contents.map { $0.fileId })
+          let availableIds = Set(fileList.contents.map(\.fileId))
           state.pendingFileIds.removeAll { availableIds.contains($0) }
         }
         state.isLoading = false
@@ -235,23 +255,34 @@ struct FileListFeature {
           }))
         }
 
+      case .alert(.presented(.dismiss)):
+        state.pendingYoutubeId = nil
+        state.pendingAddUrl = nil
+        return .none
+
       case .alert:
         return .none
 
       case let .addPendingFileId(fileId):
         state.pendingFileIds.append(fileId)
         // Start Live Activity immediately while app is in foreground
-        return .run { _ in
-          await LiveActivityManager.shared.startActivityWithId(fileId: fileId)
+        return .run { [liveActivityClient] _ in
+          await liveActivityClient.startActivityWithId(fileId: fileId)
         }
+
+      case let .prepareAddFile(url, youtubeId):
+        state.pendingAddUrl = url
+        state.pendingYoutubeId = youtubeId
+        return .none
 
       case .addFromClipboard:
         state.showAddConfirmation = false
         // Move pasteboard access to background thread to avoid blocking main thread (1-3s)
+        let pasteboard = pasteboardClient
         return .run { send in
           let result = await Task.detached {
-            guard UIPasteboard.general.hasStrings,
-                  let urlString = UIPasteboard.general.string,
+            guard pasteboard.hasStrings(),
+                  let urlString = pasteboard.string(),
                   let url = URL(string: urlString)
             else {
               return nil as (URL, String?)?
@@ -264,26 +295,57 @@ struct FileListFeature {
             return
           }
 
-          if let youtubeId = youtubeId {
-            await send(.addPendingFileId(youtubeId))
-          }
+          await send(.prepareAddFile(url: url, youtubeId: youtubeId))
 
           await send(.addFileResponse(Result {
             try await serverClient.addFile(url: url)
           }))
         }
+        .cancellable(id: CancelID.addFile, cancelInFlight: true)
 
       case .addFileResponse(.success):
+        let youtubeId = state.pendingYoutubeId
         state.pendingAddUrl = nil
+        state.pendingYoutubeId = nil
+        if let youtubeId {
+          return .send(.addPendingFileId(youtubeId))
+        }
         return .none
 
       case let .addFileResponse(.failure(error)):
         let appError = AppError.from(error)
         // Check if this is an auth error - redirect to login
         if appError.requiresReauth {
+          state.pendingAddUrl = nil
+          state.pendingYoutubeId = nil
           return .send(.delegate(.authenticationRequired))
         }
-        return .send(.showError(appError))
+        // Build alert inline to wire retry to .retryAddFile (not .retryRefresh)
+        if appError.isRetryable {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(action: .retryAddFile) {
+              TextState("Retry")
+            }
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        } else {
+          state.alert = AlertState {
+            TextState(appError.title)
+          } actions: {
+            ButtonState(role: .cancel, action: .dismiss) {
+              TextState("OK")
+            }
+          } message: {
+            TextState(appError.message)
+          }
+        }
+        return .none
 
       case .delegate:
         return .none
@@ -337,7 +399,7 @@ struct FileListFeature {
         // Sort by publishDate descending (newest first)
         state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
         // Remove from pending if it was there
-        state.pendingFileIds.removeAll { $0 == file.fileId }
+        state.pendingFileIds.remove(file.fileId)
         // For new files, trigger onAppear to check download status
         // (handles case where metadata notification was missed but file was downloaded)
         if isNewFile {
@@ -366,6 +428,8 @@ struct FileListFeature {
         }
 
       case let .fileFailed(fileId, error):
+        // Remove from pending if it was there (mirrors .fileAddedFromPush cleanup)
+        state.pendingFileIds.remove(fileId)
         // Update file state to show error
         if var fileState = state.files[id: fileId] {
           fileState.file.status = .failed

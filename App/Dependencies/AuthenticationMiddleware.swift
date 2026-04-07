@@ -1,11 +1,11 @@
-import ComposableArchitecture
 import Foundation
 import HTTPTypes
-import OpenAPIRuntime
+@preconcurrency import OpenAPIRuntime
 
 /// Middleware that intercepts API requests and adds JWT authentication headers
 struct AuthenticationMiddleware: ClientMiddleware {
   let keychainClient: KeychainClient
+  let logger: LoggerClient
 
   func intercept(
     _ request: HTTPTypes.HTTPRequest,
@@ -21,12 +21,12 @@ struct AuthenticationMiddleware: ClientMiddleware {
       if let token = try await keychainClient.getJwtToken() {
         request.headerFields[.authorization] = "Bearer \(token)"
         let preview = String(token.prefix(20)) + "..."
-        print("🔑 AuthenticationMiddleware: Added Bearer token (\(preview)) to request")
+        logger.debug(.auth, "AuthenticationMiddleware: Added Bearer token (\(preview)) to request")
       } else {
-        print("🔑 AuthenticationMiddleware: No token in keychain")
+        logger.debug(.auth, "AuthenticationMiddleware: No token in keychain")
       }
     } catch {
-      print("🔑 AuthenticationMiddleware: Error getting token: \(error)")
+      logger.warning(.auth, "AuthenticationMiddleware: Error getting token: \(error)")
     }
 
     return try await next(request, body, baseURL)

@@ -584,7 +584,7 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -624,7 +624,7 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
@@ -641,7 +641,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OfflineMediaDownloader";
 			};
@@ -659,7 +659,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OfflineMediaDownloader.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OfflineMediaDownloader";
 			};
@@ -675,7 +675,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = OfflineMediaDownloader;
 			};
@@ -691,7 +691,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloaderUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = OfflineMediaDownloader;
 			};
@@ -724,7 +724,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -756,7 +756,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -824,7 +824,7 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.15.1;
+				minimumVersion = 1.25.0;
 			};
 		};
 		C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */ = {

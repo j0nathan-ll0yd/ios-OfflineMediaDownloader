@@ -4,116 +4,109 @@ import Foundation
 @testable import OfflineMediaDownloader
 import Testing
 
+@Suite(.serialized)
 struct DiagnosticFeatureTests {
   // MARK: - Keychain Loading Tests
 
   @MainActor
   @Test("onAppear loads all keychain items")
   func onAppearLoadsAllItems() async {
-    await withMainSerialExecutor {
-      let testToken = "test-token-012345678901234567890123456789012345678" // 50 chars
-      let testExpiration = Date().addingTimeInterval(3600)
-      let store = TestStore(initialState: DiagnosticFeature.State()) {
-        DiagnosticFeature()
-      } withDependencies: {
-        $0.keychainClient.getJwtToken = { testToken }
-        $0.keychainClient.getUserData = { TestData.sampleUser }
-        $0.keychainClient.getDeviceData = { TestData.sampleDevice }
-        $0.keychainClient.getTokenExpiresAt = { testExpiration }
-        $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
-      }
+    let testToken = "test-token-012345678901234567890123456789012345678" // 50 chars
+    let testExpiration = Date().addingTimeInterval(3600)
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.keychainClient.getJwtToken = { testToken }
+      $0.keychainClient.getUserData = { TestData.sampleUser }
+      $0.keychainClient.getDeviceData = { TestData.sampleDevice }
+      $0.keychainClient.getTokenExpiresAt = { testExpiration }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
+    }
 
-      await store.send(.onAppear) {
-        $0.isLoading = true
-      }
+    await store.send(.onAppear) {
+      $0.isLoading = true
+    }
 
-      // withMainSerialExecutor ensures deterministic action ordering
-      await store.receive(\.loadMetrics)
-      await store.receive(\.metricsLoaded)
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
 
-      await store.receive(\.tokenExpirationLoaded) {
-        $0.tokenExpiresAt = testExpiration
-      }
+    await store.receive(\.tokenExpirationLoaded) {
+      $0.tokenExpiresAt = testExpiration
+    }
 
-      await store.receive(\.keychainItemsLoaded) {
-        $0.isLoading = false
-        $0.keychainItems = [
-          KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
-          KeychainItem(
-            name: "UserData",
-            displayValue: "\(TestData.sampleUser.firstName) \(TestData.sampleUser.lastName) (\(TestData.sampleUser.email))",
-            itemType: .userData
-          ),
-          KeychainItem(name: "DeviceData", displayValue: TestData.sampleDevice.endpointArn, itemType: .deviceData),
-        ]
-      }
+    await store.receive(\.keychainItemsLoaded) {
+      $0.isLoading = false
+      $0.keychainItems = [
+        KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
+        KeychainItem(
+          name: "UserData",
+          displayValue: "\(TestData.sampleUser.firstName) \(TestData.sampleUser.lastName) (\(TestData.sampleUser.email))",
+          itemType: .userData
+        ),
+        KeychainItem(name: "DeviceData", displayValue: TestData.sampleDevice.endpointArn, itemType: .deviceData),
+      ]
     }
   }
 
   @MainActor
   @Test("onAppear with only token shows token item")
   func onAppearOnlyToken() async {
-    await withMainSerialExecutor {
-      let testToken = "short-token"
-      let store = TestStore(initialState: DiagnosticFeature.State()) {
-        DiagnosticFeature()
-      } withDependencies: {
-        $0.keychainClient.getJwtToken = { testToken }
-        $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
-        $0.keychainClient.getDeviceData = { nil }
-        $0.keychainClient.getTokenExpiresAt = { nil }
-        $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
-      }
+    let testToken = "short-token"
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.keychainClient.getJwtToken = { testToken }
+      $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
+      $0.keychainClient.getDeviceData = { nil }
+      $0.keychainClient.getTokenExpiresAt = { nil }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
+    }
 
-      await store.send(.onAppear) {
-        $0.isLoading = true
-      }
+    await store.send(.onAppear) {
+      $0.isLoading = true
+    }
 
-      // withMainSerialExecutor ensures deterministic action ordering
-      await store.receive(\.loadMetrics)
-      await store.receive(\.metricsLoaded)
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
 
-      await store.receive(\.tokenExpirationLoaded)
-      // tokenExpiresAt remains nil
+    await store.receive(\.tokenExpirationLoaded)
 
-      await store.receive(\.keychainItemsLoaded) {
-        $0.isLoading = false
-        $0.keychainItems = [
-          KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
-        ]
-      }
+    await store.receive(\.keychainItemsLoaded) {
+      $0.isLoading = false
+      $0.keychainItems = [
+        KeychainItem(name: "Token", displayValue: testToken, itemType: .token),
+      ]
     }
   }
 
   @MainActor
   @Test("onAppear with no keychain items shows empty list")
   func onAppearNoItems() async {
-    await withMainSerialExecutor {
-      let store = TestStore(initialState: DiagnosticFeature.State()) {
-        DiagnosticFeature()
-      } withDependencies: {
-        $0.keychainClient.getJwtToken = { nil }
-        $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
-        $0.keychainClient.getDeviceData = { nil }
-        $0.keychainClient.getTokenExpiresAt = { nil }
-        $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
-      }
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.keychainClient.getJwtToken = { nil }
+      $0.keychainClient.getUserData = { throw KeychainError.unableToStore }
+      $0.keychainClient.getDeviceData = { nil }
+      $0.keychainClient.getTokenExpiresAt = { nil }
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
+    }
 
-      await store.send(.onAppear) {
-        $0.isLoading = true
-      }
+    await store.send(.onAppear) {
+      $0.isLoading = true
+    }
 
-      // withMainSerialExecutor ensures deterministic action ordering
-      await store.receive(\.loadMetrics)
-      await store.receive(\.metricsLoaded)
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
 
-      await store.receive(\.tokenExpirationLoaded)
-      // tokenExpiresAt remains nil
+    await store.receive(\.tokenExpirationLoaded)
 
-      await store.receive(\.keychainItemsLoaded) {
-        $0.isLoading = false
-        $0.keychainItems = []
-      }
+    await store.receive(\.keychainItemsLoaded) {
+      $0.isLoading = false
+      $0.keychainItems = []
     }
   }
 
@@ -124,6 +117,8 @@ struct DiagnosticFeatureTests {
   func toggleDebugModeOn() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.toggleDebugMode) {
@@ -139,6 +134,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.toggleDebugMode) {
@@ -161,6 +158,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteJwtToken = { deleteTokenCalled.setValue(true) }
     }
 
@@ -185,6 +183,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteUserData = { deleteUserDataCalled.setValue(true) }
     }
 
@@ -209,6 +208,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteDeviceData = { deleteDeviceDataCalled.setValue(true) }
     }
 
@@ -230,6 +230,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.deleteKeychainItem(IndexSet()))
@@ -241,24 +243,23 @@ struct DiagnosticFeatureTests {
   @MainActor
   @Test("Truncate files calls coreDataClient")
   func truncateFiles() async {
-    await withMainSerialExecutor {
-      let truncateCalled = LockIsolated(false)
+    let truncateCalled = LockIsolated(false)
 
-      let store = TestStore(initialState: DiagnosticFeature.State()) {
-        DiagnosticFeature()
-      } withDependencies: {
-        $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
-        $0.coreDataClient.resetMetrics = {}
-        $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
-      }
-
-      await store.send(.truncateFilesButtonTapped)
-      await store.receive(\.filesTruncated)
-      await store.receive(\.loadMetrics)
-      await store.receive(\.metricsLoaded)
-
-      #expect(truncateCalled.value == true)
+    let store = TestStore(initialState: DiagnosticFeature.State()) {
+      DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.coreDataClient.truncateFiles = { truncateCalled.setValue(true) }
+      $0.coreDataClient.resetMetrics = {}
+      $0.coreDataClient.getMetrics = { FileMetrics(downloadCount: 0, totalStorageBytes: 0, playCount: 0) }
     }
+
+    await store.send(.truncateFilesButtonTapped)
+    await store.receive(\.filesTruncated)
+    await store.receive(\.loadMetrics)
+    await store.receive(\.metricsLoaded)
+
+    #expect(truncateCalled.value == true)
   }
 
   // MARK: - Error Handling Tests
@@ -274,6 +275,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.keychainClient.deleteJwtToken = { throw KeychainError.unableToStore }
     }
 
@@ -300,6 +302,7 @@ struct DiagnosticFeatureTests {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.truncateFiles = { throw CoreDataError.deleteFailed("Permission denied") }
     }
 
@@ -323,6 +326,8 @@ struct DiagnosticFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: DiagnosticFeature.State()) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.showError(.keychainError(operation: "read"))) {
@@ -352,6 +357,8 @@ struct DiagnosticFeatureTests {
 
     let store = TestStore(initialState: state) {
       DiagnosticFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.dismiss)) {

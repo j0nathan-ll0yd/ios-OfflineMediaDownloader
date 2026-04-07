@@ -1,8 +1,10 @@
 import ComposableArchitecture
 import Foundation
 @testable import OfflineMediaDownloader
+import OrderedCollections
 import Testing
 
+@Suite(.serialized)
 struct FileListFeatureTests {
   // MARK: - Loading Tests
 
@@ -10,12 +12,14 @@ struct FileListFeatureTests {
   @Test("onAppear loads files from CoreData without loading indicator")
   func onAppearLoadsFiles() async {
     var state = FileListFeature.State()
-    state.isAuthenticated = true // User is authenticated
-    state.isRegistered = true // Prevent auto-refresh (only unregistered users auto-refresh)
+    state.$isAuthenticated.withLock { $0 = true } // User is authenticated
+    state.$isRegistered.withLock { $0 = true } // Prevent auto-refresh (only unregistered users auto-refresh)
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
     }
 
@@ -33,8 +37,8 @@ struct FileListFeatureTests {
   @Test("Local files preserve download state on reload")
   func preserveDownloadStateOnReload() async {
     var state = FileListFeature.State()
-    state.isAuthenticated = true // User is authenticated
-    state.isRegistered = true // Prevent auto-refresh (only unregistered users auto-refresh)
+    state.$isAuthenticated.withLock { $0 = true } // User is authenticated
+    state.$isRegistered.withLock { $0 = true } // Prevent auto-refresh (only unregistered users auto-refresh)
     var existingCellState = FileCellFeature.State(file: TestData.sampleFile)
     existingCellState.isDownloaded = true
     existingCellState.downloadProgress = 1.0
@@ -43,6 +47,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
     }
 
@@ -64,6 +70,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -96,6 +104,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -129,6 +139,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
@@ -176,6 +188,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
@@ -210,6 +224,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(
         message: "Database unavailable",
         requestId: "test-request-id",
@@ -257,6 +273,9 @@ struct FileListFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.showError(.invalidClipboardUrl)) {
@@ -273,9 +292,11 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Alert dismiss clears alert state")
+  @Test("Alert dismiss clears alert and pending state")
   func alertDismissClearsState() async {
     var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
     state.alert = AlertState {
       TextState("Test")
     } actions: {
@@ -286,10 +307,15 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
-    await store.send(.alert(.dismiss)) {
+    await store.send(.alert(.presented(.dismiss))) {
       $0.alert = nil
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
     }
   }
 
@@ -308,6 +334,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -341,10 +369,13 @@ struct FileListFeatureTests {
   @Test("Add button shows confirmation dialog when authenticated")
   func addButtonShowsConfirmation() async {
     var state = FileListFeature.State()
-    state.isAuthenticated = true
+    state.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addButtonTapped) {
@@ -357,52 +388,91 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Add file success adds pending file ID")
-  func addFileAddsPendingId() async {
+  @Test("Add file success starts LiveActivity when youtubeId is pending")
+  func addFileSuccessStartsLiveActivity() async {
     var state = FileListFeature.State()
     state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "youtube-video-id"
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
-      $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
-    // Simulate having a pending ID added
-    await store.send(.addPendingFileId("youtube-video-id")) {
+    await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
+
+    // LiveActivity starts only after successful response
+    await store.receive(\.addPendingFileId) {
       $0.pendingFileIds = ["youtube-video-id"]
+    }
+  }
+
+  @MainActor
+  @Test("Add file success without youtubeId does not start LiveActivity")
+  func addFileSuccessNoLiveActivity() async {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://example.com/file.mp4")
+    // No pendingYoutubeId
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
       $0.pendingAddUrl = nil
     }
+    // No addPendingFileId received - no LiveActivity
   }
 
   @MainActor
-  @Test("Add file auth error triggers delegate")
+  @Test("Add file auth error triggers delegate and clears pending state")
   func addFileAuthError() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
-    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id"))))
+    await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id")))) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
     await store.receive(\.delegate.authenticationRequired)
   }
 
   @MainActor
-  @Test("Add file server error shows alert")
+  @Test("Add file server error shows inline alert (non-retryable)")
   func addFileServerError() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(
       message: "Invalid URL",
       requestId: "test-request-id",
       correlationId: "test-correlation-id"
-    ))))
-
-    await store.receive(\.showError) {
+    )))) {
+      // Inline alert wired to retryAddFile (server errors are non-retryable, so OK-only)
       $0.alert = AlertState {
         TextState("Server Error")
       } actions: {
@@ -412,6 +482,95 @@ struct FileListFeatureTests {
       } message: {
         TextState("Invalid URL\n\nCorrelation ID: test-correlation-id\nRequest ID: test-request-id")
       }
+      // Pending state preserved for potential future retry
+    }
+  }
+
+  @MainActor
+  @Test("Add file network error shows alert with retryAddFile action")
+  func addFileNetworkErrorShowsRetryAlert() async {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.addFileResponse(.failure(TestData.TestNetworkError.notConnected))) {
+      $0.alert = AlertState {
+        TextState("No Connection")
+      } actions: {
+        ButtonState(action: .retryAddFile) {
+          TextState("Retry")
+        }
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Please check your internet connection and try again.")
+      }
+      // Pending state preserved for retry
+    }
+  }
+
+  @MainActor
+  @Test("Retry add file after failure succeeds and starts LiveActivity")
+  func retryAddFileSucceedsWithLiveActivity() async {
+    var state = FileListFeature.State()
+    state.pendingAddUrl = URL(string: "https://youtube.com/watch?v=test")
+    state.pendingYoutubeId = "test-id"
+    state.alert = AlertState {
+      TextState("No Connection")
+    } actions: {
+      ButtonState(action: .retryAddFile) {
+        TextState("Retry")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("OK")
+      }
+    }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
+    }
+
+    await store.send(.alert(.presented(.retryAddFile))) {
+      $0.alert = nil
+    }
+
+    await store.receive(\.addFileResponse.success) {
+      $0.pendingAddUrl = nil
+      $0.pendingYoutubeId = nil
+    }
+
+    // LiveActivity starts after successful retry
+    await store.receive(\.addPendingFileId) {
+      $0.pendingFileIds = ["test-id"]
+    }
+  }
+
+  @MainActor
+  @Test("prepareAddFile sets pending URL and youtubeId")
+  func prepareAddFileSetsState() async throws {
+    let store = TestStore(initialState: FileListFeature.State()) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    let url = try #require(URL(string: "https://youtube.com/watch?v=abc123"))
+    await store.send(.prepareAddFile(url: url, youtubeId: "abc123")) {
+      $0.pendingAddUrl = url
+      $0.pendingYoutubeId = "abc123"
     }
   }
 
@@ -430,6 +589,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -453,6 +614,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -477,6 +640,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.fileAddedFromPush(updatedFile)) {
@@ -495,6 +661,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.updateFileUrl(fileId: pendingFile.fileId, url: newUrl)) {
@@ -511,6 +680,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -537,6 +708,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.deleteFiles(IndexSet(integer: 0))) {
@@ -552,6 +726,9 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.files(.element(id: TestData.downloadedFile.fileId, action: .delegate(.fileDeleted(TestData.downloadedFile))))) {
@@ -570,6 +747,8 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
       $0.coreDataClient.incrementPlayCount = {}
     }
 
@@ -590,10 +769,89 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
     await store.send(.dismissPlayer) {
       $0.playingFile = nil
+    }
+  }
+
+  // MARK: - Pending File ID Deduplication Tests
+
+  @MainActor
+  @Test("addPendingFileId is idempotent — duplicate ID is not appended")
+  func addPendingFileIdIdempotent() async {
+    var state = FileListFeature.State()
+    state.pendingFileIds = ["existing-id"]
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.addPendingFileId("existing-id"))
+    // pendingFileIds should still contain exactly one entry (OrderedSet no-ops on duplicate)
+    #expect(store.state.pendingFileIds == OrderedSet(["existing-id"]))
+    #expect(store.state.pendingFileIds.count == 1)
+  }
+
+  @MainActor
+  @Test("fileFailed removes fileId from pendingFileIds")
+  func fileFailedRemovesPendingId() async {
+    var state = FileListFeature.State()
+    state.pendingFileIds = ["failing-id", "other-id"]
+    state.files = [FileCellFeature.State(file: TestData.sampleFile)]
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.fileFailed(fileId: "failing-id", error: "Server error")) {
+      $0.pendingFileIds = ["other-id"]
+      $0.alert = AlertState {
+        TextState("Download Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Server error")
+      }
+    }
+  }
+
+  @MainActor
+  @Test("fileFailed for unknown pending ID is safe no-op on pendingFileIds")
+  func fileFailedUnknownPendingId() async {
+    let state = FileListFeature.State()
+    // pendingFileIds is empty
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.fileFailed(fileId: "unknown-id", error: "Error")) {
+      // pendingFileIds remains empty (remove is a no-op)
+      $0.alert = AlertState {
+        TextState("Download Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Error")
+      }
     }
   }
 }

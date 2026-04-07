@@ -1,0 +1,79 @@
+import ComposableArchitecture
+import Foundation
+
+@DependencyClient
+public struct FileClient: Sendable {
+  public var documentsDirectory: @Sendable () -> URL = {
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+  }
+
+  public var filePath: @Sendable (_ url: URL) -> URL = { url in
+    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    return documentsPath.appendingPathComponent(url.lastPathComponent)
+  }
+
+  public var fileExists: @Sendable (_ url: URL) -> Bool = { _ in false }
+  public var deleteFile: @Sendable (_ url: URL) async throws -> Void
+  public var moveFile: @Sendable (_ from: URL, _ to: URL) throws -> Void
+}
+
+public extension DependencyValues {
+  var fileClient: FileClient {
+    get { self[FileClient.self] }
+    set { self[FileClient.self] = newValue }
+  }
+}
+
+public enum FileClientError: Error {
+  case deletionFailed(String)
+  case moveFailed(String)
+}
+
+// MARK: - Live API implementation
+
+extension FileClient: DependencyKey {
+  public static let liveValue = FileClient(
+    documentsDirectory: {
+      FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    },
+    filePath: { url in
+      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      return documentsPath.appendingPathComponent(url.lastPathComponent)
+    },
+    fileExists: { url in
+      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let fileURL = documentsPath.appendingPathComponent(url.lastPathComponent)
+      return FileManager.default.fileExists(atPath: fileURL.path)
+    },
+    deleteFile: { url in
+      let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let fileURL = documentsPath.appendingPathComponent(url.lastPathComponent)
+      if FileManager.default.fileExists(atPath: fileURL.path) {
+        do {
+          try FileManager.default.removeItem(at: fileURL)
+        } catch {
+          throw FileClientError.deletionFailed("Error deleting file \(fileURL): \(error)")
+        }
+      }
+    },
+    moveFile: { from, to in
+      // Remove existing file if present
+      if FileManager.default.fileExists(atPath: to.path) {
+        try FileManager.default.removeItem(at: to)
+      }
+      try FileManager.default.moveItem(at: from, to: to)
+    }
+  )
+
+  public static let testValue = FileClient(
+    documentsDirectory: {
+      URL(fileURLWithPath: "/tmp/test-documents")
+    },
+    filePath: { url in
+      URL(fileURLWithPath: "/tmp/test-documents").appendingPathComponent(url.lastPathComponent)
+    },
+    fileExists: { _ in false },
+    deleteFile: { _ in },
+    moveFile: { _, _ in }
+  )
+}

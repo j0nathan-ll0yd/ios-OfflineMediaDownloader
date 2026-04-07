@@ -39,13 +39,13 @@ extension ServerClientError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case let .internalServerError(message, _, _):
-      return NSLocalizedString(message, comment: "Server error")
+      NSLocalizedString(message, comment: "Server error")
     case .unauthorized:
-      return NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
+      NSLocalizedString("Session expired - please login again", comment: "Unauthorized error")
     case let .badRequest(message, _, _):
-      return NSLocalizedString(message, comment: "Bad request error")
+      NSLocalizedString(message, comment: "Bad request error")
     case let .networkError(message, _, _):
-      return NSLocalizedString(message, comment: "Network error")
+      NSLocalizedString(message, comment: "Network error")
     }
   }
 
@@ -56,7 +56,7 @@ extension ServerClientError: LocalizedError {
          let .unauthorized(requestId, _),
          let .badRequest(_, requestId, _),
          let .networkError(_, requestId, _):
-      return requestId
+      requestId
     }
   }
 
@@ -67,7 +67,7 @@ extension ServerClientError: LocalizedError {
          let .unauthorized(_, correlationId),
          let .badRequest(_, _, correlationId),
          let .networkError(_, _, correlationId):
-      return correlationId
+      correlationId
     }
   }
 }
@@ -81,13 +81,14 @@ private func handleAPIResponse<SuccessPayload, DomainResponse>(
   errorExtractor: () -> (statusCode: Int, message: String?, requestId: String?)?,
   transform: (SuccessPayload) throws -> DomainResponse
 ) throws -> DomainResponse {
+  @Dependency(\.logger) var logger
   if let payload = successExtractor() {
-    print("📡 ServerClient.\(endpoint) succeeded")
+    logger.info(.network, "ServerClient.\(endpoint) succeeded")
     return try transform(payload)
   }
 
   if let (statusCode, message, requestId) = errorExtractor() {
-    print("📡 ServerClient.\(endpoint) failed: HTTP \(statusCode)")
+    logger.warning(.network, "ServerClient.\(endpoint) failed: HTTP \(statusCode)")
     throw mapStatusCodeToError(statusCode, message: message, requestId: requestId)
   }
 
@@ -102,17 +103,17 @@ private func mapStatusCodeToError(
 ) -> ServerClientError {
   switch statusCode {
   case 400:
-    return .badRequest(message: message ?? "Bad request", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Bad request", requestId: requestId, correlationId: nil)
   case 401, 403:
-    return .unauthorized(requestId: requestId, correlationId: nil)
+    .unauthorized(requestId: requestId, correlationId: nil)
   case 404:
-    return .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Not found", requestId: requestId, correlationId: nil)
   case 409:
-    return .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
+    .badRequest(message: message ?? "Conflict", requestId: requestId, correlationId: nil)
   case 500 ... 599:
-    return .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
+    .internalServerError(message: message ?? "Server error", requestId: requestId, correlationId: nil)
   default:
-    return .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
+    .networkError(message: "HTTP \(statusCode)", requestId: requestId, correlationId: nil)
   }
 }
 
@@ -156,8 +157,8 @@ private func makeAuthenticatedAPIClient() -> Client {
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
-      APIKeyMiddleware(apiKey: Environment.apiKey),
-      AuthenticationMiddleware(keychainClient: keychainClient),
+      APIKeyMiddleware(apiKey: Environment.apiKey, logger: logger),
+      AuthenticationMiddleware(keychainClient: keychainClient, logger: logger),
     ]
   )
 }
@@ -172,7 +173,7 @@ private func makeUnauthenticatedAPIClient() -> Client {
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
-      APIKeyMiddleware(apiKey: Environment.apiKey),
+      APIKeyMiddleware(apiKey: Environment.apiKey, logger: logger),
     ]
   )
 }
@@ -182,7 +183,8 @@ private func makeUnauthenticatedAPIClient() -> Client {
 extension ServerClient: DependencyKey {
   static let liveValue = ServerClient(
     registerDevice: { token in
-      print("📡 ServerClient.registerDevice called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.registerDevice called")
       let client = makeAuthenticatedAPIClient()
 
       let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
@@ -199,7 +201,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
+        logger.debug(.network, "Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
       #endif
 
       let response = try await client.Devices_registerDevice(
@@ -211,19 +213,19 @@ extension ServerClient: DependencyKey {
         endpoint: "registerDevice",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          case let .created(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          case let .created(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_DeviceRegistrationResponse) in
@@ -237,7 +239,8 @@ extension ServerClient: DependencyKey {
     },
 
     registerUser: { userData, authorizationCode in
-      print("📡 ServerClient.registerUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.registerUser called")
       let client = makeUnauthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_UserRegistrationRequest(
@@ -247,7 +250,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
+        logger.debug(.network, "Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
       #endif
 
       let response = try await client.Authentication_registerUser(
@@ -259,17 +262,17 @@ extension ServerClient: DependencyKey {
         endpoint: "registerUser",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
@@ -288,7 +291,8 @@ extension ServerClient: DependencyKey {
     },
 
     loginUser: { authorizationCode in
-      print("📡 ServerClient.loginUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.loginUser called")
       let client = makeUnauthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_UserLoginRequest(
@@ -296,7 +300,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
+        logger.debug(.network, "Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
       #endif
 
       let response = try await client.Authentication_loginUser(
@@ -308,19 +312,19 @@ extension ServerClient: DependencyKey {
         endpoint: "loginUser",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .notFound(r): return (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .conflict(r): return (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .notFound(r): (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .conflict(r): (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
@@ -339,7 +343,8 @@ extension ServerClient: DependencyKey {
     },
 
     refreshToken: {
-      print("📡 ServerClient.refreshToken called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.refreshToken called")
       let client = makeAuthenticatedAPIClient()
 
       let response = try await client.Authentication_refreshToken(
@@ -350,16 +355,16 @@ extension ServerClient: DependencyKey {
         endpoint: "refreshToken",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_TokenRefreshResponse) in
@@ -378,7 +383,8 @@ extension ServerClient: DependencyKey {
     },
 
     getFiles: { statusFilter in
-      print("📡 ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
       // TODO: Add query parameter support when backend API is deployed and OpenAPI types regenerated
@@ -391,17 +397,17 @@ extension ServerClient: DependencyKey {
         endpoint: "getFiles",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .unauthorized(r): return (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_FileListResponse) in
@@ -416,7 +422,8 @@ extension ServerClient: DependencyKey {
     },
 
     addFile: { url in
-      print("📡 ServerClient.addFile called with URL: \(url)")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.addFile called with URL: \(url)")
       let client = makeAuthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_FeedlyWebhookRequest(
@@ -425,7 +432,7 @@ extension ServerClient: DependencyKey {
       )
 
       #if DEBUG
-        print("📡 Request body: articleURL=\(url.absoluteString)")
+        logger.debug(.network, "Request body: articleURL=\(url.absoluteString)")
       #endif
 
       let response = try await client.Webhooks_processFeedlyWebhook(
@@ -437,18 +444,18 @@ extension ServerClient: DependencyKey {
         endpoint: "addFile",
         successExtractor: {
           switch response {
-          case let .ok(r): return try? r.body.json.body.value1
-          case let .accepted(r): return try? r.body.json.body.value1
-          default: return nil
+          case let .ok(r): try? r.body.json.body.value1
+          case let .accepted(r): try? r.body.json.body.value1
+          default: nil
           }
         },
         errorExtractor: {
           switch response {
-          case let .badRequest(r): return (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): return (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): return (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): return (code, nil, p.headerFields[amznRequestIdField])
-          default: return nil
+          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
+          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
+          case let .undocumented(code, p): (code, nil, p.headerFields[amznRequestIdField])
+          default: nil
           }
         },
         transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
@@ -462,7 +469,8 @@ extension ServerClient: DependencyKey {
     },
 
     logoutUser: {
-      print("📡 ServerClient.logoutUser called")
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.logoutUser called")
       let client = makeAuthenticatedAPIClient()
 
       let response = try await client.Authentication_logoutUser(
@@ -471,7 +479,7 @@ extension ServerClient: DependencyKey {
 
       switch response {
       case .noContent:
-        print("📡 ServerClient.logoutUser succeeded")
+        logger.info(.network, "ServerClient.logoutUser succeeded")
         return
       case let .unauthorized(r):
         throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
@@ -577,6 +585,52 @@ extension ServerClient {
         body: DownloadFileResponseDetail(status: "queued"),
         error: nil,
         requestId: "test-request-id"
+      )
+    },
+    logoutUser: {}
+  )
+
+  static let previewValue = ServerClient(
+    registerDevice: { _ in
+      RegisterDeviceResponse(
+        body: EndpointResponse(endpointArn: "preview-endpoint"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    registerUser: { _, _ in
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    loginUser: { _ in
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    refreshToken: {
+      LoginResponse(
+        body: TokenResponse(token: "preview-token", expiresAt: nil, sessionId: nil, userId: nil),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    getFiles: { _ in
+      FileResponse(
+        body: FileList(contents: [], keyCount: 0),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    addFile: { _ in
+      DownloadFileResponse(
+        body: DownloadFileResponseDetail(status: "queued"),
+        error: nil,
+        requestId: "preview"
       )
     },
     logoutUser: {}

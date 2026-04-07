@@ -5,7 +5,7 @@ import SwiftUI
 
 struct LifegamesLoginView: View {
   /// The user's name if registered (nil if not registered)
-  var registeredUserName: String? = nil
+  var registeredUserName: String?
   var isLoading: Bool = false
   var onSignInWithApple: ((ASAuthorizationAppleIDRequest) -> Void)?
   var onAppleSignInComplete: ((Result<ASAuthorization, Error>) -> Void)?
@@ -19,9 +19,9 @@ struct LifegamesLoginView: View {
 
   private var welcomeSubtitle: String {
     if let name = registeredUserName, !name.isEmpty {
-      return name
+      name
     } else {
-      return "Sign in to get started"
+      "Sign in to get started"
     }
   }
 

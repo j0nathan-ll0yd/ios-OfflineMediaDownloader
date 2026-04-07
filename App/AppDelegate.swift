@@ -2,8 +2,10 @@ import AVFoundation
 import ComposableArchitecture
 import Foundation
 import SwiftUI
+@preconcurrency import UIKit
 import UserNotifications
 
+@MainActor
 class AppDelegate: NSObject, UIApplicationDelegate {
   /// Check if running as a test host (unit tests hosted by the app)
   private static var isRunningTests: Bool {
@@ -63,7 +65,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     do {
       try audioSession.setCategory(.playback, mode: .moviePlayback)
     } catch {
-      print("Setting audio session category failed: \(error)")
+      @Dependency(\.logger) var logger
+      logger.warning(.lifecycle, "Setting audio session category failed: \(error)")
     }
 
     store.send(.didFinishLaunching)
@@ -90,7 +93,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
-    print("📥 Received push notification: \(userInfo)")
+    @Dependency(\.logger) var logger
+    logger.info(.push, "Received push notification: \(userInfo)")
     // Send to TCA store for processing
     store.send(.receivedPushNotification(userInfo))
     completionHandler(.newData)
@@ -101,11 +105,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     handleEventsForBackgroundURLSession identifier: String,
     completionHandler: @escaping () -> Void
   ) {
-    print("📥 AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
+    @Dependency(\.logger) var logger
+    logger.info(.lifecycle, "AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
     // Re-initialize DownloadManager if needed (it's a singleton, so accessing .shared ensures it's initialized)
     // Pass the completion handler to DownloadManager
+    nonisolated(unsafe) let handler = completionHandler
     Task {
-      await DownloadManager.shared.setBackgroundCompletionHandler(completionHandler)
+      await DownloadManager.shared.setBackgroundCompletionHandler(handler)
     }
   }
 }

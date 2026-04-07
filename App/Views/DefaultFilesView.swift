@@ -85,7 +85,7 @@ struct DefaultFilesView: View {
     Button {
       if store.isDownloaded {
         store.send(.playButtonTapped)
-      } else if !store.isDownloading && !store.isLoadingFile {
+      } else if !store.isDownloading, !store.isLoadingFile {
         store.send(.downloadButtonTapped)
       }
     } label: {

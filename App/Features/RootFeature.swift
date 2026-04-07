@@ -4,14 +4,17 @@ import UserNotifications
 
 // MARK: - Notification Setup Helper
 
+@MainActor
 func setupNotifications() {
+  @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
+  let client = notificationRegistrationClient
   let center = UNUserNotificationCenter.current()
   center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
     guard granted else { return }
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       guard settings.authorizationStatus == .authorized else { return }
-      DispatchQueue.main.async {
-        UIApplication.shared.registerForRemoteNotifications()
+      Task {
+        await client.registerForRemoteNotifications()
       }
     }
   }
@@ -31,23 +34,18 @@ struct RootFeature {
     init() {}
     var isLaunching: Bool = true
     var launchStatus: String = "Starting..."
-    var isAuthenticated: Bool = false
+    @Shared(.inMemory("isAuthenticated")) var isAuthenticated = false
+    @Shared(.inMemory("isRegistered")) var isRegistered = false
     var login: LoginFeature.State = .init()
     var main: MainFeature.State = .init()
+    var downloadTracking: DownloadTrackingFeature.State = .init()
 
-    // Download initiation tracking - blocks UI until first progress received
-    var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
     var isBlockingForDownloadInitiation: Bool {
-      !initiatingDownloads.isEmpty
+      downloadTracking.isBlockingForDownloadInitiation
     }
 
-    struct DownloadInitiation: Equatable, Identifiable {
-      var id: String {
-        fileId
-      }
-
-      let fileId: String
-      let title: String
+    var initiatingDownloads: IdentifiedArrayOf<DownloadTrackingFeature.State.DownloadInitiation> {
+      downloadTracking.initiatingDownloads
     }
 
     #if DEBUG
@@ -69,11 +67,7 @@ struct RootFeature {
     case processedPushNotification(PushNotificationType)
     case fileMetadataSaved(File)
     case downloadReadyProcessed(fileId: String, key: String, url: URL, size: Int64)
-    case backgroundDownloadCompleted(fileId: String)
-    case backgroundDownloadFailed(fileId: String, error: String)
-    // Download initiation tracking
-    case downloadFirstProgressReceived(fileId: String)
-    case downloadInitiationTimeout(fileId: String)
+    case downloadTracking(DownloadTrackingFeature.Action)
     case login(LoginFeature.Action)
     case main(MainFeature.Action)
     case requestDeviceRegistration
@@ -83,6 +77,11 @@ struct RootFeature {
     #endif
   }
 
+  private enum CancelID {
+    case tokenRefresh
+    case deviceRegistration
+  }
+
   @Dependency(\.authenticationClient) var authenticationClient
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
@@ -90,10 +89,15 @@ struct RootFeature {
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.logger) var logger
+  @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
+  @Dependency(\.liveActivityClient) var liveActivityClient
 
   var body: some ReducerOf<Self> {
     Scope(state: \.login, action: \.login) {
       LoginFeature()
+    }
+    Scope(state: \.downloadTracking, action: \.downloadTracking) {
+      DownloadTrackingFeature()
     }
 
     Reduce { state, action in
@@ -102,8 +106,8 @@ struct RootFeature {
         // Keep isLaunching = true until auth check completes
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
-        setupNotifications()
         return .run { [authenticationClient] send in
+          await MainActor.run { setupNotifications() }
           let authState = await authenticationClient.determineAuthState()
           await send(.authStateResponse(authState))
         }
@@ -115,13 +119,8 @@ struct RootFeature {
         ])
         state.isLaunching = false // Now safe to show main view
         state.login.registrationStatus = authState.registrationStatus
-        state.isAuthenticated = authState.isAuthenticated
-        // Propagate auth state to MainFeature
-        state.main.isAuthenticated = authState.isAuthenticated
-        state.main.fileList.isAuthenticated = authState.isAuthenticated
-        // Propagate registration status to MainFeature
-        state.main.isRegistered = authState.isRegistered
-        state.main.fileList.isRegistered = authState.isRegistered
+        state.$isAuthenticated.withLock { $0 = authState.isAuthenticated }
+        state.$isRegistered.withLock { $0 = authState.isRegistered }
 
         if authState.isAuthenticated {
           logger.info(.auth, "User is authenticated - checking token expiration")
@@ -139,6 +138,7 @@ struct RootFeature {
             try await serverClient.registerDevice(token: token)
           }))
         }
+        .cancellable(id: CancelID.deviceRegistration, cancelInFlight: true)
 
       case .didFailToRegisterForRemoteNotificationsWithError:
         return .none
@@ -154,9 +154,7 @@ struct RootFeature {
         if let serverError = error as? ServerClientError,
            case .unauthorized = serverError
         {
-          state.isAuthenticated = false
-          state.main.isAuthenticated = false
-          state.main.fileList.isAuthenticated = false
+          state.$isAuthenticated.withLock { $0 = false }
           return .run { _ in
             try? await keychainClient.deleteJwtToken()
             try? await keychainClient.deleteTokenExpiresAt()
@@ -166,10 +164,8 @@ struct RootFeature {
 
       case .requestDeviceRegistration:
         logger.info(.push, "Re-requesting device registration with authentication")
-        return .run { _ in
-          await MainActor.run {
-            UIApplication.shared.registerForRemoteNotifications()
-          }
+        return .run { [notificationRegistrationClient] _ in
+          await notificationRegistrationClient.registerForRemoteNotifications()
         }
 
       // MARK: - Token Refresh
@@ -191,6 +187,7 @@ struct RootFeature {
             logger.info(.auth, "Token valid for \(Int(timeUntilExpiration))s - no refresh needed")
           }
         }
+        .cancellable(id: CancelID.tokenRefresh, cancelInFlight: true)
 
       case let .tokenRefreshResponse(.success(response)):
         guard let token = response.body?.token else {
@@ -200,7 +197,7 @@ struct RootFeature {
         let expirationDate = response.body?.expirationDate
         return .run { [keychainClient, logger] _ in
           try await keychainClient.setJwtToken(token)
-          if let expirationDate = expirationDate {
+          if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
           logger.info(.auth, "Token refreshed successfully")
@@ -221,25 +218,15 @@ struct RootFeature {
       // Handle login completion - user already registered, just re-authenticated
       case .login(.delegate(.loginCompleted)),
            .main(.delegate(.loginCompleted)):
-        state.isAuthenticated = true
-        state.main.isAuthenticated = true
-        state.main.fileList.isAuthenticated = true
-        // User is already registered, just needs authentication state updated
-        state.main.isRegistered = true
-        state.main.fileList.isRegistered = true
-        // Don't trigger device registration - user already registered their device
+        state.$isAuthenticated.withLock { $0 = true }
+        state.$isRegistered.withLock { $0 = true }
         return .none
 
       // Handle registration completion - first time registration
       case .login(.delegate(.registrationCompleted)),
            .main(.delegate(.registrationCompleted)):
-        state.isAuthenticated = true
-        state.main.isAuthenticated = true
-        state.main.fileList.isAuthenticated = true
-        // User is now registered for the first time
-        state.main.isRegistered = true
-        state.main.fileList.isRegistered = true
-        // Only trigger device registration on first registration
+        state.$isAuthenticated.withLock { $0 = true }
+        state.$isRegistered.withLock { $0 = true }
         return .send(.requestDeviceRegistration)
 
       case .login:
@@ -247,10 +234,7 @@ struct RootFeature {
 
       // Handle auth required from MainFeature - force user to re-login
       case .main(.delegate(.authenticationRequired)):
-        state.isAuthenticated = false
-        state.main.isAuthenticated = false
-        state.main.fileList.isAuthenticated = false
-        // Keep registration status - user is still registered, just needs to re-authenticate
+        state.$isAuthenticated.withLock { $0 = false }
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         // Present login sheet to force re-authentication
@@ -263,9 +247,7 @@ struct RootFeature {
         }
 
       case .main(.delegate(.signedOut)):
-        state.isAuthenticated = false
-        state.main.isAuthenticated = false
-        // Keep login.registrationStatus = .registered so user can log back in
+        state.$isAuthenticated.withLock { $0 = false }
         return .none
 
       // MARK: - Push Notification Handling
@@ -305,8 +287,8 @@ struct RootFeature {
 
         case let .failure(fileId, _, _, errorMessage):
           // Update file status to failed in CoreData and UI, end Live Activity
-          return .run { [coreDataClient] send in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
+          return .run { [coreDataClient, liveActivityClient] send in
+            await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
             try await coreDataClient.updateFileStatus(fileId, .failed)
             await send(.main(.fileList(.fileFailed(fileId: fileId, error: errorMessage))))
           }
@@ -320,87 +302,34 @@ struct RootFeature {
         // Forward to MainFeature to update FileList and start Live Activity
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
-          .run { _ in
-            await LiveActivityManager.shared.startActivity(for: file)
+          .run { [liveActivityClient] _ in
+            await liveActivityClient.startActivity(file)
           }
         )
 
       case let .downloadReadyProcessed(fileId, key, url, size):
         // Get title from files list or use key as fallback
         let title = state.main.fileList.files[id: fileId]?.file.title ?? key
-        // Track download initiation - shows blocking overlay
-        state.initiatingDownloads.append(State.DownloadInitiation(fileId: fileId, title: title))
-        // Start background download and update Live Activity
-        return .merge(
-          .send(.main(.activeDownloads(.downloadStarted(fileId: fileId, title: title, isBackground: true)))),
-          .run { [logger, downloadClient] send in
-            logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
-            await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: 0, status: .downloading)
-            let stream = downloadClient.downloadFile(url, size)
-            var firstProgressReceived = false
-            for await progress in stream {
-              switch progress {
-              case .completed:
-                await send(.backgroundDownloadCompleted(fileId: fileId))
-              case let .failed(message):
-                await send(.backgroundDownloadFailed(fileId: fileId, error: message))
-              case let .progress(percent):
-                // Dismiss overlay on first progress event
-                if !firstProgressReceived {
-                  firstProgressReceived = true
-                  await send(.downloadFirstProgressReceived(fileId: fileId))
-                }
-                await LiveActivityManager.shared.updateProgress(fileId: fileId, percent: percent, status: .downloading)
-                // Forward progress to in-app tracking
-                await send(.main(.activeDownloads(.downloadProgressUpdated(fileId: fileId, percent: percent))))
-              }
-            }
-          },
-          // Safety timeout - dismiss overlay after 10 seconds even if no progress
-          .run { send in
-            try? await Task.sleep(for: .seconds(10))
-            await send(.downloadInitiationTimeout(fileId: fileId))
-          }
-        )
+        return .send(.downloadTracking(.startDownload(fileId: fileId, title: title, url: url, size: size)))
 
-      case let .backgroundDownloadCompleted(fileId):
-        logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
-        // Remove from initiating downloads (in case overlay is still showing)
-        state.initiatingDownloads.remove(id: fileId)
-        // Mark file as downloaded for metrics tracking, end Live Activity, then refresh UI state
-        return .merge(
-          .run { [coreDataClient] send in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .downloaded)
-            try? await coreDataClient.markFileDownloaded(fileId)
-            await send(.main(.fileList(.refreshFileState(fileId))))
-          },
-          .send(.main(.activeDownloads(.downloadCompleted(fileId: fileId))))
-        )
+      // MARK: - Download Tracking Delegates
 
-      case let .backgroundDownloadFailed(fileId, error):
-        logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
-        // Remove from initiating downloads (in case overlay is still showing)
-        state.initiatingDownloads.remove(id: fileId)
-        // End Live Activity with failed status
-        return .merge(
-          .run { _ in
-            await LiveActivityManager.shared.endActivity(fileId: fileId, status: .failed, errorMessage: error)
-          },
-          .send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: error))))
-        )
+      case let .downloadTracking(.delegate(.downloadStarted(fileId, title, isBackground))):
+        return .send(.main(.activeDownloads(.downloadStarted(fileId: fileId, title: title, isBackground: isBackground))))
 
-      case let .downloadFirstProgressReceived(fileId):
-        // Dismiss the blocking overlay - download has started
-        state.initiatingDownloads.remove(id: fileId)
-        return .none
+      case let .downloadTracking(.delegate(.downloadProgressUpdated(fileId, percent))):
+        return .send(.main(.activeDownloads(.downloadProgressUpdated(fileId: fileId, percent: percent))))
 
-      case let .downloadInitiationTimeout(fileId):
-        // Safety timeout - dismiss overlay even if no progress received
-        // This prevents the overlay from blocking indefinitely
-        if state.initiatingDownloads[id: fileId] != nil {
-          logger.warning(.download, "Download initiation timed out", metadata: ["fileId": fileId])
-          state.initiatingDownloads.remove(id: fileId)
-        }
+      case let .downloadTracking(.delegate(.downloadCompleted(fileId))):
+        return .send(.main(.activeDownloads(.downloadCompleted(fileId: fileId))))
+
+      case let .downloadTracking(.delegate(.downloadFailed(fileId, error))):
+        return .send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: error))))
+
+      case let .downloadTracking(.delegate(.refreshFileState(fileId))):
+        return .send(.main(.fileList(.refreshFileState(fileId))))
+
+      case .downloadTracking:
         return .none
 
       case .main:
@@ -412,9 +341,7 @@ struct RootFeature {
           return .none
 
         case .diagnostic(.presented(.delegate(.authenticationInvalidated))):
-          state.isAuthenticated = false
-          state.main.isAuthenticated = false
-          state.main.fileList.isAuthenticated = false
+          state.$isAuthenticated.withLock { $0 = false }
           state.login.loginStatus = .unauthenticated
           state.diagnostic = nil // Dismiss the diagnostic sheet
           return .send(.main(.fileList(.clearAllFiles)))
