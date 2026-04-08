@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017  # v5.5.3
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate iOS version targets
         run: bash Scripts/validate-ios-version.sh
@@ -112,7 +112,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-xcode-env
       - name: Build APITypes package
         run: xcrun swift build --package-path APITypes --disable-sandbox
@@ -125,7 +125,7 @@ jobs:
     env:
       SNAPSHOT_TESTING_RECORD: never
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-xcode-env
         id: env
@@ -185,7 +185,7 @@ jobs:
 
       - name: Upload test results (always)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: |
@@ -196,7 +196,7 @@ jobs:
 
       - name: Upload snapshot failures (failure only)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: snapshot-failures
           path: |
@@ -231,7 +231,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-xcode-env
 
