@@ -68,14 +68,10 @@ enum FileMapper {
   static func fromAPI(_ api: APIFile) -> File {
     let publishDate: Date? = api.publishDate.flatMap { DateFormatters.parse($0) }
 
-    let status: FileStatus?
-      // The generator wraps allOf references in a payload struct with value1
-      = if let apiStatus = api.status?.value1
-    {
-      FileStatus(from: apiStatus)
-    } else {
-      nil
-    }
+    // Models.File.status is generated as an inline nested enum
+    // (Components.Schemas.Models_period_File.statusPayload) with String raw values
+    // matching the domain FileStatus enum.
+    let status: FileStatus? = api.status.flatMap { FileStatus(rawValue: $0.rawValue) }
 
     return File(
       fileId: api.fileId,
