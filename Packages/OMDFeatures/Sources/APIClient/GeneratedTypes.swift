@@ -32,7 +32,7 @@ public typealias APIWebhookResponse = Components.Schemas.Models_period_WebhookRe
 
 // MARK: - Error Types
 
-public typealias APIErrorResponse = Components.Schemas.ErrorResponse
-public typealias APIForbiddenError = Components.Schemas.ForbiddenError
-public typealias APIUnauthorizedError = Components.Schemas.UnauthorizedError
-public typealias APIInternalServerError = Components.Schemas.InternalServerError
+public typealias APIErrorResponse = Components.Schemas.Models_period_ErrorResponse
+public typealias APIForbiddenError = Components.Schemas.Models_period_ForbiddenError
+public typealias APIUnauthorizedError = Components.Schemas.Models_period_UnauthorizedError
+public typealias APIInternalServerError = Components.Schemas.Models_period_InternalServerError

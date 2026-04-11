@@ -185,8 +185,7 @@ extension ServerClient: DependencyKey {
         logger.debug(.network, "Request body: deviceId=\(deviceId), name=\(name), systemName=\(systemName)")
       #endif
 
-      let response = try await client.Devices_registerDevice(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+      let response = try await client.postDeviceRegister(
         body: .json(requestBody)
       )
 
@@ -194,8 +193,8 @@ extension ServerClient: DependencyKey {
         endpoint: "registerDevice",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
-          case let .created(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
+          case let .created(r): try? r.body.json
           default: nil
           }
         },
@@ -234,8 +233,7 @@ extension ServerClient: DependencyKey {
         logger.debug(.network, "Request body: firstName=\(userData.firstName), lastName=\(userData.lastName)")
       #endif
 
-      let response = try await client.Authentication_registerUser(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+      let response = try await client.postUserRegister(
         body: .json(requestBody)
       )
 
@@ -243,7 +241,7 @@ extension ServerClient: DependencyKey {
         endpoint: "registerUser",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
           default: nil
           }
         },
@@ -284,8 +282,7 @@ extension ServerClient: DependencyKey {
         logger.debug(.network, "Request body: authorizationCode=\(String(authorizationCode.prefix(20)))...")
       #endif
 
-      let response = try await client.Authentication_loginUser(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+      let response = try await client.postUserLogin(
         body: .json(requestBody)
       )
 
@@ -293,7 +290,7 @@ extension ServerClient: DependencyKey {
         endpoint: "loginUser",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
           default: nil
           }
         },
@@ -328,15 +325,13 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.refreshToken called")
       let client = makeAuthenticatedAPIClient()
 
-      let response = try await client.Authentication_refreshToken(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
-      )
+      let response = try await client.postUserRefresh()
 
       return try handleAPIResponse(
         endpoint: "refreshToken",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
           default: nil
           }
         },
@@ -368,15 +363,15 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
-      let response = try await client.Files_listFiles(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
+      let response = try await client.getFiles(
+        body: .json(Components.Schemas.Models_period_ListFilesQuery(status: statusFilter.rawValue))
       )
 
       return try handleAPIResponse(
         endpoint: "getFiles",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
           default: nil
           }
         },
@@ -406,7 +401,6 @@ extension ServerClient: DependencyKey {
       let client = makeAuthenticatedAPIClient()
 
       let requestBody = Components.Schemas.Models_period_FeedlyWebhookRequest(
-        articleTitle: "User Added",
         articleURL: url.absoluteString
       )
 
@@ -414,8 +408,7 @@ extension ServerClient: DependencyKey {
         logger.debug(.network, "Request body: articleURL=\(url.absoluteString)")
       #endif
 
-      let response = try await client.Webhooks_processFeedlyWebhook(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey),
+      let response = try await client.postFeedlyWebhook(
         body: .json(requestBody)
       )
 
@@ -423,8 +416,8 @@ extension ServerClient: DependencyKey {
         endpoint: "addFile",
         successExtractor: {
           switch response {
-          case let .ok(r): try? r.body.json.body.value1
-          case let .accepted(r): try? r.body.json.body.value1
+          case let .ok(r): try? r.body.json
+          case let .accepted(r): try? r.body.json
           default: nil
           }
         },
@@ -438,8 +431,14 @@ extension ServerClient: DependencyKey {
           }
         },
         transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
-          DownloadFileResponse(
-            body: DownloadFileResponseDetail(status: response.status.rawValue),
+          // WebhookResponse.status is a oneOf union with three possible literal values:
+          // Dispatched (value1), Initiated (value2), Accepted (value3).
+          let statusString = response.status.value1?.rawValue
+            ?? response.status.value2?.rawValue
+            ?? response.status.value3?.rawValue
+            ?? "unknown"
+          return DownloadFileResponse(
+            body: DownloadFileResponseDetail(status: statusString),
             error: nil,
             requestId: "generated"
           )
@@ -452,9 +451,7 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.logoutUser called")
       let client = makeAuthenticatedAPIClient()
 
-      let response = try await client.Authentication_logoutUser(
-        headers: .init(X_hyphen_API_hyphen_Key: Environment.apiKey)
-      )
+      let response = try await client.postUserLogout()
 
       switch response {
       case .noContent:
@@ -479,7 +476,7 @@ private func mapAPIFileToDomainFile(_ apiFile: Components.Schemas.Models_period_
 
   var fileStatus: FileStatus?
   if let statusPayload = apiFile.status {
-    switch statusPayload.value1 {
+    switch statusPayload {
     case .Queued:
       fileStatus = .queued
     case .Downloading:
