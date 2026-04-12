@@ -53,8 +53,10 @@ struct FileListFeature {
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
+    case fileDownloadStartedOnServer(fileId: String)
     case refreshFileState(String) // fileId
     case fileFailed(fileId: String, error: String)
+    case deleteFileFailed(File, String)
     case clearAllFiles // Clears state and CoreData (used on registration)
     case delegate(Delegate)
 
@@ -82,6 +84,7 @@ struct FileListFeature {
   @Dependency(\.logger) var logger
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.pasteboardClient) var pasteboardClient
+  @Dependency(\.fileClient) var fileClient
 
   private enum CancelID {
     case loadFiles
@@ -127,6 +130,7 @@ struct FileListFeature {
             newState.isDownloaded = existing.isDownloaded
             newState.isDownloading = existing.isDownloading
             newState.downloadProgress = existing.downloadProgress
+            newState.isServerDownloading = existing.isServerDownloading
           }
           return newState
         })
@@ -169,6 +173,7 @@ struct FileListFeature {
               newState.isDownloaded = existing.isDownloaded
               newState.isDownloading = existing.isDownloading
               newState.downloadProgress = existing.downloadProgress
+              newState.isServerDownloading = existing.isServerDownloading
             }
             return newState
           })
@@ -351,10 +356,31 @@ struct FileListFeature {
         return .none
 
       case let .deleteFiles(indexSet):
-        for index in indexSet {
+        let filesToDelete = indexSet.compactMap { index -> File? in
+          guard state.files.indices.contains(index) else { return nil }
+          return state.files[index].file
+        }
+        // Optimistic removal from UI
+        for index in indexSet.sorted().reversed() {
           state.files.remove(at: index)
         }
-        return .none
+        guard !filesToDelete.isEmpty else { return .none }
+        let serverClient = serverClient
+        let coreDataClient = coreDataClient
+        let fileClient = fileClient
+        return .run { send in
+          for file in filesToDelete {
+            do {
+              let _ = try await serverClient.deleteFile(file.fileId)
+              try await coreDataClient.deleteFile(file)
+              if let url = file.url, fileClient.fileExists(url) {
+                try await fileClient.deleteFile(url)
+              }
+            } catch {
+              await send(.deleteFileFailed(file, error.localizedDescription))
+            }
+          }
+        }
 
       case let .files(.element(id: _, action: .delegate(.fileDeleted(file)))):
         state.files.remove(id: file.fileId)
@@ -401,7 +427,6 @@ struct FileListFeature {
         // Remove from pending if it was there
         state.pendingFileIds.remove(file.fileId)
         // For new files, trigger onAppear to check download status
-        // (handles case where metadata notification was missed but file was downloaded)
         if isNewFile {
           return .send(.files(.element(id: file.fileId, action: .onAppear)))
         }
@@ -411,6 +436,14 @@ struct FileListFeature {
         // Update the file's URL in state (called when download-ready notification arrives)
         if var fileState = state.files[id: fileId] {
           fileState.file.url = url
+          fileState.isServerDownloading = false
+          state.files[id: fileId] = fileState
+        }
+        return .none
+
+      case let .fileDownloadStartedOnServer(fileId):
+        if var fileState = state.files[id: fileId] {
+          fileState.isServerDownloading = true
           state.files[id: fileId] = fileState
         }
         return .none
@@ -444,6 +477,22 @@ struct FileListFeature {
           }
         } message: {
           TextState(error)
+        }
+        return .none
+
+      case let .deleteFileFailed(file, errorMessage):
+        // Re-insert the file and show an error
+        state.files.append(FileCellFeature.State(file: file))
+        state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+        let fileName = file.title ?? file.key
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Failed to delete \"\(fileName)\": \(errorMessage)")
         }
         return .none
 

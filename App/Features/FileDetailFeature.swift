@@ -41,6 +41,7 @@ struct FileDetailFeature {
     }
   }
 
+  @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
@@ -158,13 +159,19 @@ struct FileDetailFeature {
 
       case .alert(.presented(.confirmDelete)):
         let file = state.file
+        let logger = logger
         return .run { [thumbnailCacheClient] send in
+          let _ = try await serverClient.deleteFile(file.fileId)
           try await coreDataClient.deleteFile(file)
           if let url = file.url, fileClient.fileExists(url) {
             try await fileClient.deleteFile(url)
           }
           // Also delete cached thumbnail
           await thumbnailCacheClient.deleteThumbnail(file.fileId)
+          await send(.delegate(.fileDeleted(file)))
+        } catch: { error, send in
+          logger.error(.network, "Delete failed", metadata: ["fileId": file.fileId, "error": error.localizedDescription])
+          // Still dismiss and report deleted to avoid stuck UI state
           await send(.delegate(.fileDeleted(file)))
         }
 

@@ -18,6 +18,7 @@ struct ServerClient {
   var refreshToken: @Sendable () async throws -> LoginResponse
   var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
+  var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   var logoutUser: @Sendable () async throws -> Void
 }
 
@@ -473,6 +474,48 @@ extension ServerClient: DependencyKey {
       }
     },
 
+    deleteFile: { fileId in
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.deleteFile called with fileId: \(fileId)")
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.deleteFile(
+        path: .init(fileId: fileId)
+      )
+
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.deleteFile succeeded")
+        return DeleteFileResponse(
+          body: DeleteFileResponseDetail(
+            deleted: payload.deleted ?? false,
+            fileRemoved: payload.fileRemoved ?? false
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .unauthorized(r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[amznRequestIdField])
+      }
+    },
+
     logoutUser: {
       @Dependency(\.logger) var logger
       logger.info(.network, "ServerClient.logoutUser called")
@@ -596,6 +639,13 @@ extension ServerClient {
         requestId: "test-request-id"
       )
     },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+        error: nil,
+        requestId: "test-request-id"
+      )
+    },
     logoutUser: {}
   )
 
@@ -638,6 +688,13 @@ extension ServerClient {
     addFile: { _ in
       DownloadFileResponse(
         body: DownloadFileResponseDetail(status: "queued"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
         error: nil,
         requestId: "preview"
       )

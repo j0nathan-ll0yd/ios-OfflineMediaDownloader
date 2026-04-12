@@ -136,6 +136,14 @@ struct FileCellView: View {
       Text("Processing...")
         .font(.caption2)
         .foregroundStyle(theme.warningColor)
+    } else if store.isServerDownloading, !store.isDownloading, !store.isDownloaded {
+      HStack(spacing: 4) {
+        Image(systemName: "icloud.and.arrow.down")
+          .font(.caption2)
+        Text("Server downloading...")
+      }
+      .font(.caption2)
+      .foregroundStyle(Color.cyan)
     } else if store.isDownloading {
       Text("Downloading \(Int(store.downloadProgress * 100))%")
         .font(.caption2)
