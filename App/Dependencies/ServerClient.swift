@@ -383,10 +383,8 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
-      // TODO: Add query parameter support when backend API is deployed and OpenAPI types regenerated
-      // For now, fetch files without status filter (backend returns all by default after deployment)
       let response = try await client.getFiles(
-        body: .json(Components.Schemas.Models_period_ListFilesQuery(status: statusFilter.rawValue))
+        query: .init(status: statusFilter.rawValue)
       )
 
       switch response {
@@ -511,11 +509,10 @@ extension ServerClient: DependencyKey {
 
 /// Maps an item from the `/files` list response to the domain `File` model.
 ///
-/// The generator emits `Models.FileListResponse.contents` as an inline array of
-/// nested structs (`contentsPayloadPayload`) rather than a reference to the
-/// top-level `Models.File` schema, so we take that nested type directly.
+/// The CLI's $ref promotion resolves `FileListResponse.contents` items to the
+/// top-level `Models.File` component, so this takes `Models_period_File` directly.
 private func mapAPIFileListItemToDomainFile(
-  _ apiFile: Components.Schemas.Models_period_FileListResponse.contentsPayloadPayload
+  _ apiFile: Components.Schemas.Models_period_File
 ) -> File {
   let publishDate = apiFile.publishDate.flatMap { DateFormatters.parse($0) }
 

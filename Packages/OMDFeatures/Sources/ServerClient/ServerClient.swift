@@ -364,7 +364,7 @@ extension ServerClient: DependencyKey {
       let client = makeAuthenticatedAPIClient()
 
       let response = try await client.getFiles(
-        body: .json(Components.Schemas.Models_period_ListFilesQuery(status: statusFilter.rawValue))
+        query: .init(status: statusFilter.rawValue)
       )
 
       return try handleAPIResponse(
