@@ -2,7 +2,7 @@ import ComposableArchitecture
 import Foundation
 
 /// Represents the type of push notification received for file operations
-enum PushNotificationType: Equatable, Sendable {
+enum PushNotificationType: Equatable {
   /// Full file metadata received (no url, no size) - file is being processed on server
   case metadata(File)
   /// Download URL is ready - can start downloading

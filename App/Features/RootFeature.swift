@@ -285,6 +285,9 @@ struct RootFeature {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
+        case let .downloadStarted(fileId):
+          return .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId))))
+
         case let .failure(fileId, _, _, errorMessage):
           // Update file status to failed in CoreData and UI, end Live Activity
           return .run { [coreDataClient, liveActivityClient] send in
