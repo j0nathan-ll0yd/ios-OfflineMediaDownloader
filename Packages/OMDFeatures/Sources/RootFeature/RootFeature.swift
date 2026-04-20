@@ -16,6 +16,7 @@ import PersistenceClient
 import ServerClient
 import SharedModels
 import SwiftUI
+import ThumbnailCacheClient
 import UserNotifications
 
 // MARK: - Notification Setup Helper
@@ -105,6 +106,7 @@ public struct RootFeature: Sendable {
   @Dependency(\.logger) var logger
   @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
   @Dependency(\.liveActivityClient) var liveActivityClient
+  @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
 
   public var body: some ReducerOf<Self> {
     Scope(state: \.login, action: \.login) {
@@ -279,8 +281,15 @@ public struct RootFeature: Sendable {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
-        case let .downloadStarted(fileId):
-          return .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId))))
+        case let .downloadStarted(fileId, thumbnailUrl, _):
+          let thumbnailCacheClient = thumbnailCacheClient
+          return .merge(
+            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl)))),
+            .run { _ in
+              guard let urlString = thumbnailUrl, let url = URL(string: urlString) else { return }
+              await thumbnailCacheClient.prefetchThumbnails([(fileId: fileId, url: url)])
+            }
+          )
 
         case let .failure(fileId, _, _, errorMessage):
           return .run { [coreDataClient, liveActivityClient] send in
@@ -295,10 +304,15 @@ public struct RootFeature: Sendable {
         }
 
       case let .fileMetadataSaved(file):
+        let thumbnailCacheClient = thumbnailCacheClient
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
           .run { [liveActivityClient] _ in
             await liveActivityClient.startActivity(file)
+          },
+          .run { _ in
+            guard let urlString = file.thumbnailUrl, let url = URL(string: urlString) else { return }
+            await thumbnailCacheClient.prefetchThumbnails([(fileId: file.fileId, url: url)])
           }
         )
 

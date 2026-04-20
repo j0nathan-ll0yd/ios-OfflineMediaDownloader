@@ -1,17 +1,19 @@
 import ComposableArchitecture
 import UIKit
 
-/// Client for caching thumbnail images to disk
+/// Client for caching thumbnail images with two-tier cache (memory + disk)
 @DependencyClient
 struct ThumbnailCacheClient {
   /// Get thumbnail for a file, fetching from network if not cached
   var getThumbnail: @Sendable (_ fileId: String, _ url: URL) async -> UIImage?
-  /// Check if thumbnail exists in cache
-  var hasCachedThumbnail: @Sendable (_ fileId: String) -> Bool = { _ in false }
+  /// Check if thumbnail exists in cache (memory or disk)
+  var hasCachedThumbnail: @Sendable (_ fileId: String) async -> Bool = { _ in false }
   /// Delete cached thumbnail for a file
   var deleteThumbnail: @Sendable (_ fileId: String) async -> Void
   /// Clear all cached thumbnails
   var clearCache: @Sendable () async -> Void
+  /// Pre-fetch and cache thumbnails in background (fire-and-forget from reducers)
+  var prefetchThumbnails: @Sendable (_ thumbnails: [(fileId: String, url: URL)]) async -> Void
 }
 
 extension DependencyValues {
@@ -26,56 +28,19 @@ extension DependencyValues {
 extension ThumbnailCacheClient: DependencyKey {
   static let liveValue = ThumbnailCacheClient(
     getThumbnail: { fileId, url in
-      let fileManager = FileManager.default
-      guard let cacheDir = thumbnailCacheDirectory() else { return nil }
-
-      let cachedPath = cacheDir.appendingPathComponent("\(fileId).jpg")
-
-      // Check if cached
-      if fileManager.fileExists(atPath: cachedPath.path) {
-        if let data = try? Data(contentsOf: cachedPath),
-           let image = UIImage(data: data)
-        {
-          return image
-        }
-      }
-
-      // Fetch from network
-      do {
-        let (data, response) = try await URLSession.shared.data(from: url)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200,
-              let image = UIImage(data: data)
-        else {
-          return nil
-        }
-
-        // Save to cache (use JPEG for smaller file size)
-        if let jpegData = image.jpegData(compressionQuality: 0.8) {
-          try? jpegData.write(to: cachedPath)
-        }
-
-        return image
-      } catch {
-        return nil
-      }
+      await ThumbnailCacheStorage.shared.getImage(fileId: fileId, url: url)
     },
     hasCachedThumbnail: { fileId in
-      guard let cacheDir = thumbnailCacheDirectory() else { return false }
-      let cachedPath = cacheDir.appendingPathComponent("\(fileId).jpg")
-      return FileManager.default.fileExists(atPath: cachedPath.path)
+      await ThumbnailCacheStorage.shared.hasCached(fileId: fileId)
     },
     deleteThumbnail: { fileId in
-      guard let cacheDir = thumbnailCacheDirectory() else { return }
-      let cachedPath = cacheDir.appendingPathComponent("\(fileId).jpg")
-      try? FileManager.default.removeItem(at: cachedPath)
+      await ThumbnailCacheStorage.shared.delete(fileId: fileId)
     },
     clearCache: {
-      guard let cacheDir = thumbnailCacheDirectory() else { return }
-      try? FileManager.default.removeItem(at: cacheDir)
-      // Recreate empty directory
-      try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+      await ThumbnailCacheStorage.shared.clearAll()
+    },
+    prefetchThumbnails: { thumbnails in
+      await ThumbnailCacheStorage.shared.prefetch(thumbnails: thumbnails)
     }
   )
 }
@@ -87,29 +52,159 @@ extension ThumbnailCacheClient {
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: {}
+    clearCache: {},
+    prefetchThumbnails: { _ in }
   )
 
   static let previewValue = ThumbnailCacheClient(
     getThumbnail: { _, _ in nil },
     hasCachedThumbnail: { _ in false },
     deleteThumbnail: { _ in },
-    clearCache: {}
+    clearCache: {},
+    prefetchThumbnails: { _ in }
   )
 }
 
-// MARK: - Helpers
+// MARK: - Two-Tier Cache Storage Actor
 
-private func thumbnailCacheDirectory() -> URL? {
-  guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-    return nil
+private actor ThumbnailCacheStorage {
+  static let shared = ThumbnailCacheStorage()
+
+  // SAFETY: NSCache is thread-safe internally; actor isolation provides additional safety for access patterns
+  private let memoryCache: NSCache<NSString, UIImage> = {
+    let cache = NSCache<NSString, UIImage>()
+    cache.countLimit = 100
+    cache.totalCostLimit = 50 * 1024 * 1024 // 50MB decoded images
+    return cache
+  }()
+
+  private var inflightTasks: [String: Task<UIImage?, Never>] = [:]
+
+  init() {
+    Self.cleanupOldDirectory()
   }
-  let cacheDir = documentsDir.appendingPathComponent("thumbnails", isDirectory: true)
 
-  // Create directory if needed
-  if !FileManager.default.fileExists(atPath: cacheDir.path) {
-    try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+  // MARK: - Public API
+
+  func getImage(fileId: String, url: URL) async -> UIImage? {
+    // Tier 1: Memory cache (instant)
+    if let cached = memoryCache.object(forKey: fileId as NSString) {
+      return cached
+    }
+
+    // Deduplicate in-flight requests
+    if let existingTask = inflightTasks[fileId] {
+      return await existingTask.value
+    }
+
+    // Tier 2: Disk cache
+    if let diskImage = loadFromDisk(fileId: fileId) {
+      memoryCache.setObject(diskImage, forKey: fileId as NSString)
+      return diskImage
+    }
+
+    // Tier 3: Network fetch with deduplication
+    let task = Task<UIImage?, Never> {
+      do {
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200,
+              let image = UIImage(data: data)
+        else { return nil }
+
+        saveToDisk(fileId: fileId, image: image)
+        memoryCache.setObject(image, forKey: fileId as NSString)
+        return image
+      } catch {
+        return nil
+      }
+    }
+
+    inflightTasks[fileId] = task
+    let result = await task.value
+    inflightTasks[fileId] = nil
+    return result
   }
 
-  return cacheDir
+  func hasCached(fileId: String) -> Bool {
+    if memoryCache.object(forKey: fileId as NSString) != nil { return true }
+    return diskFileExists(fileId: fileId)
+  }
+
+  func delete(fileId: String) {
+    memoryCache.removeObject(forKey: fileId as NSString)
+    deleteDiskFile(fileId: fileId)
+  }
+
+  func clearAll() {
+    memoryCache.removeAllObjects()
+    clearDiskCache()
+  }
+
+  func prefetch(thumbnails: [(fileId: String, url: URL)]) async {
+    await withTaskGroup(of: Void.self) { group in
+      for (fileId, url) in thumbnails {
+        group.addTask {
+          _ = await self.getImage(fileId: fileId, url: url)
+        }
+      }
+    }
+  }
+
+  // MARK: - Disk I/O (Library/Caches/thumbnails/)
+
+  private func cacheDirectory() -> URL? {
+    guard let cachesDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    else { return nil }
+    let dir = cachesDir.appendingPathComponent("thumbnails", isDirectory: true)
+    if !FileManager.default.fileExists(atPath: dir.path) {
+      try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+    return dir
+  }
+
+  private func loadFromDisk(fileId: String) -> UIImage? {
+    guard let dir = cacheDirectory() else { return nil }
+    let path = dir.appendingPathComponent("\(fileId).jpg")
+    guard let data = try? Data(contentsOf: path) else { return nil }
+    return UIImage(data: data)
+  }
+
+  private func saveToDisk(fileId: String, image: UIImage) {
+    guard let dir = cacheDirectory() else { return }
+    let path = dir.appendingPathComponent("\(fileId).jpg")
+    if let jpegData = image.jpegData(compressionQuality: 0.8) {
+      try? jpegData.write(to: path)
+    }
+  }
+
+  private func diskFileExists(fileId: String) -> Bool {
+    guard let dir = cacheDirectory() else { return false }
+    let path = dir.appendingPathComponent("\(fileId).jpg")
+    return FileManager.default.fileExists(atPath: path.path)
+  }
+
+  private func deleteDiskFile(fileId: String) {
+    guard let dir = cacheDirectory() else { return }
+    let path = dir.appendingPathComponent("\(fileId).jpg")
+    try? FileManager.default.removeItem(at: path)
+  }
+
+  private func clearDiskCache() {
+    guard let dir = cacheDirectory() else { return }
+    try? FileManager.default.removeItem(at: dir)
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+  }
+
+  // MARK: - Old Directory Cleanup (Documents/thumbnails/ -> deleted)
+
+  private static func cleanupOldDirectory() {
+    let fileManager = FileManager.default
+    guard let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+    else { return }
+
+    let oldDir = docsDir.appendingPathComponent("thumbnails", isDirectory: true)
+    guard fileManager.fileExists(atPath: oldDir.path) else { return }
+    try? fileManager.removeItem(at: oldDir)
+  }
 }

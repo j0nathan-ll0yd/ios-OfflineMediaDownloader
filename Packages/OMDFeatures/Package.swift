@@ -186,7 +186,7 @@ let package = Package(
       "SharedModels", "DesignSystem",
       "FileCellFeature", "FileDetailFeature", "DefaultFilesFeature",
       "ServerClient", "PersistenceClient", "LoggerClient",
-      "LiveActivityClient", "PasteboardClient",
+      "LiveActivityClient", "PasteboardClient", "ThumbnailCacheClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
@@ -202,6 +202,7 @@ let package = Package(
       "AuthenticationClient", "ServerClient", "KeychainClient",
       "PersistenceClient", "DownloadClient", "FileClient",
       "LoggerClient", "NotificationRegistrationClient", "LiveActivityClient",
+      "ThumbnailCacheClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 

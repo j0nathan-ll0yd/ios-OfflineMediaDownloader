@@ -53,7 +53,7 @@ struct FileListFeature {
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
-    case fileDownloadStartedOnServer(fileId: String)
+    case fileDownloadStartedOnServer(fileId: String, thumbnailUrl: String?)
     case refreshFileState(String) // fileId
     case fileFailed(fileId: String, error: String)
     case deleteFileFailed(File, String)
@@ -85,6 +85,7 @@ struct FileListFeature {
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.pasteboardClient) var pasteboardClient
   @Dependency(\.fileClient) var fileClient
+  @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
 
   private enum CancelID {
     case loadFiles
@@ -135,7 +136,11 @@ struct FileListFeature {
           return newState
         })
         state.isLoading = false
-        return .none
+        let thumbnails = thumbnailsToFetch(from: filesToShow)
+        let thumbnailCacheClient = thumbnailCacheClient
+        return thumbnails.isEmpty ? .none : .run { _ in
+          await thumbnailCacheClient.prefetchThumbnails(thumbnails)
+        }
 
       case .clearAllFiles:
         // Clear in-memory state and CoreData/downloaded files
@@ -185,11 +190,16 @@ struct FileListFeature {
         // Share first file with DefaultFilesFeature ONLY for unregistered users
         let firstFile = response.body?.contents.first
         let isRegistered = state.isRegistered
+        let thumbnails = thumbnailsToFetch(from: response.body?.contents ?? [])
+        let thumbnailCacheClient = thumbnailCacheClient
         // Cache files to disk for instant display on next launch
         return .merge(
           isRegistered ? .none : .send(.defaultFiles(.parentProvidedFile(firstFile))),
           .run { [files = response.body?.contents ?? []] _ in
             try await coreDataClient.cacheFiles(files)
+          },
+          thumbnails.isEmpty ? .none : .run { _ in
+            await thumbnailCacheClient.prefetchThumbnails(thumbnails)
           }
         )
 
@@ -426,11 +436,21 @@ struct FileListFeature {
         state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
         // Remove from pending if it was there
         state.pendingFileIds.remove(file.fileId)
-        // For new files, trigger onAppear to check download status
-        if isNewFile {
-          return .send(.files(.element(id: file.fileId, action: .onAppear)))
+
+        let thumbnailCacheClient = thumbnailCacheClient
+        var effects: [Effect<Action>] = []
+
+        if let urlString = file.thumbnailUrl, let url = URL(string: urlString) {
+          effects.append(.run { _ in
+            await thumbnailCacheClient.prefetchThumbnails([(fileId: file.fileId, url: url)])
+          })
         }
-        return .none
+
+        if isNewFile {
+          effects.append(.send(.files(.element(id: file.fileId, action: .onAppear))))
+        }
+
+        return effects.isEmpty ? .none : .merge(effects)
 
       case let .updateFileUrl(fileId, url):
         // Update the file's URL in state (called when download-ready notification arrives)
@@ -441,9 +461,12 @@ struct FileListFeature {
         }
         return .none
 
-      case let .fileDownloadStartedOnServer(fileId):
+      case let .fileDownloadStartedOnServer(fileId, thumbnailUrl):
         if var fileState = state.files[id: fileId] {
           fileState.isServerDownloading = true
+          if let thumbnailUrl {
+            fileState.file.thumbnailUrl = thumbnailUrl
+          }
           state.files[id: fileId] = fileState
         }
         return .run { [liveActivityClient] _ in
@@ -559,5 +582,14 @@ struct FileListFeature {
       FileCellFeature()
     }
     .ifLet(\.$alert, action: \.alert)
+  }
+
+  // MARK: - Helpers
+
+  private func thumbnailsToFetch(from files: [File]) -> [(fileId: String, url: URL)] {
+    files.compactMap { file in
+      guard let urlString = file.thumbnailUrl, let url = URL(string: urlString) else { return nil }
+      return (fileId: file.fileId, url: url)
+    }
   }
 }

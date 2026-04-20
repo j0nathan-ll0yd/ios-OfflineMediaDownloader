@@ -14,9 +14,9 @@ struct ThumbnailCacheClientTests {
   }
 
   @Test("testValue returns false for hasCachedThumbnail")
-  func valueHasCached() {
+  func valueHasCached() async {
     let client = ThumbnailCacheClient.testValue
-    let result = client.hasCachedThumbnail("test-id")
+    let result = await client.hasCachedThumbnail("test-id")
     #expect(result == false)
   }
 
