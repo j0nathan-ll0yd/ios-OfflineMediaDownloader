@@ -7,6 +7,7 @@ import SharedModels
 public enum PushNotificationType: Equatable, Sendable {
   case metadata(File)
   case downloadReady(fileId: String, key: String, url: URL, size: Int64)
+  case downloadStarted(fileId: String)
   case failure(fileId: String, title: String?, errorCategory: String, errorMessage: String)
   case unknown
 
@@ -41,6 +42,13 @@ public enum PushNotificationType: Equatable, Sendable {
         return .unknown
       }
       return .downloadReady(fileId: fileId, key: key, url: url, size: Int64(size))
+
+    case "DownloadStartedNotification":
+      guard let fileId = fileData["fileId"] as? String else {
+        logger.warning(.push, "Missing fileId in DownloadStartedNotification")
+        return .unknown
+      }
+      return .downloadStarted(fileId: fileId)
 
     case "FailureNotification":
       guard let fileId = fileData["fileId"] as? String,
