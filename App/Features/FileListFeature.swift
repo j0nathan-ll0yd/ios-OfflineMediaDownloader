@@ -114,7 +114,7 @@ struct FileListFeature {
           },
           // Pre-warm pasteboard access (triggers permission dialog if needed)
           .run { _ in
-            _ = await Task.detached(priority: .background) { pasteboard.hasStrings() }.value
+            _ = pasteboard.hasStrings()
           }
         )
 
@@ -292,18 +292,17 @@ struct FileListFeature {
 
       case .addFromClipboard:
         state.showAddConfirmation = false
-        // Move pasteboard access to background thread to avoid blocking main thread (1-3s)
         let pasteboard = pasteboardClient
         return .run { send in
-          let result = await Task.detached {
+          let result: (URL, String?)? = {
             guard pasteboard.hasStrings(),
                   let urlString = pasteboard.string(),
                   let url = URL(string: urlString)
             else {
-              return nil as (URL, String?)?
+              return nil
             }
             return (url, urlString.youtubeID)
-          }.value
+          }()
 
           guard let (url, youtubeId) = result else {
             await send(.showError(.invalidClipboardUrl))

@@ -115,7 +115,7 @@ public struct FileListFeature: Sendable {
             }
           },
           .run { _ in
-            _ = await Task.detached(priority: .background) { pasteboard.hasStrings() }.value
+            _ = pasteboard.hasStrings()
           }
         )
 
@@ -281,15 +281,15 @@ public struct FileListFeature: Sendable {
         state.showAddConfirmation = false
         let pasteboard = pasteboardClient
         return .run { send in
-          let result = await Task.detached {
+          let result: (URL, String?)? = {
             guard pasteboard.hasStrings(),
                   let urlString = pasteboard.string(),
                   let url = URL(string: urlString)
             else {
-              return nil as (URL, String?)?
+              return nil
             }
             return (url, urlString.youtubeID)
-          }.value
+          }()
 
           guard let (url, youtubeId) = result else {
             await send(.showError(.invalidClipboardUrl))
