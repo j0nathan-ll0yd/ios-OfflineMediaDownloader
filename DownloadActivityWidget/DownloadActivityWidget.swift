@@ -24,6 +24,7 @@ struct DownloadActivityAttributes: ActivityAttributes {
 
 enum DownloadActivityStatus: String, Codable {
   case queued = "Queued"
+  case serverDownloading = "Server downloading..."
   case downloading = "Downloading"
   case downloaded = "Downloaded"
   case failed = "Failed"
@@ -98,6 +99,9 @@ struct DownloadActivityWidget: Widget {
     case .queued:
       Image(systemName: "clock.fill")
         .foregroundStyle(.orange)
+    case .serverDownloading:
+      Image(systemName: "icloud.and.arrow.down.fill")
+        .foregroundStyle(.cyan)
     case .downloading:
       Image(systemName: "arrow.down.circle.fill")
         .foregroundStyle(.blue)
@@ -113,6 +117,7 @@ struct DownloadActivityWidget: Widget {
   private func progressColor(for status: DownloadActivityStatus) -> Color {
     switch status {
     case .queued: .orange
+    case .serverDownloading: .cyan
     case .downloading: .blue
     case .downloaded: .green
     case .failed: .red
@@ -151,7 +156,7 @@ struct LockScreenView: View {
 
       Spacer()
 
-      if context.state.status == .downloading {
+      if context.state.status == .downloading || context.state.status == .serverDownloading {
         VStack {
           Text("\(context.state.progressPercent)%")
             .font(.headline)
@@ -175,6 +180,9 @@ struct LockScreenView: View {
     case .queued:
       Image(systemName: "clock.fill")
         .foregroundStyle(.orange)
+    case .serverDownloading:
+      Image(systemName: "icloud.and.arrow.down.fill")
+        .foregroundStyle(.cyan)
     case .downloading:
       Image(systemName: "arrow.down.circle.fill")
         .foregroundStyle(.blue)
@@ -201,6 +209,7 @@ struct LockScreenView: View {
   private var badgeColor: Color {
     switch context.state.status {
     case .queued: .orange
+    case .serverDownloading: .cyan
     case .downloading: .blue
     case .downloaded: .green
     case .failed: .red

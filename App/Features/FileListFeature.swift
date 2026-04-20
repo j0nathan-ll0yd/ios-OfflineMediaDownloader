@@ -446,7 +446,9 @@ struct FileListFeature {
           fileState.isServerDownloading = true
           state.files[id: fileId] = fileState
         }
-        return .none
+        return .run { [liveActivityClient] _ in
+          await liveActivityClient.updateProgress(fileId, 0, .serverDownloading)
+        }
 
       case let .refreshFileState(fileId):
         // If file exists in state, trigger onAppear to re-check download status
