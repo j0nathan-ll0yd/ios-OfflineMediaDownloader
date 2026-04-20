@@ -509,8 +509,7 @@ struct FileListFeature {
       // Handle delegate actions from FileDetailFeature
       case let .detail(.presented(.delegate(.fileDeleted(file)))):
         state.files.remove(id: file.fileId)
-        state.selectedFile = nil
-        return .none
+        return .send(.detail(.dismiss))
 
       case let .detail(.presented(.delegate(.playFile(file)))):
         state.isPreparingToPlay = true

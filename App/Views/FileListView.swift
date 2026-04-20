@@ -352,27 +352,27 @@ struct FileListView: View {
   }
 
   private var fileList: some View {
-    ScrollView {
-      LazyVStack(spacing: 0) {
-        ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
-          FileCellView(store: cellStore)
-            .contentShape(Rectangle())
-            .onTapGesture {
-              store.send(.fileTapped(cellStore.state))
-            }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-              Button(role: .destructive) {
-                if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
-                  store.send(.deleteFiles(IndexSet(integer: index)))
-                }
-              } label: {
-                Label("Delete", systemImage: "trash")
+    List {
+      ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
+        FileCellView(store: cellStore)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            store.send(.fileTapped(cellStore.state))
+          }
+          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+              if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
+                store.send(.deleteFiles(IndexSet(integer: index)))
               }
+            } label: {
+              Label("Delete", systemImage: "trash")
             }
-        }
+          }
+          .listRowInsets(EdgeInsets())
+          .listRowSeparator(.hidden)
       }
-      .padding(.vertical, 12)
     }
+    .listStyle(.plain)
     .refreshable {
       store.send(.refreshButtonTapped)
     }

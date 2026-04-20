@@ -23,6 +23,7 @@ struct FileDetailFeature {
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
+    case showDeleteError(fileName: String, message: String)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
 
@@ -170,10 +171,23 @@ struct FileDetailFeature {
           await thumbnailCacheClient.deleteThumbnail(file.fileId)
           await send(.delegate(.fileDeleted(file)))
         } catch: { error, send in
-          logger.error(.network, "Delete failed", metadata: ["fileId": file.fileId, "error": error.localizedDescription])
-          // Still dismiss and report deleted to avoid stuck UI state
-          await send(.delegate(.fileDeleted(file)))
+          let message = error.localizedDescription
+          logger.error(.network, "Delete failed", metadata: ["fileId": file.fileId, "error": message])
+          let fileName = file.title ?? file.key
+          await send(.showDeleteError(fileName: fileName, message: message))
         }
+
+      case let .showDeleteError(fileName, message):
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Could not delete \"\(fileName)\": \(message)")
+        }
+        return .none
 
       case .alert:
         return .none
