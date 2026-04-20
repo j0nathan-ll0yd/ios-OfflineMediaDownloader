@@ -27,6 +27,7 @@ public struct DownloadActivityAttributes: ActivityAttributes {
 
 public enum DownloadActivityStatus: String, Codable, Sendable {
   case queued = "Queued"
+  case serverDownloading = "Server downloading..."
   case downloading = "Downloading"
   case downloaded = "Downloaded"
   case failed = "Failed"

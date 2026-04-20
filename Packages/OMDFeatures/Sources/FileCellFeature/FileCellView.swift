@@ -110,6 +110,11 @@ public struct FileCellView: View {
         .font(.system(size: 22))
         .foregroundStyle(theme.warningColor)
         .shadow(color: .black.opacity(0.5), radius: 2)
+    } else if store.isServerDownloading {
+      Image(systemName: "icloud.and.arrow.down")
+        .font(.system(size: 22))
+        .foregroundStyle(.cyan)
+        .shadow(color: .black.opacity(0.5), radius: 2)
     } else if store.isDownloading {
       // Show mini progress in thumbnail during download
       ZStack {
@@ -139,6 +144,10 @@ public struct FileCellView: View {
       Text("Processing...")
         .font(.caption2)
         .foregroundStyle(theme.warningColor)
+    } else if store.isServerDownloading {
+      Text("Server downloading...")
+        .font(.caption2)
+        .foregroundStyle(.cyan)
     } else if store.isDownloading {
       Text("Downloading \(Int(store.downloadProgress * 100))%")
         .font(.caption2)
