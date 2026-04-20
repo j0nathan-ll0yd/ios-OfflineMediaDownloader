@@ -18,6 +18,7 @@ struct ServerClient {
   var refreshToken: @Sendable () async throws -> LoginResponse
   var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
+  var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   var logoutUser: @Sendable () async throws -> Void
 }
 
@@ -383,10 +384,8 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.getFiles called with status filter: \(statusFilter.rawValue)")
       let client = makeAuthenticatedAPIClient()
 
-      // TODO: Add query parameter support when backend API is deployed and OpenAPI types regenerated
-      // For now, fetch files without status filter (backend returns all by default after deployment)
       let response = try await client.getFiles(
-        body: .json(Components.Schemas.Models_period_ListFilesQuery(status: statusFilter.rawValue))
+        query: .init(status: statusFilter.rawValue)
       )
 
       switch response {
@@ -473,6 +472,48 @@ extension ServerClient: DependencyKey {
       }
     },
 
+    deleteFile: { fileId in
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.deleteFile called with fileId: \(fileId)")
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.deleteFilesByFileId(
+        path: .init(fileId: fileId)
+      )
+
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.deleteFile succeeded")
+        return DeleteFileResponse(
+          body: DeleteFileResponseDetail(
+            deleted: payload.deleted,
+            fileRemoved: payload.fileRemoved
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .unauthorized(r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[amznRequestIdField])
+      }
+    },
+
     logoutUser: {
       @Dependency(\.logger) var logger
       logger.info(.network, "ServerClient.logoutUser called")
@@ -511,11 +552,10 @@ extension ServerClient: DependencyKey {
 
 /// Maps an item from the `/files` list response to the domain `File` model.
 ///
-/// The generator emits `Models.FileListResponse.contents` as an inline array of
-/// nested structs (`contentsPayloadPayload`) rather than a reference to the
-/// top-level `Models.File` schema, so we take that nested type directly.
+/// The CLI's $ref promotion resolves `FileListResponse.contents` items to the
+/// top-level `Models.File` component, so this takes `Models_period_File` directly.
 private func mapAPIFileListItemToDomainFile(
-  _ apiFile: Components.Schemas.Models_period_FileListResponse.contentsPayloadPayload
+  _ apiFile: Components.Schemas.Models_period_File
 ) -> File {
   let publishDate = apiFile.publishDate.flatMap { DateFormatters.parse($0) }
 
@@ -596,6 +636,13 @@ extension ServerClient {
         requestId: "test-request-id"
       )
     },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+        error: nil,
+        requestId: "test-request-id"
+      )
+    },
     logoutUser: {}
   )
 
@@ -638,6 +685,13 @@ extension ServerClient {
     addFile: { _ in
       DownloadFileResponse(
         body: DownloadFileResponseDetail(status: "queued"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
         error: nil,
         requestId: "preview"
       )

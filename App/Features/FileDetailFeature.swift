@@ -23,6 +23,7 @@ struct FileDetailFeature {
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
+    case showDeleteError(fileName: String, message: String)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
 
@@ -41,6 +42,7 @@ struct FileDetailFeature {
     }
   }
 
+  @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
@@ -158,7 +160,9 @@ struct FileDetailFeature {
 
       case .alert(.presented(.confirmDelete)):
         let file = state.file
+        let logger = logger
         return .run { [thumbnailCacheClient] send in
+          let _ = try await serverClient.deleteFile(file.fileId)
           try await coreDataClient.deleteFile(file)
           if let url = file.url, fileClient.fileExists(url) {
             try await fileClient.deleteFile(url)
@@ -166,7 +170,24 @@ struct FileDetailFeature {
           // Also delete cached thumbnail
           await thumbnailCacheClient.deleteThumbnail(file.fileId)
           await send(.delegate(.fileDeleted(file)))
+        } catch: { error, send in
+          let message = error.localizedDescription
+          logger.error(.network, "Delete failed", metadata: ["fileId": file.fileId, "error": message])
+          let fileName = file.title ?? file.key
+          await send(.showDeleteError(fileName: fileName, message: message))
         }
+
+      case let .showDeleteError(fileName, message):
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Could not delete \"\(fileName)\": \(message)")
+        }
+        return .none
 
       case .alert:
         return .none

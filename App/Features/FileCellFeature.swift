@@ -13,6 +13,7 @@ struct FileCellFeature {
     var isDownloading: Bool = false
     var downloadProgress: Double = 0
     var isDownloaded: Bool = false // Cached to avoid fileClient.fileExists() in view body
+    var isServerDownloading: Bool = false
     @Presents var alert: AlertState<Action.Alert>?
 
     /// File is pending when metadata is received but no download URL is available yet
@@ -31,6 +32,7 @@ struct FileCellFeature {
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
+    case deleteFailed(String)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
 
@@ -161,7 +163,11 @@ struct FileCellFeature {
 
       case .deleteButtonTapped:
         let file = state.file
-        return .run { [thumbnailCacheClient] send in
+        let serverClient = serverClient
+        let coreDataClient = coreDataClient
+        let fileClient = fileClient
+        return .run { send in
+          let _ = try await serverClient.deleteFile(file.fileId)
           try await coreDataClient.deleteFile(file)
           if let url = file.url, fileClient.fileExists(url) {
             try await fileClient.deleteFile(url)
@@ -169,7 +175,22 @@ struct FileCellFeature {
           // Also delete cached thumbnail
           await thumbnailCacheClient.deleteThumbnail(file.fileId)
           await send(.delegate(.fileDeleted(file)))
+        } catch: { error, send in
+          await send(.deleteFailed(error.localizedDescription))
         }
+
+      case let .deleteFailed(message):
+        let fileName = state.file.title ?? state.file.key
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Could not delete \"\(fileName)\": \(message)")
+        }
+        return .none
 
       case .delegate:
         return .none

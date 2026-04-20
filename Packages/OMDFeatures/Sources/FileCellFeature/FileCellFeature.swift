@@ -20,6 +20,7 @@ public struct FileCellFeature: Sendable {
     }
 
     public var isDownloading: Bool = false
+    public var isServerDownloading: Bool = false
     public var downloadProgress: Double = 0
     public var isDownloaded: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?

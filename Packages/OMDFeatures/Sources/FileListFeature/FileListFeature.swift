@@ -60,6 +60,7 @@ public struct FileListFeature: Sendable {
     case defaultFiles(DefaultFilesFeature.Action)
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
+    case fileDownloadStartedOnServer(fileId: String)
     case refreshFileState(String)
     case fileFailed(fileId: String, error: String)
     case clearAllFiles
@@ -126,6 +127,7 @@ public struct FileListFeature: Sendable {
           if let existing = existingStates[file.fileId] {
             newState.isDownloaded = existing.isDownloaded
             newState.isDownloading = existing.isDownloading
+            newState.isServerDownloading = existing.isServerDownloading
             newState.downloadProgress = existing.downloadProgress
           }
           return newState
@@ -163,6 +165,7 @@ public struct FileListFeature: Sendable {
             if let existing = existingStates[file.fileId] {
               newState.isDownloaded = existing.isDownloaded
               newState.isDownloading = existing.isDownloading
+              newState.isServerDownloading = existing.isServerDownloading
               newState.downloadProgress = existing.downloadProgress
             }
             return newState
@@ -385,6 +388,14 @@ public struct FileListFeature: Sendable {
       case let .updateFileUrl(fileId, url):
         if var fileState = state.files[id: fileId] {
           fileState.file.url = url
+          fileState.isServerDownloading = false
+          state.files[id: fileId] = fileState
+        }
+        return .none
+
+      case let .fileDownloadStartedOnServer(fileId):
+        if var fileState = state.files[id: fileId] {
+          fileState.isServerDownloading = true
           state.files[id: fileId] = fileState
         }
         return .none

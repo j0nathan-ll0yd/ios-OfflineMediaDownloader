@@ -668,6 +668,7 @@ struct FileListFeatureTests {
 
     await store.send(.updateFileUrl(fileId: pendingFile.fileId, url: newUrl)) {
       $0.files[id: pendingFile.fileId]?.file.url = newUrl
+      $0.files[id: pendingFile.fileId]?.isServerDownloading = false
     }
   }
 
@@ -699,7 +700,7 @@ struct FileListFeatureTests {
   // MARK: - Delete Tests
 
   @MainActor
-  @Test("Delete files removes from state")
+  @Test("Delete files removes from state and calls server")
   func deleteFilesRemoves() async {
     var state = FileListFeature.State()
     state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
@@ -711,6 +712,15 @@ struct FileListFeatureTests {
     } withDependencies: {
       $0.logger = TestData.noopLogger
       $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.deleteFile = { _ in
+        DeleteFileResponse(
+          body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+          error: nil,
+          requestId: "test"
+        )
+      }
+      $0.coreDataClient.deleteFile = { _ in }
+      $0.fileClient.fileExists = { _ in false }
     }
 
     await store.send(.deleteFiles(IndexSet(integer: 0))) {
