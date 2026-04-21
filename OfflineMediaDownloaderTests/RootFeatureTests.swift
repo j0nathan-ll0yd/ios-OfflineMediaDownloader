@@ -378,7 +378,7 @@ struct RootFeatureTests {
   @MainActor
   @Test("Token expiration check skipped when no expiration stored")
   func tokenExpirationCheckNoExpirationStored() async {
-    var state = RootFeature.State()
+    let state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
@@ -395,7 +395,7 @@ struct RootFeatureTests {
   @MainActor
   @Test("Token expiration check skipped when token is valid")
   func tokenExpirationCheckValidToken() async {
-    var state = RootFeature.State()
+    let state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
@@ -413,7 +413,7 @@ struct RootFeatureTests {
   @MainActor
   @Test("Token expiration check triggers refresh when token expires soon")
   func tokenExpirationCheckTriggersRefresh() async {
-    var state = RootFeature.State()
+    let state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let refreshedExpiration = Date().addingTimeInterval(3600)
@@ -470,7 +470,7 @@ struct RootFeatureTests {
   @MainActor
   @Test("Token refresh failure with network error does not interrupt user")
   func tokenRefreshNetworkErrorContinues() async {
-    var state = RootFeature.State()
+    let state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
@@ -486,7 +486,7 @@ struct RootFeatureTests {
   @MainActor
   @Test("Token refresh success updates keychain")
   func tokenRefreshSuccessUpdatesKeychain() async {
-    var state = RootFeature.State()
+    let state = RootFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let storedToken = LockIsolated<String?>(nil)
