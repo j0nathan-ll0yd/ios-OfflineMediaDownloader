@@ -17,6 +17,7 @@ struct DownloadActivityAttributes: ActivityAttributes {
 
 enum DownloadActivityStatus: String, Codable {
   case queued = "Queued"
+  case serverDownloading = "Server downloading..."
   case downloading = "Downloading"
   case downloaded = "Downloaded"
   case failed = "Failed"

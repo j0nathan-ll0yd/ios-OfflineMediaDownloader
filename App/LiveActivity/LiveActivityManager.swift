@@ -115,13 +115,17 @@ actor LiveActivityManager {
       return
     }
 
+    let previousStatus = state.status
     state.status = status
     state.progressPercent = percent
     currentStates[fileId] = state
 
     nonisolated(unsafe) let unsafeActivity = activity
     await unsafeActivity.update(ActivityContent(state: state, staleDate: nil))
-    logger.debug("Live Activity updated for fileId: \(fileId), progress: \(percent)%, status: \(status.rawValue)")
+    // Only log status transitions and milestones (25% intervals) to reduce noise
+    if status != previousStatus || percent % 25 == 0 {
+      logger.debug("Live Activity: \(fileId) \(status.rawValue) \(percent)%")
+    }
   }
 
   func endActivity(fileId: String, status: DownloadActivityStatus, errorMessage: String? = nil) async {

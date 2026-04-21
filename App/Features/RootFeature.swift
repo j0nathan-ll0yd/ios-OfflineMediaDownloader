@@ -91,6 +91,7 @@ struct RootFeature {
   @Dependency(\.logger) var logger
   @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
   @Dependency(\.liveActivityClient) var liveActivityClient
+  @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
 
   var body: some ReducerOf<Self> {
     Scope(state: \.login, action: \.login) {
@@ -285,8 +286,15 @@ struct RootFeature {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
-        case let .downloadStarted(fileId):
-          return .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId))))
+        case let .downloadStarted(fileId, thumbnailUrl, _):
+          let thumbnailCacheClient = thumbnailCacheClient
+          return .merge(
+            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl)))),
+            .run { _ in
+              guard let urlString = thumbnailUrl, let url = URL(string: urlString) else { return }
+              await thumbnailCacheClient.prefetchThumbnails([(fileId: fileId, url: url)])
+            }
+          )
 
         case let .failure(fileId, _, _, errorMessage):
           // Update file status to failed in CoreData and UI, end Live Activity
@@ -303,10 +311,15 @@ struct RootFeature {
 
       case let .fileMetadataSaved(file):
         // Forward to MainFeature to update FileList and start Live Activity
+        let thumbnailCacheClient = thumbnailCacheClient
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
           .run { [liveActivityClient] _ in
             await liveActivityClient.startActivity(file)
+          },
+          .run { _ in
+            guard let urlString = file.thumbnailUrl, let url = URL(string: urlString) else { return }
+            await thumbnailCacheClient.prefetchThumbnails([(fileId: file.fileId, url: url)])
           }
         )
 

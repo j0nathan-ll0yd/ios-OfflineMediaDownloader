@@ -218,16 +218,20 @@ extension ServerClient: DependencyKey {
           error: nil,
           requestId: "generated"
         )
+      case let .created(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.registerDevice created (201)")
+        return RegisterDeviceResponse(
+          body: EndpointResponse(endpointArn: payload.endpointArn),
+          error: nil,
+          requestId: "generated"
+        )
       case let .badRequest(r):
         throw mapStatusCodeToError(
           400,
           message: (try? r.body.json.error.message).map { "\($0)" },
           requestId: try? r.body.json.requestId
         )
-      case let .unauthorized(r):
-        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
-      case let .forbidden(r):
-        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
       case let .internalServerError(r):
         throw mapStatusCodeToError(
           500,
@@ -404,10 +408,6 @@ extension ServerClient: DependencyKey {
           message: (try? r.body.json.error.message).map { "\($0)" },
           requestId: try? r.body.json.requestId
         )
-      case let .unauthorized(r):
-        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
-      case let .forbidden(r):
-        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
       case let .internalServerError(r):
         throw mapStatusCodeToError(
           500,
@@ -446,6 +446,18 @@ extension ServerClient: DependencyKey {
           ?? payload.status.value2?.rawValue
           ?? payload.status.value3?.rawValue
           ?? "unknown"
+        return DownloadFileResponse(
+          body: DownloadFileResponseDetail(status: statusString),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .accepted(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.addFile accepted (202)")
+        let statusString = payload.status.value1?.rawValue
+          ?? payload.status.value2?.rawValue
+          ?? payload.status.value3?.rawValue
+          ?? "Accepted"
         return DownloadFileResponse(
           body: DownloadFileResponseDetail(status: statusString),
           error: nil,
@@ -524,6 +536,9 @@ extension ServerClient: DependencyKey {
       switch response {
       case .ok:
         logger.info(.network, "ServerClient.logoutUser succeeded")
+        return
+      case .noContent:
+        logger.info(.network, "ServerClient.logoutUser succeeded (204)")
         return
       case let .badRequest(r):
         throw mapStatusCodeToError(
