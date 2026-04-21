@@ -22,16 +22,6 @@ public enum FileStatus: String, Codable, Equatable, Sendable, CaseIterable {
     }
   }
 
-  /// Initialize from generated API type
-  init(from apiStatus: APIFileStatus) {
-    switch apiStatus {
-    case .Queued: self = .queued
-    case .Downloading: self = .downloading
-    case .Downloaded: self = .downloaded
-    case .Failed: self = .failed
-    }
-  }
-
   /// Custom decoder to handle both API format (capitalized) and push notification format (lowercase)
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
