@@ -110,6 +110,9 @@ struct MainFeature {
         return .none
 
       // Forward download tracking delegates to ActiveDownloadsFeature
+      case let .fileList(.delegate(.fileQueued(fileId))):
+        return .send(.activeDownloads(.fileQueued(fileId: fileId, title: fileId)))
+
       case let .fileList(.delegate(.downloadStarted(file))):
         let title = file.title ?? file.key
         return .send(.activeDownloads(.downloadStarted(fileId: file.fileId, title: title, isBackground: false)))

@@ -73,6 +73,7 @@ struct FileListFeature {
       case authenticationRequired
       case loginRequired
       // Download tracking delegates for in-app progress banner
+      case fileQueued(fileId: String)
       case downloadStarted(File)
       case downloadProgressUpdated(fileId: String, percent: Int)
       case downloadCompleted(fileId: String)
@@ -281,10 +282,13 @@ struct FileListFeature {
 
       case let .addPendingFileId(fileId):
         state.pendingFileIds.append(fileId)
-        // Start Live Activity immediately while app is in foreground
-        return .run { [liveActivityClient] _ in
-          await liveActivityClient.startActivityWithId(fileId: fileId)
-        }
+        // Start Live Activity and show banner immediately while app is in foreground
+        return .merge(
+          .send(.delegate(.fileQueued(fileId: fileId))),
+          .run { [liveActivityClient] _ in
+            await liveActivityClient.startActivityWithId(fileId: fileId)
+          }
+        )
 
       case let .prepareAddFile(url, youtubeId):
         state.pendingAddUrl = url

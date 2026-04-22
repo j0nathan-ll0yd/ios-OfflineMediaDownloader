@@ -1,6 +1,5 @@
 import AVKit
 import ComposableArchitecture
-import OrderedCollections
 import SwiftUI
 import UIKit
 
@@ -384,13 +383,6 @@ struct FileListView: View {
   private var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
       HStack(spacing: 16) {
-        if !store.pendingFileIds.isEmpty {
-          NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
-            Image(systemName: "clock.arrow.circlepath")
-              .foregroundStyle(theme.warningColor)
-          }
-        }
-
         Button {
           store.send(.refreshButtonTapped)
         } label: {
@@ -425,69 +417,6 @@ struct FileListView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
-  }
-}
-
-struct PendingFilesView: View {
-  let fileIds: OrderedSet<String>
-
-  private let theme = DarkProfessionalTheme()
-
-  var body: some View {
-    ZStack {
-      theme.backgroundColor
-        .ignoresSafeArea()
-
-      ScrollView {
-        VStack(spacing: 16) {
-          // Header section
-          VStack(spacing: 8) {
-            Text("PENDING DOWNLOADS")
-              .font(.caption)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.textSecondary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-
-            ForEach(fileIds, id: \.self) { id in
-              HStack(spacing: 12) {
-                Image(systemName: "clock")
-                  .font(.system(size: 18))
-                  .foregroundStyle(theme.warningColor)
-
-                Text(id)
-                  .font(.subheadline)
-                  .foregroundStyle(.white)
-                  .lineLimit(1)
-
-                Spacer()
-              }
-              .padding(.horizontal, 16)
-              .padding(.vertical, 14)
-              .background(theme.surfaceColor)
-              .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-          }
-
-          // Info section
-          HStack(spacing: 12) {
-            Image(systemName: "info.circle.fill")
-              .foregroundStyle(theme.primaryColor)
-
-            Text("These videos are being processed by the server. They will appear in your Files list when ready.")
-              .font(.caption)
-              .foregroundStyle(theme.textSecondary)
-          }
-          .padding(16)
-          .background(theme.surfaceColor)
-          .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(16)
-      }
-    }
-    .navigationTitle("Pending")
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbarColorScheme(.dark, for: .navigationBar)
-    .preferredColorScheme(.dark)
   }
 }
 
