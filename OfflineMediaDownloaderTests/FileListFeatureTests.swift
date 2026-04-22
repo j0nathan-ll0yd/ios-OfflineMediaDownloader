@@ -11,7 +11,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("onAppear loads files from CoreData without loading indicator")
   func onAppearLoadsFiles() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true } // User is authenticated
     state.$isRegistered.withLock { $0 = true } // Prevent auto-refresh (only unregistered users auto-refresh)
 
@@ -368,7 +368,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Add button shows confirmation dialog when authenticated")
   func addButtonShowsConfirmation() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
