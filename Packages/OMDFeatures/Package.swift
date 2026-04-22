@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
   name: "OMDFeatures",
-  platforms: [.iOS(.v18), .macOS(.v14)],
+  platforms: [.iOS(.v26)],
   products: [
     .library(name: "RootFeature", targets: ["RootFeature"]),
     .library(name: "SharedModels", targets: ["SharedModels"]),

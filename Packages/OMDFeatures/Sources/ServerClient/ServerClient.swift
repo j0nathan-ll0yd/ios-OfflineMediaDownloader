@@ -22,6 +22,7 @@ public struct ServerClient: Sendable {
   public var refreshToken: @Sendable () async throws -> LoginResponse
   public var getFiles: @Sendable (_ statusFilter: FileStatusFilter) async throws -> FileResponse
   public var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
+  public var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   public var logoutUser: @Sendable () async throws -> Void
 }
 
@@ -74,28 +75,7 @@ extension ServerClientError: LocalizedError {
   }
 }
 
-// MARK: - Generic Response Handling
-
-/// Generic handler for OpenAPI responses that extracts success/error and maps to domain types
-private func handleAPIResponse<SuccessPayload, DomainResponse>(
-  endpoint: String,
-  successExtractor: () -> SuccessPayload?,
-  errorExtractor: () -> (statusCode: Int, message: String?, requestId: String?)?,
-  transform: (SuccessPayload) throws -> DomainResponse
-) throws -> DomainResponse {
-  @Dependency(\.logger) var logger
-  if let payload = successExtractor() {
-    logger.info(.network, "ServerClient.\(endpoint) succeeded")
-    return try transform(payload)
-  }
-
-  if let (statusCode, message, requestId) = errorExtractor() {
-    logger.warning(.network, "ServerClient.\(endpoint) failed: HTTP \(statusCode)")
-    throw mapStatusCodeToError(statusCode, message: message, requestId: requestId)
-  }
-
-  throw ServerClientError.networkError(message: "Unexpected response", requestId: nil, correlationId: nil)
-}
+// MARK: - Error Mapping
 
 /// Centralized error mapping from HTTP status codes
 private func mapStatusCodeToError(
@@ -189,33 +169,38 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      return try handleAPIResponse(
-        endpoint: "registerDevice",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          case let .created(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_DeviceRegistrationResponse) in
-          RegisterDeviceResponse(
-            body: EndpointResponse(endpointArn: response.endpointArn),
-            error: nil,
-            requestId: "generated"
-          )
-        }
-      )
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.registerDevice succeeded")
+        return RegisterDeviceResponse(
+          body: EndpointResponse(endpointArn: payload.endpointArn),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .created(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.registerDevice created (201)")
+        return RegisterDeviceResponse(
+          body: EndpointResponse(endpointArn: payload.endpointArn),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     registerUser: { userData, authorizationCode in
@@ -223,7 +208,7 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.registerUser called")
       let client = makeUnauthenticatedAPIClient()
 
-      let requestBody = Components.Schemas.Models_period_UserRegistrationRequest(
+      let requestBody = Components.Schemas.Models_period_RegistrationRequest(
         idToken: authorizationCode,
         firstName: userData.firstName,
         lastName: userData.lastName
@@ -237,36 +222,35 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      return try handleAPIResponse(
-        endpoint: "registerUser",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_UserRegistrationResponse) in
-          LoginResponse(
-            body: TokenResponse(
-              token: response.token,
-              expiresAt: response.expiresAt,
-              sessionId: response.sessionId,
-              userId: response.userId
-            ),
-            error: nil,
-            requestId: "generated"
-          )
-        }
-      )
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.registerUser succeeded")
+        return LoginResponse(
+          body: TokenResponse(
+            token: payload.token,
+            expiresAt: payload.expiresAt,
+            sessionId: payload.sessionId,
+            userId: payload.userId
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     loginUser: { authorizationCode in
@@ -274,7 +258,7 @@ extension ServerClient: DependencyKey {
       logger.info(.network, "ServerClient.loginUser called")
       let client = makeUnauthenticatedAPIClient()
 
-      let requestBody = Components.Schemas.Models_period_UserLoginRequest(
+      let requestBody = Components.Schemas.Models_period_LoginRequest(
         idToken: authorizationCode
       )
 
@@ -286,38 +270,35 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      return try handleAPIResponse(
-        endpoint: "loginUser",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
-          case let .notFound(r): (404, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .conflict(r): (409, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_UserLoginResponse) in
-          LoginResponse(
-            body: TokenResponse(
-              token: response.token,
-              expiresAt: response.expiresAt,
-              sessionId: response.sessionId,
-              userId: response.userId
-            ),
-            error: nil,
-            requestId: "generated"
-          )
-        }
-      )
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.loginUser succeeded")
+        return LoginResponse(
+          body: TokenResponse(
+            token: payload.token,
+            expiresAt: payload.expiresAt,
+            sessionId: payload.sessionId,
+            userId: payload.userId
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     refreshToken: {
@@ -327,35 +308,39 @@ extension ServerClient: DependencyKey {
 
       let response = try await client.postUserRefresh()
 
-      return try handleAPIResponse(
-        endpoint: "refreshToken",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_TokenRefreshResponse) in
-          LoginResponse(
-            body: TokenResponse(
-              token: response.token,
-              expiresAt: response.expiresAt,
-              sessionId: response.sessionId,
-              userId: response.userId
-            ),
-            error: nil,
-            requestId: "generated"
-          )
-        }
-      )
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.refreshToken succeeded")
+        return LoginResponse(
+          body: TokenResponse(
+            token: payload.token,
+            expiresAt: payload.expiresAt,
+            sessionId: payload.sessionId,
+            userId: payload.userId
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .unauthorized(r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     getFiles: { statusFilter in
@@ -367,32 +352,31 @@ extension ServerClient: DependencyKey {
         query: .init(status: statusFilter.rawValue)
       )
 
-      return try handleAPIResponse(
-        endpoint: "getFiles",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .unauthorized(r): (401, nil, try? r.body.json.requestId)
-          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_FileListResponse) in
-          let files: [File] = response.contents.map { mapAPIFileToDomainFile($0) }
-          return FileResponse(
-            body: FileList(contents: files, keyCount: Int(response.keyCount)),
-            error: nil,
-            requestId: "generated"
-          )
-        }
-      )
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.getFiles succeeded")
+        let files: [File] = payload.contents.map { mapAPIFileListItemToDomainFile($0) }
+        return FileResponse(
+          body: FileList(contents: files, keyCount: Int(payload.keyCount)),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     addFile: { url in
@@ -412,38 +396,94 @@ extension ServerClient: DependencyKey {
         body: .json(requestBody)
       )
 
-      return try handleAPIResponse(
-        endpoint: "addFile",
-        successExtractor: {
-          switch response {
-          case let .ok(r): try? r.body.json
-          case let .accepted(r): try? r.body.json
-          default: nil
-          }
-        },
-        errorExtractor: {
-          switch response {
-          case let .badRequest(r): (400, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .forbidden(r): (403, nil, try? r.body.json.requestId)
-          case let .internalServerError(r): (500, (try? r.body.json.error.message).map { "\($0)" }, try? r.body.json.requestId)
-          case let .undocumented(code, p): (code, nil, p.headerFields[.init("x-amzn-requestid")!])
-          default: nil
-          }
-        },
-        transform: { (response: Components.Schemas.Models_period_WebhookResponse) in
-          // WebhookResponse.status is a oneOf union with three possible literal values:
-          // Dispatched (value1), Initiated (value2), Accepted (value3).
-          let statusString = response.status.value1?.rawValue
-            ?? response.status.value2?.rawValue
-            ?? response.status.value3?.rawValue
-            ?? "unknown"
-          return DownloadFileResponse(
-            body: DownloadFileResponseDetail(status: statusString),
-            error: nil,
-            requestId: "generated"
-          )
-        }
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.addFile succeeded")
+        // WebhookResponse.status is a oneOf union with three possible literal values:
+        // Dispatched (value1), Initiated (value2), Accepted (value3).
+        let statusString = payload.status.value1?.rawValue
+          ?? payload.status.value2?.rawValue
+          ?? payload.status.value3?.rawValue
+          ?? "unknown"
+        return DownloadFileResponse(
+          body: DownloadFileResponseDetail(status: statusString),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .accepted(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.addFile accepted (202)")
+        let statusString = payload.status.value1?.rawValue
+          ?? payload.status.value2?.rawValue
+          ?? payload.status.value3?.rawValue
+          ?? "Accepted"
+        return DownloadFileResponse(
+          body: DownloadFileResponseDetail(status: statusString),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .unauthorized(r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
+    },
+
+    deleteFile: { fileId in
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.deleteFile called with fileId: \(fileId)")
+      let client = makeAuthenticatedAPIClient()
+
+      let response = try await client.deleteFilesByFileId(
+        path: .init(fileId: fileId)
       )
+
+      switch response {
+      case let .ok(r):
+        let payload = try r.body.json
+        logger.info(.network, "ServerClient.deleteFile succeeded")
+        return DeleteFileResponse(
+          body: DeleteFileResponseDetail(
+            deleted: payload.deleted,
+            fileRemoved: payload.fileRemoved
+          ),
+          error: nil,
+          requestId: "generated"
+        )
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .unauthorized(r):
+        throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
+      case let .internalServerError(r):
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
+      case let .undocumented(code, p):
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+      }
     },
 
     logoutUser: {
@@ -454,13 +494,28 @@ extension ServerClient: DependencyKey {
       let response = try await client.postUserLogout()
 
       switch response {
-      case .noContent:
+      case .ok:
         logger.info(.network, "ServerClient.logoutUser succeeded")
         return
+      case .noContent:
+        logger.info(.network, "ServerClient.logoutUser succeeded (204)")
+        return
+      case let .badRequest(r):
+        throw mapStatusCodeToError(
+          400,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
       case let .unauthorized(r):
         throw mapStatusCodeToError(401, message: nil, requestId: try? r.body.json.requestId)
+      case let .forbidden(r):
+        throw mapStatusCodeToError(403, message: nil, requestId: try? r.body.json.requestId)
       case let .internalServerError(r):
-        throw mapStatusCodeToError(500, message: (try? r.body.json.error.message).map { "\($0)" }, requestId: try? r.body.json.requestId)
+        throw mapStatusCodeToError(
+          500,
+          message: (try? r.body.json.error.message).map { "\($0)" },
+          requestId: try? r.body.json.requestId
+        )
       case let .undocumented(code, p):
         throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
       }
@@ -470,23 +525,19 @@ extension ServerClient: DependencyKey {
 
 // MARK: - File Mapping
 
-/// Maps OpenAPI file model to domain File model
-private func mapAPIFileToDomainFile(_ apiFile: Components.Schemas.Models_period_File) -> File {
+/// Maps an item from the `/files` list response to the domain `File` model.
+///
+/// The CLI's $ref promotion resolves `FileListResponse.contents` items to the
+/// top-level `Models.File` component, so this takes `Models_period_File` directly.
+private func mapAPIFileListItemToDomainFile(
+  _ apiFile: Components.Schemas.Models_period_File
+) -> File {
   let publishDate = apiFile.publishDate.flatMap { DateFormatters.parse($0) }
 
-  var fileStatus: FileStatus?
-  if let statusPayload = apiFile.status {
-    switch statusPayload {
-    case .Queued:
-      fileStatus = .queued
-    case .Downloading:
-      fileStatus = .downloading
-    case .Downloaded:
-      fileStatus = .downloaded
-    case .Failed:
-      fileStatus = .failed
-    }
-  }
+  // The nested `statusPayload` enum has identical raw values to the domain
+  // `FileStatus` enum, so map via rawValue to stay independent of the
+  // generator's naming.
+  let fileStatus: FileStatus? = apiFile.status.flatMap { FileStatus(rawValue: $0.rawValue) }
 
   var file = File(
     fileId: apiFile.fileId,
@@ -560,6 +611,13 @@ public extension ServerClient {
         requestId: "test-request-id"
       )
     },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+        error: nil,
+        requestId: "test-request-id"
+      )
+    },
     logoutUser: {}
   )
 
@@ -602,6 +660,13 @@ public extension ServerClient {
     addFile: { _ in
       DownloadFileResponse(
         body: DownloadFileResponseDetail(status: "queued"),
+        error: nil,
+        requestId: "preview"
+      )
+    },
+    deleteFile: { _ in
+      DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
         error: nil,
         requestId: "preview"
       )

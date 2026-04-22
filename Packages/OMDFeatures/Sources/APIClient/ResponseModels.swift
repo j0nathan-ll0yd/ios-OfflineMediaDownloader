@@ -63,6 +63,30 @@ public struct DownloadFileResponse: Codable, Sendable {
   }
 }
 
+// MARK: - Delete File Response
+
+public struct DeleteFileResponseDetail: Codable, Sendable {
+  public var deleted: Bool
+  public var fileRemoved: Bool
+
+  public init(deleted: Bool, fileRemoved: Bool) {
+    self.deleted = deleted
+    self.fileRemoved = fileRemoved
+  }
+}
+
+public struct DeleteFileResponse: Codable, Sendable {
+  public var body: DeleteFileResponseDetail?
+  public var error: ErrorDetail?
+  public var requestId: String
+
+  public init(body: DeleteFileResponseDetail? = nil, error: ErrorDetail? = nil, requestId: String) {
+    self.body = body
+    self.error = error
+    self.requestId = requestId
+  }
+}
+
 // MARK: - Register Device Response
 
 public struct EndpointResponse: Codable, Sendable {

@@ -25,11 +25,15 @@ if [ "$CURRENT_BRANCH" = "master" ] || [ "$CURRENT_BRANCH" = "main" ]; then
 fi
 
 echo "Running pre-push checks..."
-echo "Verifying Xcode build..."
+echo "Verifying Xcode build-for-testing..."
+echo ""
+echo "NOTE: First push on a fresh clone may take 8-12 minutes while"
+echo "DerivedData is populated. Subsequent pushes use warm cache (<1 min typical)."
 echo ""
 
-# Build the project to verify it compiles
-# Use generic iOS Simulator destination to work with any available simulator
+# Build the project including test targets to verify everything compiles.
+# build-for-testing compiles OfflineMediaDownloaderTests and UITests alongside
+# the main app, catching test-target compile errors before they reach CI.
 # -skipMacroValidation bypasses Xcode's interactive macro approval requirement
 # -skipPackagePluginValidation bypasses Swift package plugin approval
 xcodebuild -project OfflineMediaDownloader.xcodeproj \
@@ -37,19 +41,31 @@ xcodebuild -project OfflineMediaDownloader.xcodeproj \
   -destination 'generic/platform=iOS Simulator' \
   -skipMacroValidation \
   -skipPackagePluginValidation \
-  -quiet \
-  build
+  build-for-testing 2>&1 | tee /tmp/pre-push-build.log
 
-BUILD_RESULT=$?
+BUILD_RESULT=${PIPESTATUS[0]}
 
 if [ $BUILD_RESULT -ne 0 ]; then
   echo ""
-  echo "ERROR: Xcode build failed. Please fix build errors before pushing."
+  echo "ERROR: Xcode build-for-testing failed. Please fix build errors before pushing."
+  echo ""
+  echo "To bypass (emergency only): git push --no-verify"
+  exit 1
+fi
+
+# Mirror CI's warnings-as-errors behavior
+WARNING_COUNT=$(grep -c 'warning:' /tmp/pre-push-build.log || true)
+if [ "$WARNING_COUNT" -gt 0 ]; then
+  echo ""
+  echo "ERROR: Build succeeded but produced $WARNING_COUNT warning(s)."
+  echo "CI treats warnings as errors (-warnings-as-errors). Fix them before pushing."
+  echo ""
+  grep 'warning:' /tmp/pre-push-build.log | head -20
   echo ""
   echo "To bypass (emergency only): git push --no-verify"
   exit 1
 fi
 
 echo ""
-echo "Build successful. Proceeding with push."
+echo "Build successful (zero warnings). Proceeding with push."
 exit 0

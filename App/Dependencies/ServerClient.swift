@@ -73,28 +73,7 @@ extension ServerClientError: LocalizedError {
   }
 }
 
-// MARK: - Generic Response Handling
-
-/// Generic handler for OpenAPI responses that extracts success/error and maps to domain types
-private func handleAPIResponse<SuccessPayload, DomainResponse>(
-  endpoint: String,
-  successExtractor: () -> SuccessPayload?,
-  errorExtractor: () -> (statusCode: Int, message: String?, requestId: String?)?,
-  transform: (SuccessPayload) throws -> DomainResponse
-) throws -> DomainResponse {
-  @Dependency(\.logger) var logger
-  if let payload = successExtractor() {
-    logger.info(.network, "ServerClient.\(endpoint) succeeded")
-    return try transform(payload)
-  }
-
-  if let (statusCode, message, requestId) = errorExtractor() {
-    logger.warning(.network, "ServerClient.\(endpoint) failed: HTTP \(statusCode)")
-    throw mapStatusCodeToError(statusCode, message: message, requestId: requestId)
-  }
-
-  throw ServerClientError.networkError(message: "Unexpected response", requestId: nil, correlationId: nil)
-}
+// MARK: - Error Mapping
 
 /// Centralized error mapping from HTTP status codes
 private func mapStatusCodeToError(
