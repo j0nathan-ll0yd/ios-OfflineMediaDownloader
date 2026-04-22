@@ -8,6 +8,7 @@ public enum PushNotificationType: Equatable, Sendable {
   case metadata(File)
   case downloadReady(fileId: String, key: String, url: URL, size: Int64)
   case downloadStarted(fileId: String, thumbnailUrl: String?, title: String?)
+  case downloadProgress(fileId: String, progressPercent: Int)
   case failure(fileId: String, title: String?, errorCategory: String, errorMessage: String)
   case unknown
 
@@ -51,6 +52,15 @@ public enum PushNotificationType: Equatable, Sendable {
       let thumbnailUrl = fileData["thumbnailUrl"] as? String
       let title = fileData["title"] as? String
       return .downloadStarted(fileId: fileId, thumbnailUrl: thumbnailUrl, title: title)
+
+    case "DownloadProgressNotification":
+      guard let fileId = fileData["fileId"] as? String,
+            let progressPercent = fileData["progressPercent"] as? Int
+      else {
+        logger.warning(.push, "Missing required fields in DownloadProgressNotification")
+        return .unknown
+      }
+      return .downloadProgress(fileId: fileId, progressPercent: progressPercent)
 
     case "FailureNotification":
       guard let fileId = fileData["fileId"] as? String,

@@ -54,6 +54,7 @@ struct FileListFeature {
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case fileDownloadStartedOnServer(fileId: String, thumbnailUrl: String?)
+    case serverDownloadProgress(fileId: String, percent: Int)
     case refreshFileState(String) // fileId
     case fileFailed(fileId: String, error: String)
     case deleteFileFailed(File, String)
@@ -459,6 +460,12 @@ struct FileListFeature {
           state.files[id: fileId] = fileState
         }
         return .none
+
+      case let .serverDownloadProgress(fileId, percent):
+        let liveActivityClient = liveActivityClient
+        return .run { _ in
+          await liveActivityClient.updateProgress(fileId, percent, .serverDownloading)
+        }
 
       case let .fileDownloadStartedOnServer(fileId, thumbnailUrl):
         if var fileState = state.files[id: fileId] {

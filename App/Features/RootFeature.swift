@@ -296,6 +296,9 @@ struct RootFeature {
             }
           )
 
+        case let .downloadProgress(fileId, progressPercent):
+          return .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent))))
+
         case let .failure(fileId, _, _, errorMessage):
           // Update file status to failed in CoreData and UI, end Live Activity
           return .run { [coreDataClient, liveActivityClient] send in

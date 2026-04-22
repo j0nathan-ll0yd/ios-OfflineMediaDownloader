@@ -9,6 +9,8 @@ enum PushNotificationType: Equatable {
   case downloadReady(fileId: String, key: String, url: URL, size: Int64)
   /// Server has started downloading the file to S3
   case downloadStarted(fileId: String, thumbnailUrl: String?, title: String?)
+  /// Server-side download progress update (25/50/75%)
+  case downloadProgress(fileId: String, progressPercent: Int)
   /// File processing failed
   case failure(fileId: String, title: String?, errorCategory: String, errorMessage: String)
   /// Unknown or malformed notification
@@ -56,6 +58,15 @@ enum PushNotificationType: Equatable {
       let thumbnailUrl = fileData["thumbnailUrl"] as? String
       let title = fileData["title"] as? String
       return .downloadStarted(fileId: fileId, thumbnailUrl: thumbnailUrl, title: title)
+
+    case "DownloadProgressNotification":
+      guard let fileId = fileData["fileId"] as? String,
+            let progressPercent = fileData["progressPercent"] as? Int
+      else {
+        logger.warning(.push, "Missing required fields in DownloadProgressNotification")
+        return .unknown
+      }
+      return .downloadProgress(fileId: fileId, progressPercent: progressPercent)
 
     case "FailureNotification":
       guard let fileId = fileData["fileId"] as? String,

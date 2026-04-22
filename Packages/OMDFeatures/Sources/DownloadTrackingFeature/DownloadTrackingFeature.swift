@@ -69,6 +69,7 @@ public struct DownloadTrackingFeature: Sendable {
             await liveActivityClient.updateProgress(fileId: fileId, percent: 0, status: .downloading)
             let stream = downloadClient.downloadFile(url, size)
             var firstProgressReceived = false
+            var lastReportedPercent = 0
             for await progress in stream {
               switch progress {
               case .completed:
@@ -80,8 +81,12 @@ public struct DownloadTrackingFeature: Sendable {
                   firstProgressReceived = true
                   await send(.firstProgressReceived(fileId: fileId))
                 }
-                await liveActivityClient.updateProgress(fileId: fileId, percent: percent, status: .downloading)
-                await send(.delegate(.downloadProgressUpdated(fileId: fileId, percent: percent)))
+                // Throttle Live Activity and delegate updates to 10% intervals
+                if percent >= lastReportedPercent + 10 || percent >= 100 {
+                  lastReportedPercent = percent
+                  await liveActivityClient.updateProgress(fileId: fileId, percent: percent, status: .downloading)
+                  await send(.delegate(.downloadProgressUpdated(fileId: fileId, percent: percent)))
+                }
               }
             }
           },
