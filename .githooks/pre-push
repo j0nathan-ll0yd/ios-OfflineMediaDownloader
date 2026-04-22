@@ -54,13 +54,14 @@ if [ $BUILD_RESULT -ne 0 ]; then
 fi
 
 # Mirror CI's warnings-as-errors behavior
-WARNING_COUNT=$(grep -c 'warning:' /tmp/pre-push-build.log || true)
+# Exclude Xcode system warnings (appintentsmetadataprocessor) that we cannot control
+WARNING_COUNT=$(grep 'warning:' /tmp/pre-push-build.log | grep -cv 'appintentsmetadataprocessor' || true)
 if [ "$WARNING_COUNT" -gt 0 ]; then
   echo ""
   echo "ERROR: Build succeeded but produced $WARNING_COUNT warning(s)."
   echo "CI treats warnings as errors (-warnings-as-errors). Fix them before pushing."
   echo ""
-  grep 'warning:' /tmp/pre-push-build.log | head -20
+  grep 'warning:' /tmp/pre-push-build.log | grep -v 'appintentsmetadataprocessor' | head -20
   echo ""
   echo "To bypass (emergency only): git push --no-verify"
   exit 1
