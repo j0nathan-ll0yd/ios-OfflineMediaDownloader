@@ -40,14 +40,6 @@ struct RootFeature {
     var main: MainFeature.State = .init()
     var downloadTracking: DownloadTrackingFeature.State = .init()
 
-    var isBlockingForDownloadInitiation: Bool {
-      downloadTracking.isBlockingForDownloadInitiation
-    }
-
-    var initiatingDownloads: IdentifiedArrayOf<DownloadTrackingFeature.State.DownloadInitiation> {
-      downloadTracking.initiatingDownloads
-    }
-
     #if DEBUG
       @Presents var diagnostic: DiagnosticFeature.State?
     #endif
