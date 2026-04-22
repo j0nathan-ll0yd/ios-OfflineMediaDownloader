@@ -291,6 +291,9 @@ public struct RootFeature: Sendable {
             }
           )
 
+        case let .downloadProgress(fileId, progressPercent):
+          return .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent))))
+
         case let .failure(fileId, _, _, errorMessage):
           return .run { [coreDataClient, liveActivityClient] send in
             await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)

@@ -62,6 +62,7 @@ public struct FileListFeature: Sendable {
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
     case fileDownloadStartedOnServer(fileId: String, thumbnailUrl: String?)
+    case serverDownloadProgress(fileId: String, percent: Int)
     case refreshFileState(String)
     case fileFailed(fileId: String, error: String)
     case clearAllFiles
@@ -424,6 +425,12 @@ public struct FileListFeature: Sendable {
           state.files[id: fileId] = fileState
         }
         return .none
+
+      case let .serverDownloadProgress(fileId, percent):
+        let liveActivityClient = liveActivityClient
+        return .run { _ in
+          await liveActivityClient.updateProgress(fileId, percent, .serverDownloading)
+        }
 
       case let .refreshFileState(fileId):
         if state.files[id: fileId] != nil {
