@@ -53,7 +53,7 @@ struct FileListFeature {
     // Push notification actions
     case fileAddedFromPush(File)
     case updateFileUrl(fileId: String, url: URL)
-    case fileDownloadStartedOnServer(fileId: String, thumbnailUrl: String?)
+    case fileDownloadStartedOnServer(fileId: String, thumbnailUrl: String?, title: String?)
     case serverDownloadProgress(fileId: String, percent: Int)
     case refreshFileState(String) // fileId
     case fileFailed(fileId: String, error: String)
@@ -467,16 +467,23 @@ struct FileListFeature {
           await liveActivityClient.updateProgress(fileId, percent, .serverDownloading)
         }
 
-      case let .fileDownloadStartedOnServer(fileId, thumbnailUrl):
+      case let .fileDownloadStartedOnServer(fileId, thumbnailUrl, title):
         if var fileState = state.files[id: fileId] {
           fileState.isServerDownloading = true
           if let thumbnailUrl {
             fileState.file.thumbnailUrl = thumbnailUrl
           }
+          if let title, fileState.file.title == nil {
+            fileState.file.title = title
+          }
           state.files[id: fileId] = fileState
         }
-        return .run { [liveActivityClient] _ in
+        let updatedFile = state.files[id: fileId]?.file
+        return .run { [liveActivityClient, coreDataClient] _ in
           await liveActivityClient.updateProgress(fileId, 0, .serverDownloading)
+          if let file = updatedFile {
+            try? await coreDataClient.cacheFile(file)
+          }
         }
 
       case let .refreshFileState(fileId):

@@ -286,10 +286,10 @@ struct RootFeature {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
-        case let .downloadStarted(fileId, thumbnailUrl, _):
+        case let .downloadStarted(fileId, thumbnailUrl, title):
           let thumbnailCacheClient = thumbnailCacheClient
           return .merge(
-            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl)))),
+            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl, title: title)))),
             .run { _ in
               guard let urlString = thumbnailUrl, let url = URL(string: urlString) else { return }
               await thumbnailCacheClient.prefetchThumbnails([(fileId: fileId, url: url)])
