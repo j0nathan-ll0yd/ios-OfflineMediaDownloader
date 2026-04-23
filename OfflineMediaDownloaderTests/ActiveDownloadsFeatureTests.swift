@@ -37,8 +37,11 @@ struct ActiveDownloadsFeatureTests {
       $0.logger = TestData.noopLogger
     }
 
-    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false))
-    // No state change expected - duplicate should be ignored
+    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false)) {
+      $0.activeDownloads[id: "file1"]?.status = .downloading
+      $0.activeDownloads[id: "file1"]?.progress = 0
+      $0.activeDownloads[id: "file1"]?.isBackgroundInitiated = false
+    }
   }
 
   // MARK: - Progress Update Tests

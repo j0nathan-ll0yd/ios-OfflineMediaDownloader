@@ -40,14 +40,6 @@ struct RootFeature {
     var main: MainFeature.State = .init()
     var downloadTracking: DownloadTrackingFeature.State = .init()
 
-    var isBlockingForDownloadInitiation: Bool {
-      downloadTracking.isBlockingForDownloadInitiation
-    }
-
-    var initiatingDownloads: IdentifiedArrayOf<DownloadTrackingFeature.State.DownloadInitiation> {
-      downloadTracking.initiatingDownloads
-    }
-
     #if DEBUG
       @Presents var diagnostic: DiagnosticFeature.State?
     #endif
@@ -286,10 +278,12 @@ struct RootFeature {
             await send(.downloadReadyProcessed(fileId: fileId, key: key, url: url, size: size))
           }
 
-        case let .downloadStarted(fileId, thumbnailUrl, _):
+        case let .downloadStarted(fileId, thumbnailUrl, title):
           let thumbnailCacheClient = thumbnailCacheClient
+          let bannerTitle = title ?? ""
           return .merge(
-            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl)))),
+            .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl, title: title)))),
+            .send(.main(.activeDownloads(.serverDownloadStarted(fileId: fileId, title: bannerTitle)))),
             .run { _ in
               guard let urlString = thumbnailUrl, let url = URL(string: urlString) else { return }
               await thumbnailCacheClient.prefetchThumbnails([(fileId: fileId, url: url)])
@@ -297,14 +291,18 @@ struct RootFeature {
           )
 
         case let .downloadProgress(fileId, progressPercent):
-          return .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent))))
+          return .merge(
+            .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent)))),
+            .send(.main(.activeDownloads(.serverDownloadProgress(fileId: fileId, percent: progressPercent))))
+          )
 
         case let .failure(fileId, _, _, errorMessage):
-          // Update file status to failed in CoreData and UI, end Live Activity
+          // Update file status to failed in CoreData and UI, end Live Activity, update banner
           return .run { [coreDataClient, liveActivityClient] send in
             await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
             try await coreDataClient.updateFileStatus(fileId, .failed)
             await send(.main(.fileList(.fileFailed(fileId: fileId, error: errorMessage))))
+            await send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: errorMessage))))
           }
 
         case .unknown:
@@ -313,10 +311,12 @@ struct RootFeature {
         }
 
       case let .fileMetadataSaved(file):
-        // Forward to MainFeature to update FileList and start Live Activity
+        // Forward to MainFeature to update FileList, start Live Activity, and show banner
         let thumbnailCacheClient = thumbnailCacheClient
+        let bannerTitle = file.title ?? file.key
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
+          .send(.main(.activeDownloads(.fileQueued(fileId: file.fileId, title: bannerTitle)))),
           .run { [liveActivityClient] _ in
             await liveActivityClient.startActivity(file)
           },

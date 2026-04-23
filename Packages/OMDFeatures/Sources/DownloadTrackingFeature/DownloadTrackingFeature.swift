@@ -12,25 +12,6 @@ public struct DownloadTrackingFeature: Sendable {
 
   @ObservableState
   public struct State: Equatable {
-    public var initiatingDownloads: IdentifiedArrayOf<DownloadInitiation> = []
-    public var isBlockingForDownloadInitiation: Bool {
-      !initiatingDownloads.isEmpty
-    }
-
-    public struct DownloadInitiation: Equatable, Identifiable, Sendable {
-      public var id: String {
-        fileId
-      }
-
-      public let fileId: String
-      public let title: String
-
-      public init(fileId: String, title: String) {
-        self.fileId = fileId
-        self.title = title
-      }
-    }
-
     public init() {}
   }
 
@@ -38,8 +19,6 @@ public struct DownloadTrackingFeature: Sendable {
     case startDownload(fileId: String, title: String, url: URL, size: Int64)
     case downloadCompleted(fileId: String)
     case downloadFailed(fileId: String, error: String)
-    case firstProgressReceived(fileId: String)
-    case initiationTimeout(fileId: String)
     case delegate(Delegate)
 
     @CasePathable
@@ -58,17 +37,15 @@ public struct DownloadTrackingFeature: Sendable {
   @Dependency(\.logger) var logger
 
   public var body: some ReducerOf<Self> {
-    Reduce { state, action in
+    Reduce { _, action in
       switch action {
       case let .startDownload(fileId, title, url, size):
-        state.initiatingDownloads.append(State.DownloadInitiation(fileId: fileId, title: title))
         return .merge(
           .send(.delegate(.downloadStarted(fileId: fileId, title: title, isBackground: true))),
           .run { [logger, downloadClient, liveActivityClient] send in
             logger.info(.download, "Starting background download", metadata: ["fileId": fileId])
             await liveActivityClient.updateProgress(fileId: fileId, percent: 0, status: .downloading)
             let stream = downloadClient.downloadFile(url, size)
-            var firstProgressReceived = false
             var lastReportedPercent = 0
             for await progress in stream {
               switch progress {
@@ -77,10 +54,6 @@ public struct DownloadTrackingFeature: Sendable {
               case let .failed(message):
                 await send(.downloadFailed(fileId: fileId, error: message))
               case let .progress(percent):
-                if !firstProgressReceived {
-                  firstProgressReceived = true
-                  await send(.firstProgressReceived(fileId: fileId))
-                }
                 // Throttle Live Activity and delegate updates to 10% intervals
                 if percent >= lastReportedPercent + 10 || percent >= 100 {
                   lastReportedPercent = percent
@@ -89,16 +62,11 @@ public struct DownloadTrackingFeature: Sendable {
                 }
               }
             }
-          },
-          .run { send in
-            try? await Task.sleep(for: .seconds(10))
-            await send(.initiationTimeout(fileId: fileId))
           }
         )
 
       case let .downloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
-        state.initiatingDownloads.remove(id: fileId)
         return .merge(
           .run { [coreDataClient, liveActivityClient] send in
             await liveActivityClient.endActivity(fileId: fileId, status: .downloaded, errorMessage: nil)
@@ -110,7 +78,6 @@ public struct DownloadTrackingFeature: Sendable {
 
       case let .downloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
-        state.initiatingDownloads.remove(id: fileId)
         return .merge(
           .run { [liveActivityClient] _ in
             await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: error)
@@ -118,15 +85,6 @@ public struct DownloadTrackingFeature: Sendable {
           .send(.delegate(.downloadFailed(fileId: fileId, error: error)))
         )
 
-      case let .firstProgressReceived(fileId):
-        state.initiatingDownloads.remove(id: fileId)
-        return .none
-
-      case let .initiationTimeout(fileId):
-        if state.initiatingDownloads[id: fileId] != nil {
-          logger.warning(.download, "Download initiation timed out", metadata: ["fileId": fileId])
-          state.initiatingDownloads.remove(id: fileId)
-        }
         return .none
 
       case .delegate:

@@ -52,16 +52,6 @@ struct RootView: View {
         MainView(store: store.scope(state: \.main, action: \.main))
       }
     }
-    .overlay {
-      // Blocking overlay while waiting for download to start
-      if store.isBlockingForDownloadInitiation,
-         let initiation = store.initiatingDownloads.first
-      {
-        DownloadInitiatingOverlay(title: initiation.title)
-          .transition(.opacity)
-          .animation(.easeInOut(duration: 0.3), value: store.isBlockingForDownloadInitiation)
-      }
-    }
     #if DEBUG
     .onShake {
         store.send(.shakeDetected)
