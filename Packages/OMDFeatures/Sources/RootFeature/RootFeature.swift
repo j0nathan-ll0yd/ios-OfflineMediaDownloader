@@ -57,14 +57,6 @@ public struct RootFeature: Sendable {
     public var main: MainFeature.State = .init()
     public var downloadTracking: DownloadTrackingFeature.State = .init()
 
-    public var isBlockingForDownloadInitiation: Bool {
-      downloadTracking.isBlockingForDownloadInitiation
-    }
-
-    public var initiatingDownloads: IdentifiedArrayOf<DownloadTrackingFeature.State.DownloadInitiation> {
-      downloadTracking.initiatingDownloads
-    }
-
     #if DEBUG
       @Presents public var diagnostic: DiagnosticFeature.State?
     #endif
