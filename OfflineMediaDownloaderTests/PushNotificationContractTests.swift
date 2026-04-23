@@ -8,7 +8,6 @@ import Testing
 /// These fixtures live in OfflineMediaDownloaderTests/Fixtures/NotificationPayloads/
 /// and are copied from mantle-OfflineMediaDownloader/test/fixtures/notification-payloads/
 /// as part of the push notification schema sync (Phase 4b).
-@Suite("Push Notification Contract Tests")
 @MainActor
 struct PushNotificationContractTests {
   // MARK: - Type aliases
