@@ -11,6 +11,7 @@
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
+		C44113882F30D000007EAB48 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C44113892F30D000007EAB48 /* APITypes */; };
 		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
 		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -129,6 +130,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */,
+				C44113882F30D000007EAB48 /* APITypes in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +239,7 @@
 			name = OfflineMediaDownloaderTests;
 			packageProductDependencies = (
 				C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */,
+				C44113892F30D000007EAB48 /* APITypes */,
 			);
 			productName = OfflineMediaDownloaderTests;
 			productReference = C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */;
@@ -864,6 +867,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
 			productName = SnapshotTesting;
+		};
+		C44113892F30D000007EAB48 /* APITypes */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = APITypes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
