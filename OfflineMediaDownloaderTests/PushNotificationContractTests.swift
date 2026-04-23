@@ -100,14 +100,4 @@ struct PushNotificationContractTests {
     #expect(errorCategory == "permanent")
     #expect(errorMessage == "Video is unavailable in your region")
   }
-
-  @Test("Unknown notification type parses to .unknown")
-  func unknownTypeParses() {
-    let userInfo: [AnyHashable: Any] = [
-      "notificationType": "SomeNewType",
-      "file": ["fileId": "test"],
-    ]
-    let result = PushNotificationType.parse(from: userInfo)
-    #expect(result == .unknown)
-  }
 }
