@@ -1,3 +1,4 @@
+import APITypes
 import CustomDump
 import Foundation
 
@@ -109,6 +110,29 @@ struct File: Equatable, Identifiable, Codable {
     try container.encodeIfPresent(uploadDate, forKey: .uploadDate)
     try container.encodeIfPresent(viewCount, forKey: .viewCount)
     try container.encodeIfPresent(thumbnailUrl, forKey: .thumbnailUrl)
+  }
+}
+
+// MARK: - MetadataPayload initializer
+
+extension File {
+  init(from payload: Components.Schemas.Notifications_period_MetadataPayload) {
+    fileId = payload.fileId
+    key = payload.key
+    title = payload.title
+    authorName = payload.authorName
+    authorUser = payload.authorUser
+    description = payload.description
+    contentType = payload.contentType
+    thumbnailUrl = payload.thumbnailUrl
+    publishDate = DateFormatters.parse(payload.publishDate)
+    status = FileStatus(rawValue: payload.status.rawValue)
+    // Fields not present in MetadataPayload
+    size = nil
+    url = nil
+    duration = nil
+    uploadDate = nil
+    viewCount = nil
   }
 }
 
