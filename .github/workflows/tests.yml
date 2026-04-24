@@ -2,7 +2,7 @@ name: Tests
 
 on:
   pull_request:
-    branches: [master, main, develop]
+    branches: [main, develop]
     paths:
       - 'App/**'
       - 'OfflineMediaDownloaderTests/**'
@@ -19,7 +19,7 @@ on:
       - '.github/actions/**'
       - '.github/dependabot.yml'
   push:
-    branches: [master, main, develop]
+    branches: [main, develop]
     paths:
       - 'App/**'
       - 'OfflineMediaDownloaderTests/**'
