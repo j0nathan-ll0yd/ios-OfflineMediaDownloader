@@ -226,7 +226,6 @@ jobs:
 
   release-build:
     name: Release Archive (no codesign)
-    if: github.event_name == 'push'
     needs: lint
     runs-on: macos-15
     timeout-minutes: 30
@@ -238,8 +237,6 @@ jobs:
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
         with:
           key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
-          restore-keys: |
-            xcode-deriveddata-release-${{ runner.os }}-
 
       - name: Install xcbeautify
         run: brew install xcbeautify
@@ -258,3 +255,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee release-build.log | xcbeautify
+
+      - name: Archive error summary
+        if: failure()
+        run: |
+          echo "### Release Archive Errors" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'error:' release-build.log | head -50 >> $GITHUB_STEP_SUMMARY || echo "No error: lines found — check the raw log artifact" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload raw build log (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-build-log
+          path: release-build.log
+          retention-days: 7
