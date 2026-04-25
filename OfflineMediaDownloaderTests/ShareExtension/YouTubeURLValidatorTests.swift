@@ -3,7 +3,6 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite("YouTubeURLValidator Tests")
 struct YouTubeURLValidatorTests {
   // MARK: - Valid YouTube URLs
 
