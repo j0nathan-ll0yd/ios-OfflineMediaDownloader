@@ -10,8 +10,8 @@
 		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
 		<key>NSExtensionAttributes</key>
 		<dict>
-			<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
-			<integer>1</integer>
+			<key>NSExtensionActivationRule</key>
+			<string>TRUEPREDICATE</string>
 		</dict>
 	</dict>
 	<key>MEDIA_DOWNLOADER_API_KEY</key>
