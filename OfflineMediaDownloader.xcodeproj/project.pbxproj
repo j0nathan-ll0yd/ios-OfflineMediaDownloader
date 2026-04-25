@@ -81,7 +81,7 @@
 		C44108282F1487B2007EAB48 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
 		D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeURLValidator.swift; sourceTree = "<group>"; };
+		D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtension/YouTubeURLValidator.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -200,7 +200,6 @@
 				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
 				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
-				D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */,
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
@@ -491,7 +490,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D5E5CE182F2A0018007EAB48 /* YouTubeURLValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
