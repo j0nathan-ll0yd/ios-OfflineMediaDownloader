@@ -11,11 +11,17 @@
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
-
 		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
 		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */; };
+		D5E5CE022F2A0002007EAB48 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D5E5CE032F2A0003007EAB48 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE122F2A0012007EAB48 /* Valet */; };
+		D5E5CE042F2A0004007EAB48 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE132F2A0013007EAB48 /* APITypes */; };
+		D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */; };
+		D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */; };
+		D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
+		D5E5CE182F2A0018007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +46,13 @@
 			remoteGlobalIDString = C44108242F1487B2007EAB48;
 			remoteInfo = DownloadActivityWidgetExtension;
 		};
+		D5E5CE072F2A0007007EAB48 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C41DD87C2CC6C52600F041C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D5E5CE082F2A0008007EAB48;
+			remoteInfo = ShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -50,6 +63,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */,
+				D5E5CE022F2A0002007EAB48 /* ShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -66,6 +80,8 @@
 		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		C44108282F1487B2007EAB48 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
+		D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeURLValidator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -82,6 +98,13 @@
 				Info.plist,
 			);
 			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
+		};
+		D5E5CE092F2A0009007EAB48 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D5E5CE082F2A0008007EAB48 /* ShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -110,6 +133,14 @@
 				C441083C2F1487B3007EAB48 /* Exceptions for "DownloadActivityWidget" folder in "DownloadActivityWidgetExtension" target */,
 			);
 			path = DownloadActivityWidget;
+			sourceTree = "<group>";
+		};
+		D5E5CE0A2F2A000A007EAB48 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D5E5CE092F2A0009007EAB48 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -149,6 +180,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D5E5CE0B2F2A000B007EAB48 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5E5CE032F2A0003007EAB48 /* Valet in Frameworks */,
+				D5E5CE042F2A0004007EAB48 /* APITypes in Frameworks */,
+				D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */,
+				D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -158,9 +200,11 @@
 				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
 				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
+				D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */,
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
+				D5E5CE0A2F2A000A007EAB48 /* ShareExtension */,
 				C441082A2F1487B2007EAB48 /* DownloadActivityWidget */,
 				C41DD91A2CC6E34400F041C6 /* Frameworks */,
 				C41DD8852CC6C52600F041C6 /* Products */,
@@ -176,6 +220,7 @@
 				C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */,
 				C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */,
 				C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */,
+				D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -205,6 +250,7 @@
 			);
 			dependencies = (
 				C44108372F1487B3007EAB48 /* PBXTargetDependency */,
+				D5E5CE0E2F2A000E007EAB48 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C41DD8862CC6C52600F041C6 /* App */,
@@ -238,7 +284,6 @@
 			name = OfflineMediaDownloaderTests;
 			packageProductDependencies = (
 				C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */,
-
 			);
 			productName = OfflineMediaDownloaderTests;
 			productReference = C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */;
@@ -289,6 +334,32 @@
 			productReference = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D5E5CE082F2A0008007EAB48 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5E5CE112F2A0011007EAB48 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				D5E5CE0C2F2A000C007EAB48 /* Sources */,
+				D5E5CE0B2F2A000B007EAB48 /* Frameworks */,
+				D5E5CE0D2F2A000D007EAB48 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D5E5CE0A2F2A000A007EAB48 /* ShareExtension */,
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+				D5E5CE122F2A0012007EAB48 /* Valet */,
+				D5E5CE132F2A0013007EAB48 /* APITypes */,
+				D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */,
+				D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */,
+			);
+			productName = ShareExtension;
+			productReference = D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -312,6 +383,9 @@
 					};
 					C44108242F1487B2007EAB48 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					D5E5CE082F2A0008007EAB48 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -339,6 +413,7 @@
 				C41DD8982CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A22CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
 				C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */,
+				D5E5CE082F2A0008007EAB48 /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -372,6 +447,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D5E5CE0D2F2A000D007EAB48 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -380,6 +462,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */,
+				D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -404,6 +487,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D5E5CE0C2F2A000C007EAB48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5E5CE182F2A0018007EAB48 /* YouTubeURLValidator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -421,6 +512,11 @@
 			isa = PBXTargetDependency;
 			target = C44108242F1487B2007EAB48 /* DownloadActivityWidgetExtension */;
 			targetProxy = C44108362F1487B3007EAB48 /* PBXContainerItemProxy */;
+		};
+		D5E5CE0E2F2A000E007EAB48 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D5E5CE082F2A0008007EAB48 /* ShareExtension */;
+			targetProxy = D5E5CE072F2A0007007EAB48 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -763,6 +859,62 @@
 			};
 			name = Release;
 		};
+		D5E5CE0F2F2A000F007EAB48 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		D5E5CE102F2A0010007EAB48 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C41DD92F2CC972F900F041C6 /* Development.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P328YB6M54;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Save to Downloader";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lifegames.OfflineMediaDownloader.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -807,6 +959,15 @@
 			buildConfigurations = (
 				C441083A2F1487B3007EAB48 /* Debug */,
 				C441083B2F1487B3007EAB48 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D5E5CE112F2A0011007EAB48 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5E5CE0F2F2A000F007EAB48 /* Debug */,
+				D5E5CE102F2A0010007EAB48 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -866,6 +1027,23 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
 			productName = SnapshotTesting;
+		};
+		D5E5CE122F2A0012007EAB48 /* Valet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */;
+			productName = Valet;
+		};
+		D5E5CE132F2A0013007EAB48 /* APITypes */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = APITypes;
+		};
+		D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpenAPIURLSession;
+		};
+		D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpenAPIRuntime;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

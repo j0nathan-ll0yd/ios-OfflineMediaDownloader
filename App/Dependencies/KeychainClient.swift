@@ -7,8 +7,15 @@ final class ValetUtil: Sendable {
   let secureEnclave: SecureEnclaveValet?
   let keychain: Valet
 
-  /// Use a safe identifier that works in both app and test environments
-  static let identifier: String = {
+  static let sharedGroupIdentifier: SharedGroupIdentifier = {
+    guard let id = SharedGroupIdentifier(groupPrefix: "group", nonEmptyGroup: "lifegames.OfflineMediaDownloader") else {
+      fatalError("SharedGroupIdentifier construction failed — compile-time constants guarantee non-nil")
+    }
+    return id
+  }()
+
+  /// Legacy per-app identifier, kept for one-time migration
+  static let legacyIdentifier: String = {
     if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
       return "\(bundleId).Valet"
     }
@@ -17,10 +24,6 @@ final class ValetUtil: Sendable {
   }()
 
   private init() {
-    guard let identifier = Identifier(nonEmpty: ValetUtil.identifier) else {
-      fatalError("ValetUtil.identifier is guaranteed non-empty by its computed fallback")
-    }
-
     // SecureEnclaveValet is not available in simulator environments
     // and may fail on devices without Secure Enclave hardware
     #if targetEnvironment(simulator)
@@ -28,16 +31,30 @@ final class ValetUtil: Sendable {
     #else
       // Try to create SecureEnclaveValet, but it may fail on older devices
       // or in certain CI environments
-      secureEnclave = SecureEnclaveValet.valet(
-        with: identifier,
+      secureEnclave = SecureEnclaveValet.sharedGroupValet(
+        with: ValetUtil.sharedGroupIdentifier,
         accessControl: .userPresence
       )
     #endif
 
-    keychain = Valet.valet(
-      with: identifier,
-      accessibility: .whenUnlocked
+    keychain = Valet.sharedGroupValet(
+      with: ValetUtil.sharedGroupIdentifier,
+      accessibility: .afterFirstUnlock
     )
+
+    // One-time migration from per-app valet to shared group valet
+    if !UserDefaults.standard.bool(forKey: "keychainMigratedToSharedGroup") {
+      if let legacyId = Identifier(nonEmpty: Self.legacyIdentifier) {
+        let oldValet = Valet.valet(with: legacyId, accessibility: .whenUnlocked)
+        do {
+          try keychain.migrateObjects(from: oldValet, removeOnCompletion: true)
+        } catch {
+          // Migration failure is non-fatal. Either no items to migrate
+          // or keychain access issue. Worst case: user re-authenticates.
+        }
+      }
+      UserDefaults.standard.set(true, forKey: "keychainMigratedToSharedGroup")
+    }
   }
 }
 
