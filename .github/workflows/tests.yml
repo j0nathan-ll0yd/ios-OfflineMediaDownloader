@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - 'App/**'
+      - 'ShareExtension/**'
       - 'OfflineMediaDownloaderTests/**'
       - 'OfflineMediaDownloader.xcodeproj/**'
       - 'OfflineMediaDownloaderUITests/**'
@@ -22,6 +23,7 @@ on:
     branches: [main, develop]
     paths:
       - 'App/**'
+      - 'ShareExtension/**'
       - 'OfflineMediaDownloaderTests/**'
       - 'OfflineMediaDownloader.xcodeproj/**'
       - 'OfflineMediaDownloaderUITests/**'
