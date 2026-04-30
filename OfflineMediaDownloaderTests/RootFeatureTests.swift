@@ -356,6 +356,18 @@ struct RootFeatureTests {
       $0.main.fileList.files.append(FileCellFeature.State(file: testFile))
     }
 
+    await store.receive(\.main.activeDownloads.fileQueued) {
+      $0.main.activeDownloads.activeDownloads.append(
+        ActiveDownloadsFeature.ActiveDownload(
+          fileId: "push-file-123",
+          title: "Push Video.mp4",
+          progress: 0,
+          status: .queued,
+          isBackgroundInitiated: false
+        )
+      )
+    }
+
     await store.receive(\.main.fileList.files[id: "push-file-123"].onAppear)
   }
 

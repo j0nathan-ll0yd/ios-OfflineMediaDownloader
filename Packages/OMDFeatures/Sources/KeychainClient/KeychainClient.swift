@@ -8,6 +8,7 @@ public final class ValetUtil: Sendable {
   public static let shared = ValetUtil()
   public let secureEnclave: SecureEnclaveValet?
   public let keychain: Valet
+  public let sharedKeychain: Valet?
 
   /// Use a safe identifier that works in both app and test environments
   public static let identifier: String = {
@@ -36,6 +37,12 @@ public final class ValetUtil: Sendable {
       with: Identifier(nonEmpty: ValetUtil.identifier)!,
       accessibility: .whenUnlocked
     )
+
+    if let groupId = SharedGroupIdentifier(groupPrefix: "group", nonEmptyGroup: "lifegames.OfflineMediaDownloader") {
+      sharedKeychain = Valet.sharedGroupValet(with: groupId, accessibility: .afterFirstUnlock)
+    } else {
+      sharedKeychain = nil
+    }
   }
 }
 
@@ -174,6 +181,7 @@ extension KeychainClient: DependencyKey {
       logger.debug(.auth, "KeychainClient.setJwtToken: storing token (\(token.count) chars, \(preview))")
       do {
         try ValetUtil.shared.keychain.setString(token, forKey: KeychainKeys.jwtToken.rawValue)
+        try? ValetUtil.shared.sharedKeychain?.setString(token, forKey: KeychainKeys.jwtToken.rawValue)
         logger.debug(.auth, "KeychainClient.setJwtToken: succeeded")
       } catch {
         logger.warning(.auth, "KeychainClient.setJwtToken: failed with error: \(error)")
@@ -185,6 +193,7 @@ extension KeychainClient: DependencyKey {
       let timestamp = String(expiresAt.timeIntervalSince1970)
       logger.debug(.auth, "KeychainClient.setTokenExpiresAt: storing expiration \(expiresAt)")
       try ValetUtil.shared.keychain.setString(timestamp, forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+      try? ValetUtil.shared.sharedKeychain?.setString(timestamp, forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
       logger.debug(.auth, "KeychainClient.setTokenExpiresAt: succeeded")
     },
     setDeviceData: { deviceData in
@@ -200,12 +209,14 @@ extension KeychainClient: DependencyKey {
       @Dependency(\.logger) var logger
       logger.debug(.auth, "KeychainClient.deleteJwtToken: removing token from keychain")
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtToken.rawValue)
+      try? ValetUtil.shared.sharedKeychain?.removeObject(forKey: KeychainKeys.jwtToken.rawValue)
       logger.debug(.auth, "KeychainClient.deleteJwtToken: token removed")
     },
     deleteTokenExpiresAt: {
       @Dependency(\.logger) var logger
       logger.debug(.auth, "KeychainClient.deleteTokenExpiresAt: removing expiration from keychain")
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+      try? ValetUtil.shared.sharedKeychain?.removeObject(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
       logger.debug(.auth, "KeychainClient.deleteTokenExpiresAt: expiration removed")
     },
     deleteDeviceData: {
