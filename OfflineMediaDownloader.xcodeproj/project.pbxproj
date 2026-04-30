@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41DD8BD2CC6C6F500F041C6 /* Constants.swift */; };
+
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
@@ -74,7 +74,7 @@
 		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C41DD8BD2CC6C6F500F041C6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+
 		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 		C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownloadActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -199,7 +199,7 @@
 			children = (
 				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
-				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
+
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
@@ -475,7 +475,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */,
+
 				D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

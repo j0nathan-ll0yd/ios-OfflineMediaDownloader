@@ -27,8 +27,8 @@ public extension DependencyValues {
 
 // MARK: - Download Manager (handles URLSession delegate)
 
-actor DownloadManager: NSObject {
-  static let shared = DownloadManager()
+public actor DownloadManager: NSObject {
+  public static let shared = DownloadManager()
 
   private var activeTasks: [URL: URLSessionDownloadTask] = [:]
   private var progressContinuations: [URL: AsyncStream<DownloadProgress>.Continuation] = [:]
@@ -114,7 +114,7 @@ actor DownloadManager: NSObject {
 
   // MARK: - Background Session Support
 
-  func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
+  public func setBackgroundCompletionHandler(_ handler: @escaping () -> Void) {
     backgroundCompletionHandler = handler
   }
 
@@ -129,7 +129,7 @@ actor DownloadManager: NSObject {
 extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
   // MARK: Authentication Challenge (Certificate Pinning)
 
-  nonisolated func urlSession(
+  public nonisolated func urlSession(
     _: URLSession,
     didReceive challenge: URLAuthenticationChallenge,
     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
@@ -166,7 +166,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
 
   // MARK: Download Completion
 
-  nonisolated func urlSession(
+  public nonisolated func urlSession(
     _: URLSession,
     downloadTask: URLSessionDownloadTask,
     didFinishDownloadingTo location: URL
@@ -198,7 +198,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     }
   }
 
-  nonisolated func urlSession(
+  public nonisolated func urlSession(
     _: URLSession,
     task: URLSessionTask,
     didCompleteWithError error: Error?
@@ -211,7 +211,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     }
   }
 
-  nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
+  public nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession _: URLSession) {
     @Dependency(\.logger) var logger
     logger.info(.download, "URLSession background events finished")
     Task {

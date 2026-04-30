@@ -1,4 +1,6 @@
+import DesignSystem
 import SwiftUI
+import ThumbnailCacheClient
 
 // MARK: - Lifegames Pro - File List View
 
