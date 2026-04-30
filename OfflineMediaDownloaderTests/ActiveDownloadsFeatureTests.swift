@@ -25,11 +25,11 @@ struct ActiveDownloadsFeatureTests {
   }
 
   @MainActor
-  @Test("Download started does not add duplicate")
-  func downloadStartedNoDuplicate() async {
+  @Test("Download started transitions existing queued entry to downloading")
+  func downloadStartedTransitionsExisting() async {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
-      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true),
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 50, status: .serverDownloading, isBackgroundInitiated: false),
     ]
 
     let store = TestStore(initialState: state) {
@@ -38,7 +38,84 @@ struct ActiveDownloadsFeatureTests {
       $0.logger = TestData.noopLogger
     }
 
-    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false))
+    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: true)) {
+      $0.activeDownloads[id: "file1"]?.status = .downloading
+      $0.activeDownloads[id: "file1"]?.progress = 0
+      $0.activeDownloads[id: "file1"]?.isBackgroundInitiated = true
+    }
+  }
+
+  // MARK: - Server Lifecycle Tests
+
+  @MainActor
+  @Test("File queued adds download with queued status")
+  func fileQueuedAddsDownload() async {
+    let store = TestStore(initialState: ActiveDownloadsFeature.State()) {
+      ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+    }
+
+    await store.send(.fileQueued(fileId: "file1", title: "Test Video.mp4")) {
+      $0.activeDownloads = [
+        .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .queued, isBackgroundInitiated: false),
+      ]
+    }
+  }
+
+  @MainActor
+  @Test("File queued does not add duplicate")
+  func fileQueuedNoDuplicate() async {
+    var state = ActiveDownloadsFeature.State()
+    state.activeDownloads = [
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .queued, isBackgroundInitiated: false),
+    ]
+
+    let store = TestStore(initialState: state) {
+      ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+    }
+
+    await store.send(.fileQueued(fileId: "file1", title: "Test Video.mp4"))
+  }
+
+  @MainActor
+  @Test("Server download started transitions from queued to serverDownloading")
+  func serverDownloadStarted() async {
+    var state = ActiveDownloadsFeature.State()
+    state.activeDownloads = [
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .queued, isBackgroundInitiated: false),
+    ]
+
+    let store = TestStore(initialState: state) {
+      ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+    }
+
+    await store.send(.serverDownloadStarted(fileId: "file1")) {
+      $0.activeDownloads[id: "file1"]?.status = .serverDownloading
+    }
+  }
+
+  @MainActor
+  @Test("Server download progress updates percent")
+  func serverDownloadProgressUpdated() async {
+    var state = ActiveDownloadsFeature.State()
+    state.activeDownloads = [
+      .init(fileId: "file1", title: "Test Video.mp4", progress: 0, status: .serverDownloading, isBackgroundInitiated: false),
+    ]
+
+    let store = TestStore(initialState: state) {
+      ActiveDownloadsFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+    }
+
+    await store.send(.serverDownloadProgressUpdated(fileId: "file1", percent: 65)) {
+      $0.activeDownloads[id: "file1"]?.progress = 65
+    }
   }
 
   // MARK: - Progress Update Tests
@@ -200,6 +277,28 @@ struct ActiveDownloadsFeatureTests {
     var state = ActiveDownloadsFeature.State()
     state.activeDownloads = [
       .init(fileId: "file1", title: "Test.mp4", progress: 50, status: .downloading, isBackgroundInitiated: true),
+    ]
+
+    #expect(state.hasActiveDownloads == true)
+  }
+
+  @MainActor
+  @Test("hasActiveDownloads returns true when queued")
+  func hasActiveDownloadsTrueWhenQueued() {
+    var state = ActiveDownloadsFeature.State()
+    state.activeDownloads = [
+      .init(fileId: "file1", title: "Test.mp4", progress: 0, status: .queued, isBackgroundInitiated: false),
+    ]
+
+    #expect(state.hasActiveDownloads == true)
+  }
+
+  @MainActor
+  @Test("hasActiveDownloads returns true when server downloading")
+  func hasActiveDownloadsTrueWhenServerDownloading() {
+    var state = ActiveDownloadsFeature.State()
+    state.activeDownloads = [
+      .init(fileId: "file1", title: "Test.mp4", progress: 30, status: .serverDownloading, isBackgroundInitiated: false),
     ]
 
     #expect(state.hasActiveDownloads == true)
