@@ -259,6 +259,20 @@
 				C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */,
 				C41DD9232CC81B8100F041C6 /* Valet */,
 				C41DD9412D12ABC100F041C6 /* APITypes */,
+				A10000022F30000200000001 /* RootFeature */,
+				A10000032F30000300000001 /* SharedModels */,
+				A10000042F30000400000001 /* DesignSystem */,
+				A10000052F30000500000001 /* LiveActivityClient */,
+				A10000062F30000600000001 /* ThumbnailCacheClient */,
+				A10000072F30000700000001 /* KeychainClient */,
+				A10000082F30000800000001 /* ServerClient */,
+				A10000092F30000900000001 /* PersistenceClient */,
+				A100000A2F30000A00000001 /* DownloadClient */,
+				A100000B2F30000B00000001 /* FileClient */,
+				A100000C2F30000C00000001 /* LoggerClient */,
+				A100000D2F30000D00000001 /* AuthenticationClient */,
+				A100000E2F30000E00000001 /* FileDetailFeature */,
+				A100000F2F30000F00000001 /* LoginFeature */,
 			);
 			productName = OfflineMediaDownloader;
 			productReference = C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */;
@@ -402,6 +416,7 @@
 				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
 				C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */,
 				C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
@@ -973,6 +988,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/OMDFeatures;
+		};
 		C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = APITypes;
@@ -1007,6 +1026,62 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A10000022F30000200000001 /* RootFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RootFeature;
+		};
+		A10000032F30000300000001 /* SharedModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SharedModels;
+		};
+		A10000042F30000400000001 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		A10000052F30000500000001 /* LiveActivityClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LiveActivityClient;
+		};
+		A10000062F30000600000001 /* ThumbnailCacheClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ThumbnailCacheClient;
+		};
+		A10000072F30000700000001 /* KeychainClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeychainClient;
+		};
+		A10000082F30000800000001 /* ServerClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ServerClient;
+		};
+		A10000092F30000900000001 /* PersistenceClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersistenceClient;
+		};
+		A100000A2F30000A00000001 /* DownloadClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DownloadClient;
+		};
+		A100000B2F30000B00000001 /* FileClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FileClient;
+		};
+		A100000C2F30000C00000001 /* LoggerClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoggerClient;
+		};
+		A100000D2F30000D00000001 /* AuthenticationClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AuthenticationClient;
+		};
+		A100000E2F30000E00000001 /* FileDetailFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FileDetailFeature;
+		};
+		A100000F2F30000F00000001 /* LoginFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoginFeature;
+		};
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
