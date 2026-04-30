@@ -1,8 +1,11 @@
 import ConcurrencyExtras
+import CorrelationClient
 import Foundation
 import HTTPTypes
-@testable import OfflineMediaDownloader
+import KeychainClient
+import LoggerClient
 @preconcurrency import OpenAPIRuntime
+@testable import ServerClient
 import Testing
 
 enum MiddlewareTests {

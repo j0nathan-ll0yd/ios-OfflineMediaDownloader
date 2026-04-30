@@ -1,8 +1,14 @@
 import ComposableArchitecture
 import ConcurrencyExtras
+import DownloadClient
+import FileClient
+@testable import FileDetailFeature
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
+import PersistenceClient
+import SharedModels
 import Testing
+import ThumbnailCacheClient
 
 @Suite(.serialized)
 struct FileDetailFeatureTests {

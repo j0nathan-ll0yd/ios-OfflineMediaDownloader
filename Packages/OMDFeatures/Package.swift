@@ -43,6 +43,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
     .package(path: "../../APITypes"),
+    .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.9.0"),
   ],
   targets: [
     // ─── Core ─────────────────────────────────────────────────────────
@@ -60,21 +61,25 @@ let package = Package(
     .target(name: "LoggerClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "AnalyticsClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "CorrelationClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "PerformanceClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "FileClient", dependencies: [

@@ -1,6 +1,7 @@
+@testable import ActiveDownloadsFeature
 import ComposableArchitecture
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
 import Testing
 
 @Suite(.serialized)
@@ -37,11 +38,7 @@ struct ActiveDownloadsFeatureTests {
       $0.logger = TestData.noopLogger
     }
 
-    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false)) {
-      $0.activeDownloads[id: "file1"]?.status = .downloading
-      $0.activeDownloads[id: "file1"]?.progress = 0
-      $0.activeDownloads[id: "file1"]?.isBackgroundInitiated = false
-    }
+    await store.send(.downloadStarted(fileId: "file1", title: "Test Video.mp4", isBackground: false))
   }
 
   // MARK: - Progress Update Tests
