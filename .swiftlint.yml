@@ -27,6 +27,9 @@ opt_in_rules:
   - closure_spacing
 included:
   - App
+  - Packages/OMDFeatures/Sources
+  - Packages/OMDFeatures/Tests
+  - OfflineMediaDownloaderTests
 excluded:
   - APITypes/.build
   - .build
