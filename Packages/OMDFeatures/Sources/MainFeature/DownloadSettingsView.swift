@@ -1,28 +1,26 @@
 import ComposableArchitecture
+import DesignSystem
 import SwiftUI
 
-struct DownloadSettingsView: View {
+public struct DownloadSettingsView: View {
   @Bindable var store: StoreOf<DownloadSettingsFeature>
 
   private let theme = DarkProfessionalTheme()
 
-  var body: some View {
+  public init(store: StoreOf<DownloadSettingsFeature>) {
+    self.store = store
+  }
+
+  public var body: some View {
     ZStack {
       theme.backgroundColor
         .ignoresSafeArea()
 
       ScrollView {
         VStack(spacing: 24) {
-          // Header
           headerSection
-
-          // Quality Selection
           qualitySection
-
-          // Cellular Downloads Toggle
           cellularSection
-
-          // Info note
           infoSection
         }
         .padding(16)
@@ -32,9 +30,7 @@ struct DownloadSettingsView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbarColorScheme(.dark, for: .navigationBar)
     .preferredColorScheme(.dark)
-    .onAppear {
-      store.send(.onAppear)
-    }
+    .task { store.send(.onAppear) }
   }
 
   // MARK: - Header Section
@@ -109,7 +105,7 @@ struct DownloadSettingsView: View {
             .font(.body)
             .foregroundStyle(.white)
 
-          Text(quality.description)
+          Text(quality.qualityDescription)
             .font(.caption)
             .foregroundStyle(theme.textSecondary)
             .lineLimit(1)

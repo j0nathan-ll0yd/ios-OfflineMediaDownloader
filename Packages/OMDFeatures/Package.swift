@@ -215,7 +215,7 @@ let package = Package(
     ]),
 
     .target(name: "MainFeature", dependencies: [
-      "SharedModels",
+      "SharedModels", "DesignSystem",
       "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),

@@ -1,14 +1,13 @@
 import ComposableArchitecture
 import Foundation
 
-/// Download quality preferences
-enum DownloadQuality: String, CaseIterable, Codable {
+public enum DownloadQuality: String, CaseIterable, Codable, Sendable {
   case auto
   case high
   case medium
   case low
 
-  var displayName: String {
+  public var displayName: String {
     switch self {
     case .auto:
       "Auto (Recommended)"
@@ -21,7 +20,7 @@ enum DownloadQuality: String, CaseIterable, Codable {
     }
   }
 
-  var description: String {
+  public var qualityDescription: String {
     switch self {
     case .auto:
       "Automatically selects quality based on network conditions"
@@ -35,16 +34,15 @@ enum DownloadQuality: String, CaseIterable, Codable {
   }
 }
 
-/// Client for accessing user preferences stored in UserDefaults
 @DependencyClient
-struct UserDefaultsClient {
-  var getDownloadQuality: @Sendable () -> DownloadQuality = { .auto }
-  var setDownloadQuality: @Sendable (DownloadQuality) -> Void
-  var getCellularDownloadsEnabled: @Sendable () -> Bool = { false }
-  var setCellularDownloadsEnabled: @Sendable (Bool) -> Void
+public struct UserDefaultsClient: Sendable {
+  public var getDownloadQuality: @Sendable () -> DownloadQuality = { .auto }
+  public var setDownloadQuality: @Sendable (DownloadQuality) -> Void
+  public var getCellularDownloadsEnabled: @Sendable () -> Bool = { false }
+  public var setCellularDownloadsEnabled: @Sendable (Bool) -> Void
 }
 
-extension DependencyValues {
+public extension DependencyValues {
   var userDefaultsClient: UserDefaultsClient {
     get { self[UserDefaultsClient.self] }
     set { self[UserDefaultsClient.self] = newValue }
@@ -61,7 +59,7 @@ private enum UserDefaultsKeys {
 // MARK: - Live Implementation
 
 extension UserDefaultsClient: DependencyKey {
-  static let liveValue = UserDefaultsClient(
+  public static let liveValue = UserDefaultsClient(
     getDownloadQuality: {
       guard let rawValue = UserDefaults.standard.string(forKey: UserDefaultsKeys.downloadQuality),
             let quality = DownloadQuality(rawValue: rawValue)
@@ -79,16 +77,5 @@ extension UserDefaultsClient: DependencyKey {
     setCellularDownloadsEnabled: { enabled in
       UserDefaults.standard.set(enabled, forKey: UserDefaultsKeys.cellularDownloadsEnabled)
     }
-  )
-}
-
-// MARK: - Test Implementation
-
-extension UserDefaultsClient {
-  static let testValue = UserDefaultsClient(
-    getDownloadQuality: { .auto },
-    setDownloadQuality: { _ in },
-    getCellularDownloadsEnabled: { false },
-    setCellularDownloadsEnabled: { _ in }
   )
 }
