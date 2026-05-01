@@ -213,10 +213,10 @@ public struct DiagnosticView: View {
         .padding(.leading, 4)
 
       VStack(spacing: 0) {
-        ForEach(items.indices, id: \.self) { index in
-          settingsRow(item: items[index])
+        ForEach(items) { item in
+          settingsRow(item: item)
 
-          if index < items.count - 1 {
+          if item.id != items.last?.id {
             Divider()
               .background(DarkProfessionalTheme.divider)
               .padding(.leading, 52)
@@ -411,10 +411,15 @@ public struct DiagnosticView: View {
       .contentShape(Rectangle())
     }
 
-    private func formattedExpiration(_ date: Date) -> String {
+    private static let expirationFormatter: DateFormatter = {
       let formatter = DateFormatter()
       formatter.dateStyle = .medium
       formatter.timeStyle = .short
+      return formatter
+    }()
+
+    private func formattedExpiration(_ date: Date) -> String {
+      let formatter = Self.expirationFormatter
       let timeUntil = date.timeIntervalSinceNow
       if timeUntil < 0 {
         return "Expired: \(formatter.string(from: date))"
@@ -440,10 +445,14 @@ public struct DiagnosticView: View {
 
 // MARK: - Supporting Types
 
-private struct SettingsItem {
+private struct SettingsItem: Identifiable {
   let icon: String
   let title: String
   let color: Color
+
+  var id: String {
+    title
+  }
 }
 
 private struct StatCard: View {
@@ -720,14 +729,18 @@ public struct TokenExpirationDetailView: View {
     .preferredColorScheme(.dark)
   }
 
+  private static let dateTimeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .medium
+    return formatter
+  }()
+
   private var formattedValue: String {
     guard let expiresAt else {
       return "Not set"
     }
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .medium
-    return formatter.string(from: expiresAt)
+    return Self.dateTimeFormatter.string(from: expiresAt)
   }
 
   private var statusColor: Color {

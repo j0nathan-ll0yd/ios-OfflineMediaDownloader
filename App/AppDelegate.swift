@@ -117,8 +117,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     logger.info(.lifecycle, "AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
     // Re-initialize DownloadManager if needed (it's a singleton, so accessing .shared ensures it's initialized)
     // Pass the completion handler to DownloadManager
+    // SAFETY: completionHandler must escape @MainActor isolation to be called from async context
     nonisolated(unsafe) let handler = completionHandler
-    Task {
+    Task(name: "set-background-completion-handler") {
       await DownloadManager.shared.setBackgroundCompletionHandler(handler)
     }
   }
