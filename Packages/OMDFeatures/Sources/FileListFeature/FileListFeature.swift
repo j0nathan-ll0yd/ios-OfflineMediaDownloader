@@ -197,7 +197,7 @@ public struct FileListFeature: Sendable {
 
       case let .remoteFilesResponse(.failure(error)):
         state.isLoading = false
-        let appError = AppError.from(error)
+        let appError = (error as? ServerClientError).map(AppError.from) ?? AppError.from(error)
         if appError.requiresReauth {
           return .merge(
             .send(.defaultFiles(.fileFetchFailed(appError.message))),
@@ -315,7 +315,7 @@ public struct FileListFeature: Sendable {
         return .none
 
       case let .addFileResponse(.failure(error)):
-        let appError = AppError.from(error)
+        let appError = (error as? ServerClientError).map(AppError.from) ?? AppError.from(error)
         if appError.requiresReauth {
           state.pendingAddUrl = nil
           state.pendingYoutubeId = nil

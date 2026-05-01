@@ -1,6 +1,10 @@
+import APIClient
 import ComposableArchitecture
 import Foundation
-@testable import OfflineMediaDownloader
+import KeychainClient
+import LoggerClient
+@testable import LoginFeature
+import SharedModels
 import Testing
 
 @Suite(.serialized)

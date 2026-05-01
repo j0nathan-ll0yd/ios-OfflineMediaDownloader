@@ -1,7 +1,16 @@
+import APIClient
 import ComposableArchitecture
+import DefaultFilesFeature
+import FileCellFeature
+import FileClient
+@testable import FileListFeature
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
 import OrderedCollections
+import PasteboardClient
+import PersistenceClient
+import ServerClient
+import SharedModels
 import Testing
 
 @Suite(.serialized)
@@ -410,8 +419,6 @@ struct FileListFeatureTests {
     await store.receive(\.addPendingFileId) {
       $0.pendingFileIds = ["youtube-video-id"]
     }
-
-    await store.receive(\.delegate.fileQueued)
   }
 
   @MainActor
@@ -557,8 +564,6 @@ struct FileListFeatureTests {
     await store.receive(\.addPendingFileId) {
       $0.pendingFileIds = ["test-id"]
     }
-
-    await store.receive(\.delegate.fileQueued)
   }
 
   @MainActor
@@ -809,7 +814,7 @@ struct FileListFeatureTests {
     }
 
     await store.send(.addPendingFileId("existing-id"))
-    await store.receive(\.delegate.fileQueued)
+
     // pendingFileIds should still contain exactly one entry (OrderedSet no-ops on duplicate)
     #expect(store.state.pendingFileIds == OrderedSet(["existing-id"]))
     #expect(store.state.pendingFileIds.count == 1)

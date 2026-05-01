@@ -75,6 +75,23 @@ extension ServerClientError: LocalizedError {
   }
 }
 
+// MARK: - AppError Bridging
+
+public extension AppError {
+  static func from(_ error: ServerClientError) -> AppError {
+    switch error {
+    case let .unauthorized(requestId, correlationId):
+      .unauthorized(requestId: requestId, correlationId: correlationId)
+    case let .internalServerError(message, requestId, correlationId):
+      .serverError(message: message, requestId: requestId, correlationId: correlationId)
+    case let .badRequest(message, requestId, correlationId):
+      .serverError(message: message, requestId: requestId, correlationId: correlationId)
+    case let .networkError(message, requestId, correlationId):
+      .serverError(message: message, requestId: requestId, correlationId: correlationId)
+    }
+  }
+}
+
 // MARK: - Error Mapping
 
 /// Centralized error mapping from HTTP status codes

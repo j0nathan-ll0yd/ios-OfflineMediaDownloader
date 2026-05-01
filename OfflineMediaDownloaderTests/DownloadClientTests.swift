@@ -1,6 +1,6 @@
 import ComposableArchitecture
+@testable import DownloadClient
 import Foundation
-@testable import OfflineMediaDownloader
 import Testing
 
 // MARK: - Mock URLProtocol for Testing

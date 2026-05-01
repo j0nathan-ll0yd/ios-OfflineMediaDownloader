@@ -1,7 +1,12 @@
 import ComposableArchitecture
 import ConcurrencyExtras
+@testable import DefaultFilesFeature
+import DownloadClient
+import FileClient
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
+import PersistenceClient
+import SharedModels
 import Testing
 
 @Suite(.serialized)

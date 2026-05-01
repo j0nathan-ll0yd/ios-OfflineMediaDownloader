@@ -78,7 +78,21 @@ private struct DownloadRowView: View {
         }
 
         // Progress bar
-        if case .downloading = download.status {
+        if case .serverDownloading = download.status {
+          GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+              RoundedRectangle(cornerRadius: 2)
+                .fill(theme.textSecondary.opacity(0.2))
+                .frame(height: 4)
+
+              RoundedRectangle(cornerRadius: 2)
+                .fill(theme.accentColor.opacity(0.7))
+                .frame(width: geometry.size.width * CGFloat(download.progress) / 100, height: 4)
+                .animation(.linear(duration: 0.2), value: download.progress)
+            }
+          }
+          .frame(height: 4)
+        } else if case .downloading = download.status {
           GeometryReader { geometry in
             ZStack(alignment: .leading) {
               // Background track
@@ -109,8 +123,18 @@ private struct DownloadRowView: View {
   @ViewBuilder
   private var statusIcon: some View {
     switch download.status {
+    case .queued:
+      Image(systemName: "clock.fill")
+        .font(.title3)
+        .foregroundStyle(theme.textSecondary)
+
+    case .serverDownloading:
+      Image(systemName: "icloud.and.arrow.down.fill")
+        .font(.title3)
+        .foregroundStyle(theme.accentColor)
+        .symbolEffect(.pulse, options: .repeating)
+
     case .downloading:
-      // Animated downloading icon
       Image(systemName: "arrow.down.circle.fill")
         .font(.title3)
         .foregroundStyle(theme.primaryColor)
@@ -130,6 +154,10 @@ private struct DownloadRowView: View {
 
   private var progressText: String {
     switch download.status {
+    case .queued:
+      "Queued"
+    case .serverDownloading:
+      "Server: \(download.progress)%"
     case .downloading:
       "\(download.progress)%"
     case .completed:
@@ -141,6 +169,10 @@ private struct DownloadRowView: View {
 
   private var statusColor: Color {
     switch download.status {
+    case .queued:
+      theme.textSecondary
+    case .serverDownloading:
+      theme.accentColor
     case .downloading:
       theme.textSecondary
     case .completed:

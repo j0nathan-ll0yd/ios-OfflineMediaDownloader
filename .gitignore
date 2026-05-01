@@ -61,3 +61,6 @@ Development.xcconfig
 # Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+# Agent enforcement symlinks
+.claude/rules/

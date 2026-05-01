@@ -22,26 +22,33 @@ xcodebuild -project OfflineMediaDownloader.xcodeproj -scheme OfflineMediaDownloa
 
 ```
 /ios-OfflineMediaDownloader/
-├── App/
-│   ├── Dependencies/           # @DependencyClient implementations (10 clients)
-│   ├── DesignSystem/           # Theme, Components, Previews
-│   ├── Enums/                  # AuthState, FileStatus, etc.
-│   ├── Extensions/             # String, Environment, DateFormatters
-│   ├── Features/               # TCA @Reducer features (all features here)
-│   ├── Helpers/                # TestHelper
-│   ├── LiveActivity/           # Download activity support
-│   ├── Models/                 # Domain models + Mappers
-│   └── Views/                  # SwiftUI views only
-├── APITypes/                   # OpenAPI generated types (Swift Package)
-├── OfflineMediaDownloaderTests/
-└── OfflineMediaDownloaderUITests/
+├── App/                              # Thin shell — entry point, AppDelegate, CoreData model
+│   ├── OfflineMediaDownloaderApp.swift   # @main entry point
+│   ├── AppDelegate.swift                 # Push notifications, background URL sessions
+│   ├── Info.plist / App.entitlements      # App metadata
+│   ├── OfflineMediaDownloader.xcdatamodeld/ # CoreData model
+│   └── DesignSystem/Previews/            # Preview catalog (redesign exploration)
+├── Packages/OMDFeatures/             # SPM package — all application code lives here
+│   └── Sources/
+│       ├── SharedModels/             # Domain types (File, User, FileStatus, AuthState)
+│       ├── DesignSystem/             # Theme, UI components
+│       ├── APIClient/                # OpenAPI bridging, AppError, response models
+│       ├── ServerClient/             # Networking (depends on APIClient)
+│       ├── *Client/                  # Dependency clients (11 total)
+│       ├── *Feature/                 # TCA @Reducer features (leaf + composite)
+│       ├── DownloadBehavior/         # Shared download utilities
+│       └── LiveActivityClient/       # Live Activity management
+├── APITypes/                         # OpenAPI generated types (Swift Package)
+├── ShareExtension/                   # iOS Share Extension for YouTube URLs
+├── OfflineMediaDownloaderTests/      # Unit tests (import SPM modules directly)
+└── OfflineMediaDownloaderUITests/    # UI tests
 ```
 
 ### Organization Convention
 
-- **Features go in `App/Features/`**: All TCA @Reducer structs (RootFeature, LoginFeature, MainFeature, etc.)
-- **Views go in `App/Views/`**: SwiftUI View structs only
-- **Dependencies go in `App/Dependencies/`**: All @DependencyClient implementations
+- **All application code lives in `Packages/OMDFeatures/Sources/`** — features, clients, models, views
+- **`App/` is a thin shell** — only entry point, AppDelegate, CoreData model, and preview catalog
+- **Tests import SPM modules directly** — e.g., `@testable import FileListFeature`, not `@testable import OfflineMediaDownloader`
 
 ## Environment Configuration
 
@@ -104,7 +111,7 @@ TCA tests use `TestStoreOf<Feature>`:
 
 - TCA: `swift-composable-architecture` 1.22.2+
 - Keychain: `Valet` (Secure Enclave support)
-- iOS 18+ (Swift 6.1)
+- iOS 26+ (Swift 6.2)
 
 ## Critical Conventions (DO NOT CHANGE)
 
@@ -114,7 +121,7 @@ These are architectural decisions that MUST NOT be modified without explicit con
 
 **The API key MUST be sent as a query parameter (`?ApiKey=xxx`), NOT as a header.**
 
-- File: `App/Dependencies/APIKeyMiddleware.swift`
+- File: `Packages/OMDFeatures/Sources/ServerClient/APIKeyMiddleware.swift`
 - The AWS API Gateway Lambda authorizer reads from query string, not headers
 - Using `X-API-Key` header will cause 401/403 errors
 - Reference: commit `244478b`

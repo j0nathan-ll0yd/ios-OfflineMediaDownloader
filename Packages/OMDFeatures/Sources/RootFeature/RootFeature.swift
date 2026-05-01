@@ -277,6 +277,7 @@ public struct RootFeature: Sendable {
           let thumbnailCacheClient = thumbnailCacheClient
           return .merge(
             .send(.main(.fileList(.fileDownloadStartedOnServer(fileId: fileId, thumbnailUrl: thumbnailUrl)))),
+            .send(.main(.activeDownloads(.serverDownloadStarted(fileId: fileId)))),
             .run { _ in
               guard let urlString = thumbnailUrl, let url = URL(string: urlString) else { return }
               await thumbnailCacheClient.prefetchThumbnails([(fileId: fileId, url: url)])
@@ -284,13 +285,17 @@ public struct RootFeature: Sendable {
           )
 
         case let .downloadProgress(fileId, progressPercent):
-          return .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent))))
+          return .merge(
+            .send(.main(.fileList(.serverDownloadProgress(fileId: fileId, percent: progressPercent)))),
+            .send(.main(.activeDownloads(.serverDownloadProgressUpdated(fileId: fileId, percent: progressPercent))))
+          )
 
         case let .failure(fileId, _, _, errorMessage):
           return .run { [coreDataClient, liveActivityClient] send in
             await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: errorMessage)
             try await coreDataClient.updateFileStatus(fileId, .failed)
             await send(.main(.fileList(.fileFailed(fileId: fileId, error: errorMessage))))
+            await send(.main(.activeDownloads(.downloadFailed(fileId: fileId, error: errorMessage))))
           }
 
         case .unknown:
@@ -302,6 +307,7 @@ public struct RootFeature: Sendable {
         let thumbnailCacheClient = thumbnailCacheClient
         return .merge(
           .send(.main(.fileList(.fileAddedFromPush(file)))),
+          .send(.main(.activeDownloads(.fileQueued(fileId: file.fileId, title: file.title ?? file.key)))),
           .run { [liveActivityClient] _ in
             await liveActivityClient.startActivity(file)
           },

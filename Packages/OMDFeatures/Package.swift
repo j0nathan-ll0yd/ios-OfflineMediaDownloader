@@ -9,6 +9,30 @@ let package = Package(
     .library(name: "SharedModels", targets: ["SharedModels"]),
     .library(name: "DesignSystem", targets: ["DesignSystem"]),
     .library(name: "LiveActivityClient", targets: ["LiveActivityClient"]),
+    .library(name: "FileCellFeature", targets: ["FileCellFeature"]),
+    .library(name: "FileDetailFeature", targets: ["FileDetailFeature"]),
+    .library(name: "FileListFeature", targets: ["FileListFeature"]),
+    .library(name: "LoginFeature", targets: ["LoginFeature"]),
+    .library(name: "MainFeature", targets: ["MainFeature"]),
+    .library(name: "ActiveDownloadsFeature", targets: ["ActiveDownloadsFeature"]),
+    .library(name: "DiagnosticFeature", targets: ["DiagnosticFeature"]),
+    .library(name: "DefaultFilesFeature", targets: ["DefaultFilesFeature"]),
+    .library(name: "DownloadTrackingFeature", targets: ["DownloadTrackingFeature"]),
+    .library(name: "DownloadBehavior", targets: ["DownloadBehavior"]),
+    .library(name: "DownloadClient", targets: ["DownloadClient"]),
+    .library(name: "ServerClient", targets: ["ServerClient"]),
+    .library(name: "ThumbnailCacheClient", targets: ["ThumbnailCacheClient"]),
+    .library(name: "APIClient", targets: ["APIClient"]),
+    .library(name: "KeychainClient", targets: ["KeychainClient"]),
+    .library(name: "AuthenticationClient", targets: ["AuthenticationClient"]),
+    .library(name: "PersistenceClient", targets: ["PersistenceClient"]),
+    .library(name: "LoggerClient", targets: ["LoggerClient"]),
+    .library(name: "FileClient", targets: ["FileClient"]),
+    .library(name: "PasteboardClient", targets: ["PasteboardClient"]),
+    .library(name: "NotificationRegistrationClient", targets: ["NotificationRegistrationClient"]),
+    .library(name: "AnalyticsClient", targets: ["AnalyticsClient"]),
+    .library(name: "CorrelationClient", targets: ["CorrelationClient"]),
+    .library(name: "PerformanceClient", targets: ["PerformanceClient"]),
   ],
   dependencies: [
     .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.22.2"),
@@ -19,6 +43,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
     .package(path: "../../APITypes"),
+    .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.9.0"),
   ],
   targets: [
     // ─── Core ─────────────────────────────────────────────────────────
@@ -36,21 +61,25 @@ let package = Package(
     .target(name: "LoggerClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "AnalyticsClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "CorrelationClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "PerformanceClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
+      .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ]),
 
     .target(name: "FileClient", dependencies: [
@@ -191,7 +220,7 @@ let package = Package(
     ]),
 
     .target(name: "MainFeature", dependencies: [
-      "SharedModels",
+      "SharedModels", "DesignSystem",
       "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),

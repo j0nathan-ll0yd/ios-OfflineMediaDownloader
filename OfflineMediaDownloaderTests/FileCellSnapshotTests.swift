@@ -1,6 +1,12 @@
 import ComposableArchitecture
+import DownloadClient
+@testable import FileCellFeature
+import FileClient
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
+import PersistenceClient
+import ServerClient
+import SharedModels
 import SnapshotTesting
 import SwiftUI
 import Testing

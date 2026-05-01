@@ -1,7 +1,11 @@
 import ComposableArchitecture
 import ConcurrencyExtras
+@testable import DiagnosticFeature
 import Foundation
-@testable import OfflineMediaDownloader
+import KeychainClient
+import LoggerClient
+import PersistenceClient
+import SharedModels
 import Testing
 
 @Suite(.serialized)

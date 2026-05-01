@@ -1,7 +1,19 @@
+import ActiveDownloadsFeature
+import APIClient
+import AuthenticationClient
 import ComposableArchitecture
 import ConcurrencyExtras
+import FileCellFeature
+import FileListFeature
 import Foundation
-@testable import OfflineMediaDownloader
+import KeychainClient
+import LoggerClient
+import LoginFeature
+import MainFeature
+import PersistenceClient
+@testable import RootFeature
+import ServerClient
+import SharedModels
 import Testing
 
 @Suite(.serialized)
@@ -345,13 +357,17 @@ struct RootFeatureTests {
     }
 
     await store.receive(\.main.activeDownloads.fileQueued) {
-      $0.main.activeDownloads.activeDownloads = [
-        .init(fileId: "push-file-123", title: "Push Video.mp4", progress: 0, status: .queued, isBackgroundInitiated: true),
-      ]
+      $0.main.activeDownloads.activeDownloads.append(
+        ActiveDownloadsFeature.ActiveDownload(
+          fileId: "push-file-123",
+          title: "Push Video.mp4",
+          progress: 0,
+          status: .queued,
+          isBackgroundInitiated: false
+        )
+      )
     }
 
-    // New files trigger onAppear to check download status
-    // (file has no URL so the effect returns immediately)
     await store.receive(\.main.fileList.files[id: "push-file-123"].onAppear)
   }
 

@@ -1,5 +1,6 @@
 import Foundation
-@testable import OfflineMediaDownloader
+@testable import RootFeature
+import SharedModels
 import Testing
 
 /// Contract tests that verify push notification fixture payloads from the backend

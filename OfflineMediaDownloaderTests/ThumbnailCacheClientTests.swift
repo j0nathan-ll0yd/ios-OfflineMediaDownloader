@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
-@testable import OfflineMediaDownloader
 import Testing
+@testable import ThumbnailCacheClient
 
 struct ThumbnailCacheClientTests {
   // MARK: - Test Value Tests

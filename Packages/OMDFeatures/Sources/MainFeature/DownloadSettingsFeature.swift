@@ -2,14 +2,18 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct DownloadSettingsFeature {
+public struct DownloadSettingsFeature: Sendable {
+  public init() {}
+
   @ObservableState
-  struct State: Equatable {
-    var downloadQuality: DownloadQuality = .auto
-    var cellularDownloadsEnabled: Bool = false
+  public struct State: Equatable, Sendable {
+    public var downloadQuality: DownloadQuality = .auto
+    public var cellularDownloadsEnabled: Bool = false
+
+    public init() {}
   }
 
-  enum Action {
+  public enum Action: Sendable {
     case onAppear
     case qualitySelected(DownloadQuality)
     case cellularToggled(Bool)
@@ -17,7 +21,7 @@ struct DownloadSettingsFeature {
 
   @Dependency(\.userDefaultsClient) var userDefaultsClient
 
-  var body: some ReducerOf<Self> {
+  public var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
       case .onAppear:

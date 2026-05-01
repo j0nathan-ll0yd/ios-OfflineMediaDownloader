@@ -11,7 +11,14 @@ public struct ActiveDownloadsFeature: Sendable {
     public var activeDownloads: IdentifiedArrayOf<ActiveDownload> = []
 
     public var hasActiveDownloads: Bool {
-      activeDownloads.contains { $0.status == .downloading }
+      activeDownloads.contains {
+        switch $0.status {
+        case .queued, .serverDownloading, .downloading:
+          true
+        case .completed, .failed:
+          false
+        }
+      }
     }
 
     public var hasVisibleDownloads: Bool {
@@ -33,6 +40,8 @@ public struct ActiveDownloadsFeature: Sendable {
     public var isBackgroundInitiated: Bool
 
     public enum DownloadStatus: Equatable, Sendable {
+      case queued
+      case serverDownloading
       case downloading
       case completed
       case failed(String)
@@ -48,6 +57,9 @@ public struct ActiveDownloadsFeature: Sendable {
   }
 
   public enum Action {
+    case fileQueued(fileId: String, title: String)
+    case serverDownloadStarted(fileId: String)
+    case serverDownloadProgressUpdated(fileId: String, percent: Int)
     case downloadStarted(fileId: String, title: String, isBackground: Bool)
     case downloadProgressUpdated(fileId: String, percent: Int)
     case downloadCompleted(fileId: String)
@@ -60,17 +72,52 @@ public struct ActiveDownloadsFeature: Sendable {
   public var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
-      case let .downloadStarted(fileId, title, isBackground):
+      case let .fileQueued(fileId, title):
         guard state.activeDownloads[id: fileId] == nil else { return .none }
         state.activeDownloads.append(
           ActiveDownload(
             fileId: fileId,
             title: title,
             progress: 0,
-            status: .downloading,
-            isBackgroundInitiated: isBackground
+            status: .queued,
+            isBackgroundInitiated: false
           )
         )
+        return .none
+
+      case let .serverDownloadStarted(fileId):
+        if var download = state.activeDownloads[id: fileId] {
+          download.status = .serverDownloading
+          download.progress = 0
+          state.activeDownloads[id: fileId] = download
+        }
+        return .none
+
+      case let .serverDownloadProgressUpdated(fileId, percent):
+        if var download = state.activeDownloads[id: fileId] {
+          download.status = .serverDownloading
+          download.progress = percent
+          state.activeDownloads[id: fileId] = download
+        }
+        return .none
+
+      case let .downloadStarted(fileId, title, isBackground):
+        if var download = state.activeDownloads[id: fileId] {
+          download.status = .downloading
+          download.progress = 0
+          download.isBackgroundInitiated = isBackground
+          state.activeDownloads[id: fileId] = download
+        } else {
+          state.activeDownloads.append(
+            ActiveDownload(
+              fileId: fileId,
+              title: title,
+              progress: 0,
+              status: .downloading,
+              isBackgroundInitiated: isBackground
+            )
+          )
+        }
         return .none
 
       case let .downloadProgressUpdated(fileId, percent):

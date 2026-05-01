@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41DD8BD2CC6C6F500F041C6 /* Constants.swift */; };
+
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
@@ -20,6 +20,7 @@
 		D5E5CE042F2A0004007EAB48 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE132F2A0013007EAB48 /* APITypes */; };
 		D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */; };
 		D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */; };
+		B1HTTP012F40000100000001 /* HTTPTypes in Frameworks */ = {isa = PBXBuildFile; productRef = B1HTTP022F40000200000001 /* HTTPTypes */; };
 		D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
 		D5E5CE182F2A0018007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
 /* End PBXBuildFile section */
@@ -74,7 +75,7 @@
 		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C41DD8BD2CC6C6F500F041C6 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+
 		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 		C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownloadActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -188,6 +189,7 @@
 				D5E5CE042F2A0004007EAB48 /* APITypes in Frameworks */,
 				D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */,
 				D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */,
+				B1HTTP012F40000100000001 /* HTTPTypes in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -199,7 +201,7 @@
 			children = (
 				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
-				C41DD8BD2CC6C6F500F041C6 /* Constants.swift */,
+
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
@@ -259,6 +261,20 @@
 				C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */,
 				C41DD9232CC81B8100F041C6 /* Valet */,
 				C41DD9412D12ABC100F041C6 /* APITypes */,
+				A10000022F30000200000001 /* RootFeature */,
+				A10000032F30000300000001 /* SharedModels */,
+				A10000042F30000400000001 /* DesignSystem */,
+				A10000052F30000500000001 /* LiveActivityClient */,
+				A10000062F30000600000001 /* ThumbnailCacheClient */,
+				A10000072F30000700000001 /* KeychainClient */,
+				A10000082F30000800000001 /* ServerClient */,
+				A10000092F30000900000001 /* PersistenceClient */,
+				A100000A2F30000A00000001 /* DownloadClient */,
+				A100000B2F30000B00000001 /* FileClient */,
+				A100000C2F30000C00000001 /* LoggerClient */,
+				A100000D2F30000D00000001 /* AuthenticationClient */,
+				A100000E2F30000E00000001 /* FileDetailFeature */,
+				A100000F2F30000F00000001 /* LoginFeature */,
 			);
 			productName = OfflineMediaDownloader;
 			productReference = C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */;
@@ -354,6 +370,7 @@
 				D5E5CE132F2A0013007EAB48 /* APITypes */,
 				D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */,
 				D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */,
+				B1HTTP022F40000200000001 /* HTTPTypes */,
 			);
 			productName = ShareExtension;
 			productReference = D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */;
@@ -402,6 +419,7 @@
 				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
 				C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */,
 				C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
@@ -460,7 +478,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C41DD8BE2CC6C6F800F041C6 /* Constants.swift in Sources */,
+
 				D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -973,6 +991,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/OMDFeatures;
+		};
 		C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = APITypes;
@@ -1007,6 +1029,62 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A10000022F30000200000001 /* RootFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RootFeature;
+		};
+		A10000032F30000300000001 /* SharedModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SharedModels;
+		};
+		A10000042F30000400000001 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		A10000052F30000500000001 /* LiveActivityClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LiveActivityClient;
+		};
+		A10000062F30000600000001 /* ThumbnailCacheClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ThumbnailCacheClient;
+		};
+		A10000072F30000700000001 /* KeychainClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeychainClient;
+		};
+		A10000082F30000800000001 /* ServerClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ServerClient;
+		};
+		A10000092F30000900000001 /* PersistenceClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersistenceClient;
+		};
+		A100000A2F30000A00000001 /* DownloadClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DownloadClient;
+		};
+		A100000B2F30000B00000001 /* FileClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FileClient;
+		};
+		A100000C2F30000C00000001 /* LoggerClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoggerClient;
+		};
+		A100000D2F30000D00000001 /* AuthenticationClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AuthenticationClient;
+		};
+		A100000E2F30000E00000001 /* FileDetailFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FileDetailFeature;
+		};
+		A100000F2F30000F00000001 /* LoginFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoginFeature;
+		};
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
@@ -1042,6 +1120,10 @@
 		D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = OpenAPIRuntime;
+		};
+		B1HTTP022F40000200000001 /* HTTPTypes */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HTTPTypes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

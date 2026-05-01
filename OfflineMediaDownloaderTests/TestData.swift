@@ -1,5 +1,8 @@
+import APIClient
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
+import PasteboardClient
+import SharedModels
 
 /// Centralized test data fixtures for all feature tests
 enum TestData {

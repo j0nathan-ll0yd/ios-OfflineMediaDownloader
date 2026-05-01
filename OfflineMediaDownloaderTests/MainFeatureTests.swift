@@ -1,6 +1,10 @@
 import ComposableArchitecture
+import DiagnosticFeature
+import FileListFeature
 import Foundation
-@testable import OfflineMediaDownloader
+import LoggerClient
+@testable import MainFeature
+import PasteboardClient
 import Testing
 
 @Suite(.serialized)
