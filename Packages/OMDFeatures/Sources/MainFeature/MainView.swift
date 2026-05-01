@@ -25,6 +25,7 @@ public struct MainView: View {
           .tag(MainFeature.State.Tab.files)
 
         accountTabContent
+          .id(store.isAuthenticated)
           .tabItem {
             Label("Account", systemImage: "person.crop.circle")
           }
