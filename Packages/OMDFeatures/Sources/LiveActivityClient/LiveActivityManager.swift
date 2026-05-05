@@ -63,8 +63,10 @@ public actor LiveActivityManager {
     state.authorName = authorName
     currentStates[fileId] = state
 
+    // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .update() from async context
     nonisolated(unsafe) let unsafeActivity = activity
-    nonisolated(unsafe) let content = ActivityContent(state: state, staleDate: nil)
+    // SAFETY: ActivityContent is not Sendable; constructed outside actor isolation for use with nonisolated Activity API
+    nonisolated(unsafe) let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(120))
     await unsafeActivity.update(content)
     liveActivityLog.info("Live Activity metadata updated for fileId: \(fileId), title: \(title)")
   }
@@ -118,8 +120,10 @@ public actor LiveActivityManager {
     state.progressPercent = percent
     currentStates[fileId] = state
 
+    // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .update() from async context
     nonisolated(unsafe) let unsafeActivity = activity
-    nonisolated(unsafe) let content = ActivityContent(state: state, staleDate: nil)
+    // SAFETY: ActivityContent is not Sendable; constructed outside actor isolation for use with nonisolated Activity API
+    nonisolated(unsafe) let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(120))
     await unsafeActivity.update(content)
     liveActivityLog.debug("Live Activity updated for fileId: \(fileId), progress: \(percent)%, status: \(status.rawValue)")
   }
@@ -136,7 +140,9 @@ public actor LiveActivityManager {
     state.progressPercent = status == .downloaded ? 100 : 0
     state.errorMessage = errorMessage
 
+    // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .update() from async context
     nonisolated(unsafe) let unsafeActivity = activity
+    // SAFETY: ActivityContent is not Sendable; constructed outside actor isolation for use with nonisolated Activity .end() API
     nonisolated(unsafe) let endState = state
     await unsafeActivity.end(ActivityContent(state: endState, staleDate: nil), dismissalPolicy: .default)
     activeActivities[fileId] = nil

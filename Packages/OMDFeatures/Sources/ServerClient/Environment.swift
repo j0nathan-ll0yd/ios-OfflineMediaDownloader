@@ -8,6 +8,7 @@ public enum Environment {
       NSClassFromString("XCTestCase") != nil
   }
 
+  // SAFETY: Bundle.main.infoDictionary is read-only after app launch; static let ensures single initialization
   private nonisolated(unsafe) static let infoDictionary: [String: Any] = // In test environments, Bundle.main.infoDictionary may be nil or missing keys
     Bundle.main.infoDictionary ?? [:]
 

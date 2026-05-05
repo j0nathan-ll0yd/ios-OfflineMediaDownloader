@@ -308,9 +308,13 @@ public struct DefaultFilesView: View {
 
   // MARK: - Helpers
 
-  private func formatSize(_ bytes: Int64) -> String {
+  private static let fileSizeFormatter: ByteCountFormatter = {
     let formatter = ByteCountFormatter()
     formatter.countStyle = .file
-    return formatter.string(fromByteCount: bytes)
+    return formatter
+  }()
+
+  private func formatSize(_ bytes: Int64) -> String {
+    Self.fileSizeFormatter.string(fromByteCount: bytes)
   }
 }

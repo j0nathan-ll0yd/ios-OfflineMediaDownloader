@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import DesignSystem
+import SharedModels
 import SwiftUI
 import ThumbnailCacheClient
 
@@ -321,23 +322,29 @@ public struct FileDetailView: View {
     }
   }
 
-  private func formatFileSize(_ bytes: Int) -> String {
+  private static let fileSizeFormatter: ByteCountFormatter = {
     let formatter = ByteCountFormatter()
     formatter.countStyle = .file
-    return formatter.string(fromByteCount: Int64(bytes))
+    return formatter
+  }()
+
+  private static let mediumDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    return formatter
+  }()
+
+  private func formatFileSize(_ bytes: Int) -> String {
+    Self.fileSizeFormatter.string(fromByteCount: Int64(bytes))
   }
 
   private func formatDate(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    return formatter.string(from: date)
+    Self.mediumDateFormatter.string(from: date)
   }
 
   /// Format upload date from YYYYMMDD string
   private func formatUploadDate(_ dateString: String) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyyMMdd"
-    guard let date = formatter.date(from: dateString) else {
+    guard let date = DateFormatters.yyyyMMdd.date(from: dateString) else {
       return dateString
     }
     return MetadataFormatters.formatRelativeDate(date)
