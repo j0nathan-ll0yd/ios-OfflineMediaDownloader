@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-
+		B1HTTP012F40000100000001 /* HTTPTypes in Frameworks */ = {isa = PBXBuildFile; productRef = B1HTTP022F40000200000001 /* HTTPTypes */; };
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
@@ -15,14 +15,26 @@
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
 		C44108382F1487B3007EAB48 /* DownloadActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */; };
+		C48AB2C12FA42A220069EED4 /* RootFeature in Frameworks */ = {isa = PBXBuildFile; productRef = A10000022F30000200000001 /* RootFeature */; };
+		C48AB2C22FA42A220069EED4 /* SharedModels in Frameworks */ = {isa = PBXBuildFile; productRef = A10000032F30000300000001 /* SharedModels */; };
+		C48AB2C32FA42A220069EED4 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = A10000042F30000400000001 /* DesignSystem */; };
+		C48AB2C42FA42A220069EED4 /* LiveActivityClient in Frameworks */ = {isa = PBXBuildFile; productRef = A10000052F30000500000001 /* LiveActivityClient */; };
+		C48AB2C52FA42A220069EED4 /* ThumbnailCacheClient in Frameworks */ = {isa = PBXBuildFile; productRef = A10000062F30000600000001 /* ThumbnailCacheClient */; };
+		C48AB2C62FA42A220069EED4 /* KeychainClient in Frameworks */ = {isa = PBXBuildFile; productRef = A10000072F30000700000001 /* KeychainClient */; };
+		C48AB2C72FA42A220069EED4 /* ServerClient in Frameworks */ = {isa = PBXBuildFile; productRef = A10000082F30000800000001 /* ServerClient */; };
+		C48AB2C82FA42A220069EED4 /* PersistenceClient in Frameworks */ = {isa = PBXBuildFile; productRef = A10000092F30000900000001 /* PersistenceClient */; };
+		C48AB2C92FA42A220069EED4 /* DownloadClient in Frameworks */ = {isa = PBXBuildFile; productRef = A100000A2F30000A00000001 /* DownloadClient */; };
+		C48AB2CA2FA42A220069EED4 /* FileClient in Frameworks */ = {isa = PBXBuildFile; productRef = A100000B2F30000B00000001 /* FileClient */; };
+		C48AB2CB2FA42A220069EED4 /* LoggerClient in Frameworks */ = {isa = PBXBuildFile; productRef = A100000C2F30000C00000001 /* LoggerClient */; };
+		C48AB2CC2FA42A220069EED4 /* AuthenticationClient in Frameworks */ = {isa = PBXBuildFile; productRef = A100000D2F30000D00000001 /* AuthenticationClient */; };
+		C48AB2CD2FA42A220069EED4 /* FileDetailFeature in Frameworks */ = {isa = PBXBuildFile; productRef = A100000E2F30000E00000001 /* FileDetailFeature */; };
+		C48AB2CE2FA42A220069EED4 /* LoginFeature in Frameworks */ = {isa = PBXBuildFile; productRef = A100000F2F30000F00000001 /* LoginFeature */; };
 		D5E5CE022F2A0002007EAB48 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D5E5CE032F2A0003007EAB48 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE122F2A0012007EAB48 /* Valet */; };
 		D5E5CE042F2A0004007EAB48 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE132F2A0013007EAB48 /* APITypes */; };
 		D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */; };
 		D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */; };
-		B1HTTP012F40000100000001 /* HTTPTypes in Frameworks */ = {isa = PBXBuildFile; productRef = B1HTTP022F40000200000001 /* HTTPTypes */; };
-		D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
-		D5E5CE182F2A0018007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
+		D5E5CE172F2A0017007EAB48 /* ShareExtension/YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* ShareExtension/YouTubeURLValidator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,14 +87,13 @@
 		C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OfflineMediaDownloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C41DD8A32CC6C52700F041C6 /* OfflineMediaDownloaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OfflineMediaDownloaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-
 		C41DD92F2CC972F900F041C6 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 		C44108252F1487B2007EAB48 /* DownloadActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownloadActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C44108262F1487B2007EAB48 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		C44108282F1487B2007EAB48 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
 		D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtension/YouTubeURLValidator.swift; sourceTree = SOURCE_ROOT; };
+		D5E5CE162F2A0016007EAB48 /* ShareExtension/YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtension/YouTubeURLValidator.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -151,6 +162,20 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C48AB2CE2FA42A220069EED4 /* LoginFeature in Frameworks */,
+				C48AB2CD2FA42A220069EED4 /* FileDetailFeature in Frameworks */,
+				C48AB2CC2FA42A220069EED4 /* AuthenticationClient in Frameworks */,
+				C48AB2CB2FA42A220069EED4 /* LoggerClient in Frameworks */,
+				C48AB2CA2FA42A220069EED4 /* FileClient in Frameworks */,
+				C48AB2C92FA42A220069EED4 /* DownloadClient in Frameworks */,
+				C48AB2C82FA42A220069EED4 /* PersistenceClient in Frameworks */,
+				C48AB2C72FA42A220069EED4 /* ServerClient in Frameworks */,
+				C48AB2C62FA42A220069EED4 /* KeychainClient in Frameworks */,
+				C48AB2C52FA42A220069EED4 /* ThumbnailCacheClient in Frameworks */,
+				C48AB2C42FA42A220069EED4 /* LiveActivityClient in Frameworks */,
+				C48AB2C32FA42A220069EED4 /* DesignSystem in Frameworks */,
+				C48AB2C22FA42A220069EED4 /* SharedModels in Frameworks */,
+				C48AB2C12FA42A220069EED4 /* RootFeature in Frameworks */,
 				C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */,
 				C41DD9242CC81B8100F041C6 /* Valet in Frameworks */,
 				C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */,
@@ -201,7 +226,6 @@
 			children = (
 				C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */,
 				C41DD92F2CC972F900F041C6 /* Development.xcconfig */,
-
 				C41DD8862CC6C52600F041C6 /* App */,
 				C41DD89C2CC6C52700F041C6 /* OfflineMediaDownloaderTests */,
 				C41DD8A62CC6C52700F041C6 /* OfflineMediaDownloaderUITests */,
@@ -209,6 +233,7 @@
 				C441082A2F1487B2007EAB48 /* DownloadActivityWidget */,
 				C41DD91A2CC6E34400F041C6 /* Frameworks */,
 				C41DD8852CC6C52600F041C6 /* Products */,
+				C48AB2CF2FA42A220069EED4 /* Recovered References */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -233,6 +258,14 @@
 				C44108282F1487B2007EAB48 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C48AB2CF2FA42A220069EED4 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				D5E5CE162F2A0016007EAB48 /* ShareExtension/YouTubeURLValidator.swift */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -419,7 +452,7 @@
 				C41DD9222CC81B8100F041C6 /* XCRemoteSwiftPackageReference "Valet" */,
 				C41DD9422D12ABC100F041C6 /* XCLocalSwiftPackageReference "APITypes" */,
 				C41DD9602F1A5A5A00F041C6 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
-				A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */,
+				A10000012F30000100000001 /* XCLocalSwiftPackageReference "Packages/OMDFeatures" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C41DD8852CC6C52600F041C6 /* Products */;
@@ -478,8 +511,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-
-				D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */,
+				D5E5CE172F2A0017007EAB48 /* ShareExtension/YouTubeURLValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -991,7 +1023,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A10000012F30000100000001 /* XCLocalSwiftPackageReference "OMDFeatures" */ = {
+		A10000012F30000100000001 /* XCLocalSwiftPackageReference "Packages/OMDFeatures" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/OMDFeatures;
 		};
@@ -1085,6 +1117,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = LoginFeature;
 		};
+		B1HTTP022F40000200000001 /* HTTPTypes */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HTTPTypes;
+		};
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C41DD8B62CC6C58100F041C6 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
@@ -1120,10 +1156,6 @@
 		D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = OpenAPIRuntime;
-		};
-		B1HTTP022F40000200000001 /* HTTPTypes */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = HTTPTypes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

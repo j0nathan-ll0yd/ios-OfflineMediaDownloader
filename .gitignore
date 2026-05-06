@@ -62,5 +62,8 @@ Development.xcconfig
 timeline.xctimeline
 playground.xcworkspace
 
+# OMC state
+.omc/
+
 # Agent enforcement symlinks
 .claude/rules/
