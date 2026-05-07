@@ -1,16 +1,3 @@
-# Companion repo dispatch pattern — security-safe self-hosted runner access.
-#
-# This is a PUBLIC repository. If CI jobs ran directly on self-hosted runners
-# here, a fork PR could execute arbitrary code on our private Mac Studio hardware.
-#
-# The actual CI jobs (pr-title, lint, apitypes-build, test, release-build) live in
-# the PRIVATE companion repo: j0nathan-ll0yd/ci-runners-private
-# at .github/workflows/ios-omd-tests.yml
-#
-# Prerequisite: the companion repo must allow workflow access from this repo.
-# Settings > Actions > General > Access > "Accessible from repositories in the
-# 'j0nathan-ll0yd' account" (or specifically this repo).
-
 name: Tests
 
 on:
@@ -51,13 +38,216 @@ on:
       - '.github/actions/**'
       - '.github/dependabot.yml'
 
-permissions:
-  contents: read
+concurrency:
+  group: tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: OfflineMediaDownloader
+  PROJECT: OfflineMediaDownloader.xcodeproj
 
 jobs:
-  ci:
-    uses: j0nathan-ll0yd/ci-runners-private/.github/workflows/ios-omd-tests.yml@main
-    with:
-      ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      head_ref: ${{ github.head_ref || '' }}
-    secrets: inherit
+  pr-title:
+    name: PR Title (Conventional Commits)
+    if: github.event_name == 'pull_request'
+    runs-on: [self-hosted, linux, arm64, base]
+    timeout-minutes: 5
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            refactor
+            test
+            style
+            ci
+            docs
+            perf
+            revert
+            deps
+
+  lint:
+    name: Lint (conventions, SwiftLint, SwiftFormat, ShellCheck)
+    runs-on: [self-hosted, linux, arm64, swift-lint]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate iOS version targets
+        run: bash Scripts/validate-ios-version.sh
+
+      - name: Validate TCA patterns
+        run: bash Scripts/validate-tca-patterns.sh
+
+      - name: SwiftLint
+        run: swiftlint lint --reporter github-actions-logging
+
+      - name: SwiftFormat (lint mode)
+        run: swiftformat --lint .
+
+      - name: ShellCheck
+        run: shellcheck Scripts/*.sh
+
+  apitypes-build:
+    name: APITypes Build (SPM)
+    needs: lint
+    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-xcode-env
+      - name: Build APITypes package
+        run: xcrun swift build --package-path APITypes --disable-sandbox
+
+  test:
+    name: Test (build + unit + snapshots + warnings)
+    needs: lint
+    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    timeout-minutes: 45
+    env:
+      SNAPSHOT_TESTING_RECORD: never
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-xcode-env
+        id: env
+
+      - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
+        with:
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          restore-keys: |
+            xcode-deriveddata-${{ runner.os }}-
+
+      - name: Boot simulator
+        run: |
+          DEVICE_ID="${{ steps.env.outputs.device_id }}"
+          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+          for i in {1..30}; do
+            if xcrun simctl list devices | grep "$DEVICE_ID" | grep -q "Booted"; then
+              echo "Simulator ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build.log | xcbeautify --report junit --report-path build-results.xml
+
+      - name: Check build warnings
+        run: bash Scripts/check-build-warnings.sh
+
+      - name: Run tests (including snapshots)
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
+            -resultBundlePath TestResults.xcresult \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 120 \
+            -parallel-testing-enabled NO \
+            -only-testing:OfflineMediaDownloaderTests \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee test.log | xcbeautify --report junit --report-path test-results.xml
+
+      - name: Upload test results (always)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: |
+            TestResults.xcresult
+            test-results.xml
+            build-results.xml
+          retention-days: 7
+
+      - name: Upload snapshot failures (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot-failures
+          path: |
+            **/__Snapshots__/**/*.png
+            **/*.diff.png
+          retention-days: 3
+
+      - name: Test Summary
+        if: always()
+        run: |
+          if [ -f test-results.xml ]; then
+            echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            TESTS=$(grep -o 'tests="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
+            FAILURES=$(grep -o 'failures="[0-9]*"' test-results.xml 2>/dev/null | head -1 | grep -o '[0-9]*' || echo "0")
+            if [ -z "$TESTS" ]; then TESTS="0"; fi
+            if [ -z "$FAILURES" ]; then FAILURES="0"; fi
+            if [ "$FAILURES" = "0" ]; then
+              echo "All $TESTS tests passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "$FAILURES of $TESTS tests failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "No test results file found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  release-build:
+    name: Release Archive (no codesign)
+    needs: lint
+    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-xcode-env
+
+      - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
+        with:
+          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+
+      - name: Archive (no codesign)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath build/OfflineMediaDownloader.xcarchive \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            2>&1 | tee release-build.log | xcbeautify
+
+      - name: Archive error summary
+        if: failure()
+        run: |
+          echo "### Release Archive Errors" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'error:' release-build.log | head -50 >> $GITHUB_STEP_SUMMARY || echo "No error: lines found — check the raw log artifact" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload raw build log (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-build-log
+          path: release-build.log
+          retention-days: 7
