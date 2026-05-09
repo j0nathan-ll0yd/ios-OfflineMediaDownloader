@@ -260,6 +260,7 @@ extension AnalyticsClient: DependencyKey {
   }()
 
   public static let testValue = AnalyticsClient()
+  public static let previewValue = AnalyticsClient()
 }
 
 public extension DependencyValues {
