@@ -30,15 +30,22 @@ final class NotificationService: UNNotificationServiceExtension {
     let notificationType = userInfo["notificationType"] as? String
     Self.logger.info("Received alert push: notificationId=\(notificationId)")
 
+    // SAFETY: UNMutableNotificationContent is not Sendable but is only read inside the Task after this point
+    nonisolated(unsafe) let bestAttempt = bestAttemptContent
+    // SAFETY: UNNotificationContent is not Sendable but is only read inside the Task after this point
+    nonisolated(unsafe) let originalContent = request.content
+    // SAFETY: contentHandler is not @Sendable but is only called once inside the Task
+    nonisolated(unsafe) let handler = contentHandler
+
     Task {
-      await sendPushDeliveredEvent(
+      await Self.sendPushDeliveredEvent(
         notificationId: notificationId,
         notificationType: notificationType
       )
-      if let content = bestAttemptContent {
-        contentHandler(content)
+      if let content = bestAttempt {
+        handler(content)
       } else {
-        contentHandler(request.content)
+        handler(originalContent)
       }
     }
   }
@@ -52,7 +59,7 @@ final class NotificationService: UNNotificationServiceExtension {
 
   // MARK: - Event Posting
 
-  private func sendPushDeliveredEvent(
+  private static func sendPushDeliveredEvent(
     notificationId: String,
     notificationType: String?
   ) async {
