@@ -1,3 +1,4 @@
+import AnalyticsClient
 import ComposableArchitecture
 import DownloadClient
 import Foundation
@@ -13,6 +14,8 @@ public struct DownloadTrackingFeature: Sendable {
   @ObservableState
   public struct State: Equatable {
     public init() {}
+    var downloadStartTimes: [String: Date] = [:]
+    var downloadSizes: [String: Int64] = [:]
   }
 
   public enum Action {
@@ -31,15 +34,18 @@ public struct DownloadTrackingFeature: Sendable {
     }
   }
 
+  @Dependency(\.analytics) var analytics
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
 
   public var body: some ReducerOf<Self> {
-    Reduce { _, action in
+    Reduce { state, action in
       switch action {
       case let .startDownload(fileId, title, url, size):
+        state.downloadStartTimes[fileId] = Date()
+        state.downloadSizes[fileId] = size
         return .merge(
           .send(.delegate(.downloadStarted(fileId: fileId, title: title, isBackground: true))),
           .run { [logger, downloadClient, liveActivityClient] send in
@@ -67,8 +73,17 @@ public struct DownloadTrackingFeature: Sendable {
 
       case let .downloadCompleted(fileId):
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
+        let startTime = state.downloadStartTimes.removeValue(forKey: fileId)
+        let fileSize = state.downloadSizes.removeValue(forKey: fileId)
+        let durationMs = startTime.map { Int(Date().timeIntervalSince($0) * 1000) } ?? 0
+        let analytics = analytics
         return .merge(
           .run { [coreDataClient, liveActivityClient] send in
+            analytics.track(.downloadCompletedLocally, [
+              "fileId": fileId,
+              "fileSizeBytes": String(fileSize ?? 0),
+              "durationMs": String(durationMs),
+            ])
             await liveActivityClient.endActivity(fileId: fileId, status: .downloaded, errorMessage: nil)
             try? await coreDataClient.markFileDownloaded(fileId)
             await send(.delegate(.refreshFileState(fileId: fileId)))
@@ -78,14 +93,14 @@ public struct DownloadTrackingFeature: Sendable {
 
       case let .downloadFailed(fileId, error):
         logger.error(.download, "Background download failed", metadata: ["fileId": fileId, "error": error])
+        state.downloadStartTimes.removeValue(forKey: fileId)
+        state.downloadSizes.removeValue(forKey: fileId)
         return .merge(
           .run { [liveActivityClient] _ in
             await liveActivityClient.endActivity(fileId: fileId, status: .failed, errorMessage: error)
           },
           .send(.delegate(.downloadFailed(fileId: fileId, error: error)))
         )
-
-        return .none
 
       case .delegate:
         return .none

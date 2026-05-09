@@ -127,6 +127,7 @@ let package = Package(
       "LoggerClient",
       "KeychainClient",
       "CorrelationClient",
+      "AnalyticsClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       .product(name: "APITypes", package: "APITypes"),
       .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
@@ -199,7 +200,7 @@ let package = Package(
 
     .target(name: "DownloadTrackingFeature", dependencies: [
       "SharedModels",
-      "DownloadClient", "LiveActivityClient", "PersistenceClient", "LoggerClient",
+      "AnalyticsClient", "DownloadClient", "LiveActivityClient", "PersistenceClient", "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
@@ -214,7 +215,7 @@ let package = Package(
     .target(name: "FileListFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "FileCellFeature", "FileDetailFeature", "DefaultFilesFeature",
-      "ServerClient", "PersistenceClient", "LoggerClient",
+      "AnalyticsClient", "ServerClient", "PersistenceClient", "LoggerClient",
       "LiveActivityClient", "PasteboardClient", "ThumbnailCacheClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
@@ -228,7 +229,7 @@ let package = Package(
     .target(name: "RootFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "LoginFeature", "MainFeature", "DownloadTrackingFeature", "DiagnosticFeature",
-      "AuthenticationClient", "ServerClient", "KeychainClient",
+      "AnalyticsClient", "AuthenticationClient", "ServerClient", "KeychainClient",
       "PersistenceClient", "DownloadClient", "FileClient",
       "LoggerClient", "NotificationRegistrationClient", "LiveActivityClient",
       "ThumbnailCacheClient",

@@ -1,3 +1,4 @@
+import AnalyticsClient
 import AuthenticationClient
 import AVFoundation
 import ComposableArchitecture
@@ -97,15 +98,35 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   }
 
   func application(
-    _: UIApplication,
+    _ application: UIApplication,
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
     @Dependency(\.logger) var logger
+    @Dependency(\.analytics) var analytics
     logger.info(.push, "Received push notification: \(userInfo)")
-    // Send to TCA store for processing
+
     store.send(.receivedPushNotification(userInfo))
-    completionHandler(.newData)
+
+    let notificationId = userInfo["notificationId"] as? String
+    let notificationType = userInfo["notificationType"] as? String
+
+    if let notificationId {
+      analytics.trackPushReceived(correlationId: notificationId, notificationType: notificationType)
+
+      let taskId = application.beginBackgroundTask(withName: "push-received-event")
+      // SAFETY: completionHandler must escape @MainActor isolation for async context
+      nonisolated(unsafe) let handler = completionHandler
+      Task {
+        await analytics.flush()
+        handler(.newData)
+        if taskId != .invalid {
+          application.endBackgroundTask(taskId)
+        }
+      }
+    } else {
+      completionHandler(.newData)
+    }
   }
 
   func application(
@@ -114,13 +135,21 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     completionHandler: @escaping () -> Void
   ) {
     @Dependency(\.logger) var logger
+    @Dependency(\.analytics) var analytics
     logger.info(.lifecycle, "AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
-    // Re-initialize DownloadManager if needed (it's a singleton, so accessing .shared ensures it's initialized)
-    // Pass the completion handler to DownloadManager
+    let startTime = CFAbsoluteTimeGetCurrent()
     // SAFETY: completionHandler must escape @MainActor isolation to be called from async context
     nonisolated(unsafe) let handler = completionHandler
+    let analyticsClient = analytics
     Task(name: "set-background-completion-handler") {
-      await DownloadManager.shared.setBackgroundCompletionHandler(handler)
+      await DownloadManager.shared.setBackgroundCompletionHandler { @Sendable in
+        let durationMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
+        analyticsClient.track(.backgroundTaskCompleted, [
+          "taskName": identifier,
+          "durationMs": String(durationMs),
+        ])
+        handler()
+      }
     }
   }
 }

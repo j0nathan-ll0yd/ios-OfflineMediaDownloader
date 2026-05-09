@@ -1,3 +1,4 @@
+import AnalyticsClient
 import APIClient
 import ComposableArchitecture
 import DefaultFilesFeature
@@ -30,6 +31,7 @@ public struct FileListFeature: Sendable {
     public var showAddConfirmation: Bool = false
     public var playingFile: File?
     public var isPreparingToPlay: Bool = false
+    var playbackStartTime: Date?
     public var pendingAddUrl: URL?
     public var pendingYoutubeId: String?
     public var sharingFileURL: URL?
@@ -86,6 +88,7 @@ public struct FileListFeature: Sendable {
     }
   }
 
+  @Dependency(\.analytics) var analytics
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
@@ -162,6 +165,7 @@ public struct FileListFeature: Sendable {
         .cancellable(id: CancelID.loadFiles, cancelInFlight: true)
 
       case let .remoteFilesResponse(.success(response)):
+        let localCount = state.files.count
         if let fileList = response.body {
           let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
           let filesToShow = state.isRegistered
@@ -179,6 +183,19 @@ public struct FileListFeature: Sendable {
           })
           let availableIds = Set(fileList.contents.map(\.fileId))
           state.pendingFileIds.removeAll { availableIds.contains($0) }
+
+          let serverCount = filesToShow.count
+          if localCount > 0, localCount != serverCount {
+            let localIds = Set(existingStates.keys)
+            let serverIds = Set(filesToShow.map(\.fileId))
+            let missingFromServer = localIds.subtracting(serverIds)
+            let analytics = analytics
+            analytics.track(.fileSyncMismatch, [
+              "localCount": String(localCount),
+              "serverCount": String(serverCount),
+              "missingFileIds": missingFromServer.sorted().joined(separator: ","),
+            ])
+          }
         }
         state.isLoading = false
         let firstFile = response.body?.contents.first
@@ -369,13 +386,27 @@ public struct FileListFeature: Sendable {
 
       case let .startPlayer(file):
         state.playingFile = file
+        state.playbackStartTime = Date()
+        let analytics = analytics
+        analytics.track(.playbackStarted, ["fileId": file.fileId])
         return .run { [coreDataClient] _ in
           try? await coreDataClient.incrementPlayCount()
         }
 
       case .dismissPlayer:
+        let fileId = state.playingFile?.fileId
+        let startTime = state.playbackStartTime
         state.playingFile = nil
         state.isPreparingToPlay = false
+        state.playbackStartTime = nil
+        if let fileId, let startTime {
+          let durationSec = Date().timeIntervalSince(startTime)
+          let analytics = analytics
+          analytics.track(.playbackCompleted, [
+            "fileId": fileId,
+            "playbackDurationSec": String(format: "%.1f", durationSec),
+          ])
+        }
         return .none
 
       case .dismissShareSheet:

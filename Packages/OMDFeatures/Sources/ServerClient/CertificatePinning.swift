@@ -1,3 +1,4 @@
+import AnalyticsClient
 import ComposableArchitecture
 import CryptoKit
 import Foundation
@@ -78,6 +79,12 @@ public final class PinningURLSessionDelegate: NSObject, URLSessionDelegate, Send
       completionHandler(.useCredential, URLCredential(trust: serverTrust))
     } else if enforcesPinning {
       logger.warning(.network, "Certificate pinning failed - connection rejected")
+      @Dependency(\.analytics) var analytics
+      let host = challenge.protectionSpace.host
+      analytics.track(.certificatePinningFailed, [
+        "host": host,
+        "errorMessage": "No matching public key found in certificate chain",
+      ])
       completionHandler(.cancelAuthenticationChallenge, nil)
     } else {
       logger.warning(.network, "Certificate pinning failed but enforcement is disabled")

@@ -24,6 +24,7 @@ public struct ServerClient: Sendable {
   public var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
   public var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   public var logoutUser: @Sendable () async throws -> Void
+  public var logEvents: @Sendable (_ body: Data) async throws -> Void
 }
 
 public extension DependencyValues {
@@ -536,6 +537,35 @@ extension ServerClient: DependencyKey {
       case let .undocumented(code, p):
         throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
       }
+    },
+
+    logEvents: { body in
+      @Dependency(\.logger) var logger
+      logger.info(.network, "ServerClient.logEvents called")
+
+      let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
+
+      var urlComponents = URLComponents(string: Environment.basePath + "device/event")!
+      urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
+        URLQueryItem(name: "ApiKey", value: Environment.apiKey),
+      ]
+
+      var request = URLRequest(url: urlComponents.url!)
+      request.httpMethod = "POST"
+      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")
+      request.httpBody = body
+      request.timeoutInterval = 30
+
+      let (_, response) = try await pinnedURLSession.data(for: request)
+      guard let httpResponse = response as? HTTPURLResponse,
+            (200 ... 299).contains(httpResponse.statusCode)
+      else {
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        throw mapStatusCodeToError(statusCode, message: nil, requestId: nil)
+      }
+
+      logger.info(.network, "ServerClient.logEvents succeeded")
     }
   )
 }
@@ -635,7 +665,8 @@ public extension ServerClient {
         requestId: "test-request-id"
       )
     },
-    logoutUser: {}
+    logoutUser: {},
+    logEvents: { _ in }
   )
 
   static let previewValue = ServerClient(
@@ -688,6 +719,7 @@ public extension ServerClient {
         requestId: "preview"
       )
     },
-    logoutUser: {}
+    logoutUser: {},
+    logEvents: { _ in }
   )
 }
