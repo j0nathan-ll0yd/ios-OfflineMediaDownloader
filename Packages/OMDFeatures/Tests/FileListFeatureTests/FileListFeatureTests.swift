@@ -687,6 +687,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.analytics.track = { _, _ in }
       $0.coreDataClient.incrementPlayCount = {}
     }
 

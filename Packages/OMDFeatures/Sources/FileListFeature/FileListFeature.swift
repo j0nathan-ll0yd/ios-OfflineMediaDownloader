@@ -89,6 +89,7 @@ public struct FileListFeature: Sendable {
   }
 
   @Dependency(\.analytics) var analytics
+  @Dependency(\.date) var date
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
@@ -386,7 +387,7 @@ public struct FileListFeature: Sendable {
 
       case let .startPlayer(file):
         state.playingFile = file
-        state.playbackStartTime = Date()
+        state.playbackStartTime = date.now
         let analytics = analytics
         analytics.track(.playbackStarted, ["fileId": file.fileId])
         return .run { [coreDataClient] _ in
@@ -400,7 +401,7 @@ public struct FileListFeature: Sendable {
         state.isPreparingToPlay = false
         state.playbackStartTime = nil
         if let fileId, let startTime {
-          let durationSec = Date().timeIntervalSince(startTime)
+          let durationSec = date.now.timeIntervalSince(startTime)
           let analytics = analytics
           analytics.track(.playbackCompleted, [
             "fileId": fileId,

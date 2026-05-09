@@ -29,6 +29,7 @@ struct RootFeatureTests {
       $0.authenticationClient.determineAuthState = {
         AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
       }
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -53,6 +54,7 @@ struct RootFeatureTests {
         AuthState(loginStatus: .authenticated, registrationStatus: .registered)
       }
       $0.keychainClient.getTokenExpiresAt = { nil } // No expiration stored
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -83,6 +85,7 @@ struct RootFeatureTests {
       $0.authenticationClient.determineAuthState = {
         AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
       }
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -118,6 +121,7 @@ struct RootFeatureTests {
         // Result: registered but unauthenticated
         AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
       }
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -310,6 +314,7 @@ struct RootFeatureTests {
       $0.keychainClient.getUserIdentifier = { "user-123" }
       $0.keychainClient.deleteJwtToken = {}
       $0.keychainClient.deleteTokenExpiresAt = {}
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -458,6 +463,7 @@ struct RootFeatureTests {
       }
       $0.keychainClient.setJwtToken = { _ in }
       $0.keychainClient.setTokenExpiresAt = { _ in }
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -477,6 +483,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.keychainClient.deleteJwtToken = {}
       $0.keychainClient.deleteTokenExpiresAt = {}
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -498,6 +505,7 @@ struct RootFeatureTests {
     let store = TestStore(initialState: state) {
       RootFeature()
     } withDependencies: {
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
@@ -520,6 +528,7 @@ struct RootFeatureTests {
     } withDependencies: {
       $0.keychainClient.setJwtToken = { storedToken.setValue($0) }
       $0.keychainClient.setTokenExpiresAt = { storedExpiration.setValue($0) }
+      $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
