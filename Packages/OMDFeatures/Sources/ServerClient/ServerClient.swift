@@ -545,7 +545,8 @@ extension ServerClient: DependencyKey {
 
       let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
 
-      var urlComponents = URLComponents(string: Environment.basePath + "device/event")!
+      let base = Environment.basePath.hasSuffix("/") ? Environment.basePath : Environment.basePath + "/"
+      var urlComponents = URLComponents(string: base + "device/event")!
       urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
         URLQueryItem(name: "ApiKey", value: Environment.apiKey),
       ]

@@ -66,7 +66,7 @@ public actor EventBuffer {
     { data in
       guard let basePath = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
             let apiKey = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_API_KEY"] as? String,
-            var urlComponents = URLComponents(string: basePath + "device/event")
+            var urlComponents = URLComponents(string: basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event")
       else {
         return
       }
