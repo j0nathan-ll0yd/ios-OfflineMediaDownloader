@@ -137,7 +137,8 @@ public struct RootFeature: Sendable {
           logger.info(.auth, "User is authenticated - checking token expiration")
           return .send(.checkTokenExpiration)
         } else if authState.isRegistered {
-          logger.info(.auth, "User registered but not authenticated - signed out")
+          logger.info(.auth, "User registered but not authenticated - presenting login sheet")
+          state.main.loginSheet = LoginFeature.State()
         } else {
           logger.info(.auth, "User not registered - browsing as guest")
         }

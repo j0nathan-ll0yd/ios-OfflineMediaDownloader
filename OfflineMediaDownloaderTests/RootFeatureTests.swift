@@ -99,6 +99,7 @@ struct RootFeatureTests {
       $0.login.registrationStatus = .registered
       $0.main.$isRegistered.withLock { $0 = true }
       $0.main.fileList.$isRegistered.withLock { $0 = true }
+      $0.main.loginSheet = LoginFeature.State()
     }
   }
 
@@ -133,10 +134,77 @@ struct RootFeatureTests {
       $0.isLaunching = false
       $0.$isAuthenticated.withLock { $0 = false }
       $0.login.registrationStatus = .registered
-      // User sees main view with local files only, no API calls made
       $0.main.$isRegistered.withLock { $0 = true }
       $0.main.fileList.$isRegistered.withLock { $0 = true }
-      // isAuthenticated remains false - user must re-login to access remote data
+      $0.main.loginSheet = LoginFeature.State()
+    }
+  }
+
+  @MainActor
+  @Test("Registered but unauthenticated user sees login sheet on cold start")
+  func registeredButUnauthenticatedPresentsLoginSheet() async {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+      }
+      $0.analytics.track = { _, _ in }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .registered
+      $0.main.$isRegistered.withLock { $0 = true }
+      $0.main.fileList.$isRegistered.withLock { $0 = true }
+      $0.main.loginSheet = LoginFeature.State()
+    }
+  }
+
+  @MainActor
+  @Test("Unregistered user does not see login sheet on cold start")
+  func unregisteredUserDoesNotSeeLoginSheet() async {
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+      }
+      $0.analytics.track = { _, _ in }
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .unregistered
+    }
+  }
+
+  @MainActor
+  @Test("Cold-start login sheet is dismissible")
+  func coldStartLoginSheetIsDismissible() async {
+    var state = RootFeature.State()
+    state.main.loginSheet = LoginFeature.State()
+
+    let store = TestStore(initialState: state) {
+      RootFeature()
+    } withDependencies: {
+      $0.logger.log = { _, _, _, _, _, _ in }
+    }
+
+    await store.send(.main(.loginSheet(.dismiss))) {
+      $0.main.loginSheet = nil
     }
   }
 
