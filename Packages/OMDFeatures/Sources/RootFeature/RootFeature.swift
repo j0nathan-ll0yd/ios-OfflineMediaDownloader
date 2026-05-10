@@ -1,3 +1,4 @@
+import AnalyticsClient
 import APIClient
 import AuthenticationClient
 import ComposableArchitecture
@@ -89,6 +90,7 @@ public struct RootFeature: Sendable {
     case deviceRegistration
   }
 
+  @Dependency(\.analytics) var analytics
   @Dependency(\.authenticationClient) var authenticationClient
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
@@ -113,7 +115,9 @@ public struct RootFeature: Sendable {
       case .didFinishLaunching:
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
+        let analytics = analytics
         return .run { [authenticationClient] send in
+          analytics.trackAppLaunched()
           await MainActor.run { setupNotifications() }
           let authState = await authenticationClient.determineAuthState()
           await send(.authStateResponse(authState))
@@ -199,22 +203,34 @@ public struct RootFeature: Sendable {
           return .none
         }
         let expirationDate = response.body?.expirationDate
+        let sessionId = response.body?.sessionId
+        let analytics = analytics
         return .run { [keychainClient, logger] _ in
           try await keychainClient.setJwtToken(token)
           if let expirationDate {
             try await keychainClient.setTokenExpiresAt(expirationDate)
           }
+          analytics.track(.tokenRefreshSucceeded, ["sessionId": sessionId].compactMapValues { $0 })
           logger.info(.auth, "Token refreshed successfully")
         }
 
       case let .tokenRefreshResponse(.failure(error)):
+        let analytics = analytics
         if let serverError = error as? ServerClientError,
            case .unauthorized = serverError
         {
           logger.warning(.auth, "Token refresh failed with 401 - session expired")
+          analytics.track(.tokenRefreshFailed, [
+            "errorType": "unauthorized",
+            "errorMessage": "Session expired",
+          ])
           return .send(.main(.delegate(.authenticationRequired)))
         }
         logger.warning(.auth, "Token refresh failed: \(error)")
+        analytics.track(.tokenRefreshFailed, [
+          "errorType": String(describing: type(of: error)),
+          "errorMessage": error.localizedDescription,
+        ])
         return .none
 
       case .login(.delegate(.loginCompleted)),
@@ -237,9 +253,11 @@ public struct RootFeature: Sendable {
         state.login.loginStatus = .unauthenticated
         state.login.alert = nil
         state.main.loginSheet = LoginFeature.State()
+        let analytics = analytics
         return .run { [logger, keychainClient] _ in
           try? await keychainClient.deleteJwtToken()
           try? await keychainClient.deleteTokenExpiresAt()
+          analytics.track(.sessionExpired)
           logger.info(.auth, "Session expired - presenting login sheet for re-authentication")
         }
 

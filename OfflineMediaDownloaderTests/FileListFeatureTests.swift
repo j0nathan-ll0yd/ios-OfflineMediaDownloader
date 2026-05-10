@@ -763,11 +763,14 @@ struct FileListFeatureTests {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
+    let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.logger = TestData.noopLogger
       $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.analytics.track = { _, _ in }
+      $0.date = .constant(fixedDate)
       $0.coreDataClient.incrementPlayCount = {}
     }
 
@@ -777,6 +780,7 @@ struct FileListFeatureTests {
 
     await store.receive(\.startPlayer) {
       $0.playingFile = TestData.sampleFile
+      $0.playbackStartTime = fixedDate
     }
   }
 
