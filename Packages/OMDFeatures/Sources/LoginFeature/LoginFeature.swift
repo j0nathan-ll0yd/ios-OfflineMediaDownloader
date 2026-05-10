@@ -14,7 +14,7 @@ public enum LoginFeatureError: Error {
   case invalidAuthorizationCredential
 }
 
-private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idToken: String, userData: User?) {
+private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idToken: String, userIdentifier: String, userData: User?) {
   guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
     throw LoginFeatureError.invalidAuthorizationCredential
   }
@@ -33,9 +33,9 @@ private func handleLoginSuccess(authorization: ASAuthorization) throws -> (idTok
       identifier: credential.user,
       lastName: credential.fullName?.familyName ?? ""
     )
-    return (idToken, userData)
+    return (idToken, credential.user, userData)
   } else {
-    return (idToken, nil)
+    return (idToken, credential.user, nil)
   }
 }
 
@@ -53,6 +53,7 @@ public struct LoginFeature: Sendable {
     public var isCompletingRegistration: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?
     public var pendingUserData: User?
+    public var pendingUserIdentifier: String?
 
     public init() {}
   }
@@ -111,9 +112,11 @@ public struct LoginFeature: Sendable {
           return .send(.showError(.loginFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: login token received (\(token.count) chars): \(tokenPreview)")
         state.loginStatus = .authenticated
         let expirationDate = response.body?.expirationDate
+        let userIdentifier = state.pendingUserIdentifier
+        state.pendingUserIdentifier = nil
         return .run { send in
           try await keychainClient.setJwtToken(token)
           if let expirationDate {
@@ -123,6 +126,12 @@ public struct LoginFeature: Sendable {
           guard storedToken == token else {
             await send(.showError(.loginFailed(reason: "Failed to store authentication token")))
             return
+          }
+          if let userIdentifier {
+            try await keychainClient.setUserIdentifier(userIdentifier)
+            logger.info(.auth, "LoginFeature: stored user identifier after login")
+          } else {
+            logger.warning(.auth, "LoginFeature: no pending user identifier to store after login")
           }
           await send(.delegate(.loginCompleted))
         }
@@ -135,7 +144,7 @@ public struct LoginFeature: Sendable {
           return .send(.showError(.registrationFailed(reason: "Invalid response: missing token")))
         }
         let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-        logger.info(.auth, "LoginFeature: token received (\(token.count) chars): \(tokenPreview)")
+        logger.info(.auth, "LoginFeature: registration token received (\(token.count) chars): \(tokenPreview)")
         state.registrationStatus = .registered
         state.loginStatus = .authenticated
         let userData = state.pendingUserData
@@ -152,21 +161,29 @@ public struct LoginFeature: Sendable {
           }
           if let userData {
             try await keychainClient.setUserData(userData)
+            logger.info(.auth, "LoginFeature: stored user data after registration")
           }
           await send(.delegate(.registrationCompleted))
         }
 
       case let .loginResponse(.failure(error)):
         state.isSigningIn = false
+        logger.warning(.auth, "LoginFeature: login failed with error: \(error)")
         return .send(.showError(AppError.from(error)))
 
       case let .registrationResponse(.failure(error)):
         state.isSigningIn = false
+        logger.warning(.auth, "LoginFeature: registration failed with error: \(error)")
         return .send(.showError(AppError.from(error)))
 
       case let .signInWithAppleButtonTapped(.success(result)):
         if let data = try? handleLoginSuccess(authorization: result) {
           state.pendingUserData = data.userData
+          state.pendingUserIdentifier = data.userIdentifier
+          let hasUserData = data.userData != nil
+          logger.info(.auth, "LoginFeature: Apple Sign In credential received - hasUserData: \(hasUserData), hasIdentifier: true")
+        } else {
+          logger.warning(.auth, "LoginFeature: failed to parse Apple Sign In credential")
         }
         return .run { send in
           try await dispatchAuthCode(send: send, result: result)

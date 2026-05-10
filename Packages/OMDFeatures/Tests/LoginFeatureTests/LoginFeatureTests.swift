@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
 @testable import LoginFeature
 import SharedModels
@@ -225,6 +226,34 @@ struct LoginFeatureTests {
     }
   }
 
+  // MARK: - User Identifier Storage Tests
+
+  @MainActor
+  @Test("Login success stores user identifier when pending identifier is set")
+  func loginSuccessStoresUserIdentifier() async throws {
+    let expectedToken = try #require(TestData.validLoginResponse.body?.token)
+    let storedIdentifier = LockIsolated<String?>(nil)
+
+    var state = LoginFeature.State()
+    state.pendingUserIdentifier = "test-apple-user-id"
+
+    let store = TestStore(initialState: state) {
+      LoginFeature()
+    } withDependencies: {
+      $0.keychainClient.setJwtToken = { _ in }
+      $0.keychainClient.getJwtToken = { expectedToken }
+      $0.keychainClient.setUserIdentifier = { storedIdentifier.setValue($0) }
+    }
+
+    await store.send(.loginResponse(.success(TestData.validLoginResponse))) {
+      $0.loginStatus = .authenticated
+      $0.pendingUserIdentifier = nil
+    }
+
+    await store.receive(\.delegate.loginCompleted)
+    #expect(storedIdentifier.value == "test-apple-user-id")
+  }
+
   // MARK: - Initial State Tests
 
   @MainActor
@@ -235,6 +264,7 @@ struct LoginFeatureTests {
     #expect(state.registrationStatus == .unregistered)
     #expect(state.alert == nil)
     #expect(state.pendingUserData == nil)
+    #expect(state.pendingUserIdentifier == nil)
   }
 
   // MARK: - ShowError Tests

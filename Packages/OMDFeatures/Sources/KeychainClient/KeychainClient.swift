@@ -68,6 +68,7 @@ public struct KeychainClient: Sendable {
   public var setJwtToken: @Sendable (_ token: String) async throws -> Void
   public var setTokenExpiresAt: @Sendable (_ expiresAt: Date) async throws -> Void
   public var setDeviceData: @Sendable (_ deviceData: Device) async throws -> Void
+  public var setUserIdentifier: @Sendable (_ identifier: String) async throws -> Void
   public var deleteUserData: @Sendable () async throws -> Void
   public var deleteJwtToken: @Sendable () async throws -> Void
   public var deleteTokenExpiresAt: @Sendable () async throws -> Void
@@ -199,6 +200,17 @@ extension KeychainClient: DependencyKey {
     setDeviceData: { deviceData in
       try ValetUtil.shared.keychain.setString(deviceData.endpointArn, forKey: KeychainKeys.endpointArn.rawValue)
     },
+    setUserIdentifier: { identifier in
+      @Dependency(\.logger) var logger
+      logger.debug(.auth, "KeychainClient.setUserIdentifier: storing identifier")
+      do {
+        try ValetUtil.shared.keychain.setString(identifier, forKey: KeychainKeys.identifier.rawValue)
+        logger.debug(.auth, "KeychainClient.setUserIdentifier: succeeded")
+      } catch {
+        logger.warning(.auth, "KeychainClient.setUserIdentifier: failed with error: \(error)")
+        throw error
+      }
+    },
     deleteUserData: {
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.email.rawValue)
       try ValetUtil.shared.keychain.removeObject(forKey: KeychainKeys.firstName.rawValue)
@@ -234,6 +246,7 @@ extension KeychainClient: DependencyKey {
     setJwtToken: { _ in },
     setTokenExpiresAt: { _ in },
     setDeviceData: { _ in },
+    setUserIdentifier: { _ in },
     deleteUserData: {},
     deleteJwtToken: {},
     deleteTokenExpiresAt: {},

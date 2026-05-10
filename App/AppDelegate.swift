@@ -41,6 +41,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
           setJwtToken: { _ in },
           setTokenExpiresAt: { _ in },
           setDeviceData: { _ in },
+          setUserIdentifier: { _ in },
           deleteUserData: {},
           deleteJwtToken: {},
           deleteTokenExpiresAt: {},

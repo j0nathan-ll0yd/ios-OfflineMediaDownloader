@@ -236,12 +236,14 @@ public struct RootFeature: Sendable {
 
       case .login(.delegate(.loginCompleted)),
            .main(.delegate(.loginCompleted)):
+        logger.info(.auth, "RootFeature: login completed - setting authenticated and registered")
         state.$isAuthenticated.withLock { $0 = true }
         state.$isRegistered.withLock { $0 = true }
         return .none
 
       case .login(.delegate(.registrationCompleted)),
            .main(.delegate(.registrationCompleted)):
+        logger.info(.auth, "RootFeature: registration completed - setting authenticated and registered, requesting device registration")
         state.$isAuthenticated.withLock { $0 = true }
         state.$isRegistered.withLock { $0 = true }
         return .send(.requestDeviceRegistration)
