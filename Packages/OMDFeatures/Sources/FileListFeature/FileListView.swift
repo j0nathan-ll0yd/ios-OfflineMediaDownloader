@@ -92,33 +92,67 @@ public struct FileListView: View {
 
   // MARK: - File List Content
 
-  @ViewBuilder
   private var fileListContent: some View {
-    // Show DefaultFilesView only for UNREGISTERED users with no files
-    // Registered users (even if signed out) should never see default file
-    if !store.isRegistered, store.files.isEmpty {
-      DefaultFilesView(
-        store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
-        onRegisterTapped: { store.send(.delegate(.loginRequired)) }
-      )
-    } else if store.isLoading, store.files.isEmpty {
-      loadingView
-    } else if store.files.isEmpty {
-      emptyView
-    } else {
-      fileList
+    Group {
+      if !store.isRegistered, store.files.isEmpty, !store.hasCompletedInitialLoad {
+        skeletonFileList
+      } else if !store.isRegistered, store.files.isEmpty {
+        DefaultFilesView(
+          store: store.scope(state: \.defaultFiles, action: \.defaultFiles),
+          onRegisterTapped: { store.send(.delegate(.loginRequired)) }
+        )
+      } else if !store.hasCompletedInitialLoad, store.files.isEmpty {
+        skeletonFileList
+      } else if store.files.isEmpty {
+        emptyView
+      } else {
+        fileList
+      }
     }
+    .animation(.snappy, value: store.hasCompletedInitialLoad)
   }
 
-  private var loadingView: some View {
-    VStack(spacing: 16) {
-      ProgressView()
-        .scaleEffect(1.2)
-        .tint(theme.primaryColor)
-      Text("Loading files...")
-        .font(.subheadline)
-        .foregroundStyle(theme.textSecondary)
+  // MARK: - Skeleton Loading
+
+  private var skeletonFileList: some View {
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        ForEach(0 ..< 4, id: \.self) { _ in
+          skeletonCell
+        }
+      }
+      .padding(.vertical, 12)
     }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Loading files")
+  }
+
+  private var skeletonCell: some View {
+    HStack(spacing: 14) {
+      RoundedRectangle(cornerRadius: 8)
+        .fill(theme.surfaceColor)
+        .frame(width: 120, height: 68)
+
+      VStack(alignment: .leading, spacing: 3) {
+        RoundedRectangle(cornerRadius: 4)
+          .fill(theme.surfaceColor)
+          .frame(height: 16)
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+        RoundedRectangle(cornerRadius: 4)
+          .fill(theme.surfaceColor)
+          .frame(width: 100, height: 12)
+
+        RoundedRectangle(cornerRadius: 4)
+          .fill(theme.surfaceColor)
+          .frame(width: 140, height: 12)
+      }
+
+      Spacer()
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .modifier(ShimmerModifier())
   }
 
   private var emptyView: some View {
@@ -305,5 +339,40 @@ public struct PendingFilesView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbarColorScheme(.dark, for: .navigationBar)
     .preferredColorScheme(.dark)
+  }
+}
+
+// MARK: - ShimmerModifier
+
+private struct ShimmerModifier: ViewModifier {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  func body(content: Content) -> some View {
+    if reduceMotion {
+      content
+        .phaseAnimator([false, true]) { view, phase in
+          view.opacity(phase ? 0.6 : 1.0)
+        } animation: { _ in
+          .easeInOut(duration: 1.2)
+        }
+    } else {
+      content
+        .phaseAnimator([false, true]) { view, phase in
+          view
+            .mask {
+              LinearGradient(
+                colors: [
+                  .white.opacity(0.4),
+                  .white,
+                  .white.opacity(0.4),
+                ],
+                startPoint: phase ? .init(x: -0.5, y: 0.5) : .init(x: -1, y: 0.5),
+                endPoint: phase ? .init(x: 1.5, y: 0.5) : .init(x: 0, y: 0.5)
+              )
+            }
+        } animation: { _ in
+          .linear(duration: 1.5)
+        }
+    }
   }
 }
