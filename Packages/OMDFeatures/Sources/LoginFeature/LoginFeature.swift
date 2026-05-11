@@ -106,6 +106,7 @@ public struct LoginFeature: Sendable {
         state.isSigningIn = true
         return .none
 
+      // TODO: Enrich login response with user profile (email, name) from server so keychain data stays consistent regardless of Apple Sign In state
       case let .loginResponse(.success(response)):
         state.isSigningIn = false
         guard let token = response.body?.token else {
