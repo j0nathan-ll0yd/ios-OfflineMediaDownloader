@@ -14,12 +14,14 @@ public struct RootView: View {
   }
 
   public var body: some View {
-    Group {
+    ZStack {
+      // Always render MainView in background so it can start loading
+      MainView(store: store.scope(state: \.main, action: \.main))
+
       if store.isLaunching {
         LaunchView(status: store.launchStatus)
-      } else {
-        // Always show MainView - auth state is handled within MainFeature
-        MainView(store: store.scope(state: \.main, action: \.main))
+          .transition(.opacity.animation(.easeInOut(duration: 0.5)))
+          .zIndex(1)
       }
     }
     #if DEBUG

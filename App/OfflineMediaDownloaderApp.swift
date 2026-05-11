@@ -33,6 +33,8 @@ private struct AppContentView: View {
 
   var body: some View {
     RootView(store: store)
+      .background(Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255).ignoresSafeArea())
+      .preferredColorScheme(.dark)
       .onChange(of: scenePhase) { _, newPhase in
         if newPhase == .active {
           if hasLaunched {

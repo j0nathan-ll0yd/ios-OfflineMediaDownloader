@@ -119,8 +119,13 @@ public struct RootFeature: Sendable {
         return .run { [authenticationClient] send in
           analytics.trackAppLaunched()
           await MainActor.run { setupNotifications() }
-          let authState = await authenticationClient.determineAuthState()
-          await send(.authStateResponse(authState))
+
+          // Ensure launch screen is visible for at least 1 second for smooth transition
+          async let authState = authenticationClient.determineAuthState()
+          async let minDelay: () = Task.sleep(nanoseconds: 1_000_000_000)
+
+          let (state, _) = try await (authState, minDelay)
+          await send(.authStateResponse(state))
         }
 
       case let .authStateResponse(authState):

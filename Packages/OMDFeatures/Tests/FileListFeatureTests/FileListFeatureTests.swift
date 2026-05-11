@@ -12,7 +12,7 @@ struct FileListFeatureTests {
   // MARK: - Loading Tests
 
   @MainActor
-  @Test("onAppear loads files from CoreData without loading indicator")
+  @Test("onAppear loads files from CoreData with loading indicator on first load")
   func onAppearLoadsFiles() async {
     var state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true } // User is authenticated
@@ -22,16 +22,40 @@ struct FileListFeatureTests {
       FileListFeature()
     } withDependencies: {
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
+      $0.pasteboardClient.hasStrings = { false }
     }
 
-    // onAppear does NOT set isLoading - only refreshButtonTapped does
-    await store.send(.onAppear)
+    // onAppear sets isLoading based on files.isEmpty (which is true)
+    await store.send(.onAppear) {
+      $0.isLoading = true
+    }
 
     await store.receive(\.localFilesLoaded) {
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
+      $0.isLoading = false
     }
+  }
+
+  @MainActor
+  @Test("onAppear does not show loading indicator if files already exist")
+  func onAppearNoLoadingIfFilesExist() async {
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = [FileCellFeature.State(file: TestData.sampleFile)]
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.coreDataClient.getFiles = { [TestData.sampleFile] }
+      $0.pasteboardClient.hasStrings = { false }
+    }
+
+    await store.send(.onAppear)
+
+    await store.receive(\.localFilesLoaded)
   }
 
   @MainActor
@@ -44,11 +68,14 @@ struct FileListFeatureTests {
     existingCellState.isDownloaded = true
     existingCellState.downloadProgress = 1.0
     state.files = [existingCellState]
+    // Set isLoading to false as it would be after an initial load
+    state.isLoading = false
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
+      $0.pasteboardClient.hasStrings = { false }
     }
 
     await store.send(.onAppear)
@@ -66,7 +93,10 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Refresh fetches from server and caches")
   func refreshFetchesFromServer() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isLoading = false
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
@@ -96,6 +126,7 @@ struct FileListFeatureTests {
   @Test("Refresh removes pending IDs for available files")
   func refreshRemovesPendingIds() async {
     var state = FileListFeature.State()
+    state.isLoading = false
     state.pendingFileIds = [TestData.sampleFile.fileId, "other-pending-id"]
 
     let store = TestStore(initialState: state) {
@@ -131,7 +162,10 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Network error shows alert with retry button")
   func networkErrorShowsAlert() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isLoading = false
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
@@ -178,7 +212,10 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Unauthorized error triggers auth required delegate")
   func unauthorizedTriggersDel() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isLoading = false
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
@@ -212,7 +249,10 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Server error with message shows alert")
   func serverErrorShowsAlert() async {
-    let store = TestStore(initialState: FileListFeature.State()) {
+    var state = FileListFeature.State()
+    state.isLoading = false
+
+    let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(
@@ -306,6 +346,7 @@ struct FileListFeatureTests {
   @Test("Alert retry triggers refresh")
   func alertRetryTriggersRefresh() async {
     var state = FileListFeature.State()
+    state.isLoading = false
     state.alert = AlertState {
       TextState("No Connection")
     } actions: {
@@ -782,6 +823,249 @@ struct FileListFeatureTests {
       } message: {
         TextState("Error")
       }
+    }
+  }
+
+  // MARK: - Merge Behavior Tests (Pull-to-Refresh Safety)
+
+  @MainActor
+  @Test("Remote response merges with local downloaded files instead of replacing")
+  func remoteFilesResponseMergesWithLocalDownloaded() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+    state.isLoading = false
+
+    var downloadedCell1 = FileCellFeature.State(file: TestData.downloadedFile)
+    downloadedCell1.isDownloaded = true
+    var downloadedCell2 = FileCellFeature.State(file: TestData.sampleFile)
+    downloadedCell2.isDownloaded = true
+    state.files = [downloadedCell1, downloadedCell2]
+
+    let serverFile = File(
+      fileId: "server-only-file",
+      key: "Server Video.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_701_000_000),
+      size: 500_000,
+      url: URL(string: "https://example.com/server.mp4")
+    )
+    let serverResponse = FileResponse(
+      body: FileList(contents: [serverFile], keyCount: 1),
+      error: nil,
+      requestId: "request-merge-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      // Server file is added, AND local downloaded files are kept
+      var merged = IdentifiedArrayOf<FileCellFeature.State>()
+      merged.append(FileCellFeature.State(file: serverFile))
+      var kept1 = FileCellFeature.State(file: TestData.downloadedFile)
+      kept1.isDownloaded = true
+      merged.append(kept1)
+      var kept2 = FileCellFeature.State(file: TestData.sampleFile)
+      kept2.isDownloaded = true
+      merged.append(kept2)
+      merged.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = merged
+    }
+  }
+
+  @MainActor
+  @Test("Remote response removes non-downloaded files missing from server")
+  func remoteFilesResponseRemovesNonDownloaded() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+    state.isLoading = false
+
+    // One downloaded, one not downloaded
+    var downloadedCell = FileCellFeature.State(file: TestData.downloadedFile)
+    downloadedCell.isDownloaded = true
+    let pendingCell = FileCellFeature.State(file: TestData.pendingFile)
+    state.files = [downloadedCell, pendingCell]
+
+    let serverFile = File(
+      fileId: "new-server-file",
+      key: "New.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_701_000_000),
+      size: 100_000,
+      url: URL(string: "https://example.com/new.mp4")
+    )
+    let serverResponse = FileResponse(
+      body: FileList(contents: [serverFile], keyCount: 1),
+      error: nil,
+      requestId: "request-prune-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      // Server file added, downloaded file kept, pending file REMOVED
+      var merged = IdentifiedArrayOf<FileCellFeature.State>()
+      merged.append(FileCellFeature.State(file: serverFile))
+      var kept = FileCellFeature.State(file: TestData.downloadedFile)
+      kept.isDownloaded = true
+      merged.append(kept)
+      merged.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = merged
+    }
+  }
+
+  @MainActor
+  @Test("Remote response updates metadata for files existing both locally and on server")
+  func remoteFilesResponseUpdatesMetadata() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+    state.isLoading = false
+
+    var existingCell = FileCellFeature.State(file: TestData.sampleFile)
+    existingCell.isDownloaded = true
+    existingCell.downloadProgress = 1.0
+    state.files = [existingCell]
+
+    var updatedFile = TestData.sampleFile
+    updatedFile.title = "Updated Title"
+    updatedFile.size = 9_999_999
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: [updatedFile], keyCount: 1),
+      error: nil,
+      requestId: "request-update-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      // File metadata updated from server, download state preserved
+      var expectedCell = FileCellFeature.State(file: updatedFile)
+      expectedCell.isDownloaded = true
+      expectedCell.downloadProgress = 1.0
+      $0.files = [expectedCell]
+    }
+  }
+
+  @MainActor
+  @Test("Remote response adds new server files not in local state")
+  func remoteFilesResponseAddsNewFiles() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+    state.isLoading = false
+    state.files = []
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: TestData.multipleFiles, keyCount: 3),
+      error: nil,
+      requestId: "request-add-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      var expected = IdentifiedArrayOf<FileCellFeature.State>()
+      for file in TestData.multipleFiles {
+        expected.append(FileCellFeature.State(file: file))
+      }
+      expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = expected
+    }
+  }
+
+  @MainActor
+  @Test("Remote response maintains sort order by publishDate descending")
+  func remoteFilesResponseMaintainsSortOrder() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+    state.isLoading = false
+
+    // Local file with old date, marked downloaded
+    let oldFile = File(
+      fileId: "old-local",
+      key: "Old.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_600_000_000),
+      size: 100_000,
+      url: URL(string: "https://example.com/old.mp4")
+    )
+    var oldCell = FileCellFeature.State(file: oldFile)
+    oldCell.isDownloaded = true
+    state.files = [oldCell]
+
+    // Server returns a newer file
+    let newFile = File(
+      fileId: "new-server",
+      key: "New.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_800_000_000),
+      size: 200_000,
+      url: URL(string: "https://example.com/new.mp4")
+    )
+    let serverResponse = FileResponse(
+      body: FileList(contents: [newFile], keyCount: 1),
+      error: nil,
+      requestId: "request-sort-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isLoading = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      // New file first (newer date), old downloaded file second
+      var merged = IdentifiedArrayOf<FileCellFeature.State>()
+      merged.append(FileCellFeature.State(file: newFile))
+      var keptOld = FileCellFeature.State(file: oldFile)
+      keptOld.isDownloaded = true
+      merged.append(keptOld)
+      $0.files = merged
     }
   }
 }

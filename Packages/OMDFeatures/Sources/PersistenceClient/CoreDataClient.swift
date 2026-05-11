@@ -83,11 +83,25 @@ extension CoreDataClient: DependencyKey {
       context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
       try await context.perform {
+        let fileIds = files.map(\.fileId)
+        let existingRequest = FileEntity.fetchRequest()
+        existingRequest.predicate = NSPredicate(format: "fileId IN %@", fileIds)
+        let existingEntities = try context.fetch(existingRequest)
+        let downloadedLookup = Dictionary(
+          uniqueKeysWithValues: existingEntities.compactMap { entity -> (String, Bool)? in
+            guard let id = entity.fileId else { return nil }
+            return (id, entity.isDownloaded)
+          }
+        )
+
         for file in files {
-          _ = FileMapper.toEntity(file, in: context)
+          let entity = FileMapper.toEntity(file, in: context)
+          if downloadedLookup[file.fileId] == true {
+            entity.isDownloaded = true
+          }
         }
         try context.save()
-        logger.debug(.storage, "Cached \(files.count) files to CoreData (background context)")
+        logger.debug(.storage, "Cached \(files.count) files to CoreData (preserved download state)")
       }
     },
     cacheFile: { file in
