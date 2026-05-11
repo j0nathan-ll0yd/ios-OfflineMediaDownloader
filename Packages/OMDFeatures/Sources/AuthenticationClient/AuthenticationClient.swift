@@ -45,8 +45,19 @@ extension AuthenticationClient: DependencyKey {
         userIdentifier = nil
       }
 
-      // No identifier means user has never registered
+      // No identifier means user has never registered — unless a JWT token
+      // exists, which proves prior registration even if the identifier was cleared
       guard let currentUserIdentifier = userIdentifier else {
+        let hasToken: Bool
+        do {
+          hasToken = try await keychainClient.getJwtToken() != nil
+        } catch {
+          hasToken = false
+        }
+        if hasToken {
+          logger.info(.auth, "No user identifier but JWT token exists - previously registered")
+          return AuthState(loginStatus: .unauthenticated, registrationStatus: .registered)
+        }
         logger.info(.auth, "No user identifier found - user is unregistered")
         return AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
       }
