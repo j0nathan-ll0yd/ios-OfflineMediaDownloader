@@ -23,7 +23,11 @@ public struct FileListFeature: Sendable {
   public struct State: Equatable {
     public var files: IdentifiedArrayOf<FileCellFeature.State> = []
     public var pendingFileIds: OrderedSet<String> = []
-    public var isLoading: Bool = false
+    public var isLoading: Bool = true
+    // One-way latch (false→true). cancelInFlight: true on refreshButtonTapped
+    // ensures a replacement request is always issued if the prior one is cancelled.
+    public var hasCompletedInitialLoad: Bool = false
+    public var isRefreshing: Bool = false
     @Shared(.inMemory("isAuthenticated")) public var isAuthenticated = false
     @Shared(.inMemory("isRegistered")) public var isRegistered = false
     @Presents public var alert: AlertState<Action.Alert>?
@@ -110,6 +114,7 @@ public struct FileListFeature: Sendable {
         let isRegistered = state.isRegistered
         logger.debug(.lifecycle, "FileListFeature.onAppear: isAuthenticated=\(isAuthenticated), isRegistered=\(isRegistered)")
         let pasteboard = pasteboardClient
+        state.isLoading = state.files.isEmpty
         return .merge(
           .run { send in
             let files = try await coreDataClient.getFiles()
@@ -139,7 +144,14 @@ public struct FileListFeature: Sendable {
           }
           return newState
         })
-        state.isLoading = false
+        if !filesToShow.isEmpty {
+          state.hasCompletedInitialLoad = true
+          state.isLoading = false
+        } else if state.isRegistered {
+          state.hasCompletedInitialLoad = true
+          state.isLoading = false
+        }
+        // When empty + unregistered, keep isLoading = true (auto-refresh is pending)
         let thumbnails = thumbnailsToFetch(from: filesToShow)
         let thumbnailCacheClient = thumbnailCacheClient
         return thumbnails.isEmpty ? .none : .run { _ in
@@ -155,9 +167,15 @@ public struct FileListFeature: Sendable {
 
       case .refreshButtonTapped:
         if state.isRegistered, !state.isAuthenticated {
+          state.hasCompletedInitialLoad = true
+          state.isLoading = false
           return .send(.delegate(.authenticationRequired))
         }
-        state.isLoading = true
+        if state.hasCompletedInitialLoad {
+          state.isRefreshing = true
+        } else {
+          state.isLoading = true
+        }
         return .run { send in
           await send(.remoteFilesResponse(Result {
             try await serverClient.getFiles(.all)
@@ -199,6 +217,8 @@ public struct FileListFeature: Sendable {
           }
         }
         state.isLoading = false
+        state.hasCompletedInitialLoad = true
+        state.isRefreshing = false
         let firstFile = response.body?.contents.first
         let isRegistered = state.isRegistered
         let thumbnails = thumbnailsToFetch(from: response.body?.contents ?? [])
@@ -215,6 +235,8 @@ public struct FileListFeature: Sendable {
 
       case let .remoteFilesResponse(.failure(error)):
         state.isLoading = false
+        state.hasCompletedInitialLoad = true
+        state.isRefreshing = false
         let appError = (error as? ServerClientError).map(AppError.from) ?? AppError.from(error)
         if appError.requiresReauth {
           return .merge(

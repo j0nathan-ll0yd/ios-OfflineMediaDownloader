@@ -18,7 +18,7 @@ struct FileListFeatureTests {
   // MARK: - Loading Tests
 
   @MainActor
-  @Test("onAppear loads files from CoreData without loading indicator")
+  @Test("onAppear loads files from CoreData with loading indicator on first load")
   func onAppearLoadsFiles() async {
     let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true } // User is authenticated
@@ -32,13 +32,15 @@ struct FileListFeatureTests {
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
     }
 
-    // onAppear does NOT set isLoading - only refreshButtonTapped does
+    // files are empty at onAppear time so isLoading stays true (no state change)
     await store.send(.onAppear)
 
     await store.receive(\.localFilesLoaded) {
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
+      $0.hasCompletedInitialLoad = true
+      $0.isLoading = false
     }
   }
 
@@ -61,9 +63,14 @@ struct FileListFeatureTests {
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
     }
 
-    await store.send(.onAppear)
+    // files are pre-populated so onAppear sets isLoading = files.isEmpty = false
+    await store.send(.onAppear) {
+      $0.isLoading = false
+    }
 
-    await store.receive(\.localFilesLoaded)
+    await store.receive(\.localFilesLoaded) {
+      $0.hasCompletedInitialLoad = true
+    }
 
     // Verify download state is preserved after the receive
     let finalFiles = store.state.files
@@ -86,12 +93,13 @@ struct FileListFeatureTests {
       $0.fileClient.fileExists = { _ in false }
     }
 
-    await store.send(.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on send
+    await store.send(.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.success) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
@@ -120,12 +128,13 @@ struct FileListFeatureTests {
       $0.fileClient.fileExists = { _ in false }
     }
 
-    await store.send(.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on send
+    await store.send(.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.success) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
@@ -153,12 +162,13 @@ struct FileListFeatureTests {
       $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
-    await store.send(.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on send
+    await store.send(.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.failure) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
     }
 
     // DefaultFilesFeature receives error notification
@@ -202,12 +212,13 @@ struct FileListFeatureTests {
       $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
-    await store.send(.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on send
+    await store.send(.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.failure) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
     }
 
     // DefaultFilesFeature receives error notification
@@ -242,12 +253,13 @@ struct FileListFeatureTests {
       ) }
     }
 
-    await store.send(.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on send
+    await store.send(.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.failure) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
     }
 
     // DefaultFilesFeature receives error notification
@@ -354,12 +366,13 @@ struct FileListFeatureTests {
       $0.alert = nil
     }
 
-    await store.receive(\.refreshButtonTapped) {
-      $0.isLoading = true
-    }
+    // isLoading is already true (default), hasCompletedInitialLoad is false — no state change on receive
+    await store.receive(\.refreshButtonTapped)
 
     await store.receive(\.remoteFilesResponse.success) {
       $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
@@ -876,6 +889,152 @@ struct FileListFeatureTests {
       } message: {
         TextState("Error")
       }
+    }
+  }
+
+  // MARK: - Initial Load State Tests
+
+  @MainActor
+  @Test("Unregistered user with empty local files stays loading until remote response arrives")
+  func onAppear_unregisteredEmptyLocal_staysLoadingUntilRemote() async {
+    let store = TestStore(initialState: FileListFeature.State()) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.coreDataClient.getFiles = { [] }
+      $0.serverClient.getFiles = { _ in TestData.validFileResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+    }
+
+    await store.send(.onAppear)
+
+    await store.receive(\.localFilesLoaded)
+
+    await store.receive(\.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+        FileCellFeature.State(file: $0)
+      })
+    }
+
+    await store.receive(\.defaultFiles.parentProvidedFile) {
+      $0.defaultFiles.isLoadingFile = false
+      $0.defaultFiles.file = TestData.multipleFiles.first
+    }
+  }
+
+  @MainActor
+  @Test("Registered user with cached files completes initial load immediately from CoreData")
+  func onAppear_registeredWithCachedFiles_loadsImmediately() async {
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.coreDataClient.getFiles = { TestData.multipleFiles }
+    }
+
+    await store.send(.onAppear)
+
+    await store.receive(\.localFilesLoaded) {
+      $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+        FileCellFeature.State(file: $0)
+      })
+      $0.hasCompletedInitialLoad = true
+      $0.isLoading = false
+    }
+  }
+
+  @MainActor
+  @Test("After initial load, refreshButtonTapped sets isRefreshing instead of isLoading")
+  func refreshAfterInitialLoad_setsRefreshing_notLoading() async {
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.coreDataClient.getFiles = { TestData.multipleFiles }
+      $0.serverClient.getFiles = { _ in TestData.validFileResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+    }
+
+    await store.send(.onAppear)
+
+    await store.receive(\.localFilesLoaded) {
+      $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+        FileCellFeature.State(file: $0)
+      })
+      $0.hasCompletedInitialLoad = true
+      $0.isLoading = false
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.isRefreshing = true
+    }
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isRefreshing = false
+      $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+        FileCellFeature.State(file: $0)
+      })
+    }
+  }
+
+  @MainActor
+  @Test("Registered but unauthenticated user: refreshButtonTapped exits loading state before auth delegate")
+  func refreshButtonTapped_registeredUnauthenticated_exitsLoadingState() async {
+    var state = FileListFeature.State()
+    state.$isRegistered.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.refreshButtonTapped) {
+      $0.hasCompletedInitialLoad = true
+      $0.isLoading = false
+    }
+
+    await store.receive(\.delegate.authenticationRequired)
+  }
+
+  @MainActor
+  @Test("Registered user with empty local files shows empty state (not skeleton) after CoreData load")
+  func onAppear_registeredEmptyLocal_showsEmptyStateNotSkeleton() async {
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.coreDataClient.getFiles = { [] }
+    }
+
+    await store.send(.onAppear)
+
+    await store.receive(\.localFilesLoaded) {
+      $0.hasCompletedInitialLoad = true
+      $0.isLoading = false
     }
   }
 }
