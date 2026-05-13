@@ -34,6 +34,9 @@ BUILD_OUTPUT=$(xcodebuild \
     -project OfflineMediaDownloader.xcodeproj \
     -scheme OfflineMediaDownloader \
     -destination "platform=iOS Simulator,id=$SIMULATOR" \
+    -skipPackagePluginValidation \
+    -skipMacroValidation \
+    CODE_SIGNING_ALLOWED=NO \
     build 2>&1) || true
 
 # Extract warnings (excluding metadata extraction warning which is harmless)

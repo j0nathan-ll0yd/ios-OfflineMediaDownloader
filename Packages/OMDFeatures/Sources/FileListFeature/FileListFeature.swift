@@ -465,10 +465,6 @@ public struct FileListFeature: Sendable {
         }
         return .none
 
-      case let .files(.element(id: _, action: .delegate(.fileDeleted(file)))):
-        state.files.remove(id: file.fileId)
-        return .none
-
       case let .files(.element(id: _, action: .delegate(.playFile(file)))):
         state.isPreparingToPlay = true
         return .run { send in
