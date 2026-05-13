@@ -265,7 +265,7 @@ public struct FileDetailView: View {
         Button(role: .destructive) {
           store.send(.deleteButtonTapped)
         } label: {
-          Label("Delete from Device", systemImage: "trash")
+          Label("Delete", systemImage: "trash")
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)

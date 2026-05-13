@@ -47,6 +47,19 @@ public struct FileListView: View {
           store.send(.confirmationDismissed)
         }
       }
+      .confirmationDialog(
+        "Delete Video?",
+        isPresented: Binding(
+          get: { store.showDeleteConfirmation },
+          set: { _ in store.send(.dismissDeleteConfirmation) }
+        ),
+        titleVisibility: .visible
+      ) {
+        Button("Delete", role: .destructive) {
+          store.send(.confirmDeleteFile)
+        }
+        Button("Cancel", role: .cancel) {}
+      }
       .alert($store.scope(state: \.alert, action: \.alert))
       .navigationDestination(
         item: $store.scope(state: \.selectedFile, action: \.detail)
@@ -205,7 +218,7 @@ public struct FileListView: View {
             .onTapGesture {
               store.send(.fileTapped(cellStore.state))
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
               Button(role: .destructive) {
                 if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
                   store.send(.deleteFiles(IndexSet(integer: index)))

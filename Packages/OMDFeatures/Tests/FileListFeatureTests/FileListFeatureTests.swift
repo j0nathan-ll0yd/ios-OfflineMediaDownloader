@@ -1,3 +1,4 @@
+import APIClient
 import ComposableArchitecture
 import FileCellFeature
 @testable import FileListFeature
@@ -686,8 +687,8 @@ struct FileListFeatureTests {
   // MARK: - Delete Tests
 
   @MainActor
-  @Test("Delete files removes from state")
-  func deleteFilesRemoves() async {
+  @Test("Swipe-to-delete sets confirmation dialog state")
+  func deleteFilesSetsConfirmation() async {
     var state = FileListFeature.State()
     state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
       FileCellFeature.State(file: $0)
@@ -697,24 +698,120 @@ struct FileListFeatureTests {
       FileListFeature()
     }
 
+    let fileToDelete = TestData.multipleFiles[0]
     await store.send(.deleteFiles(IndexSet(integer: 0))) {
-      $0.files.remove(at: 0)
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
     }
   }
 
   @MainActor
-  @Test("File deleted delegate removes file from list", .disabled("Flaky test - passes alone but fails in suite, TCA/Swift Testing interaction issue"))
-  func fileDeletedDelegate() async {
+  @Test("Delete confirmation dismissed clears state")
+  func deleteConfirmationDismissed() async {
     var state = FileListFeature.State()
-    state.files = [FileCellFeature.State(file: TestData.downloadedFile)]
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+    state.fileToDelete = TestData.multipleFiles[0]
+    state.showDeleteConfirmation = true
 
     let store = TestStore(initialState: state) {
       FileListFeature()
     }
 
-    await store.send(.files(.element(id: TestData.downloadedFile.fileId, action: .delegate(.fileDeleted(TestData.downloadedFile))))) {
-      $0.files.remove(id: TestData.downloadedFile.fileId)
+    await store.send(.dismissDeleteConfirmation) {
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
     }
+  }
+
+  @MainActor
+  @Test("Confirm delete removes file and triggers server-backed cleanup")
+  func confirmDeleteSuccess() async {
+    let serverDeleteCalled = LockIsolated(false)
+    let coreDataDeleteCalled = LockIsolated(false)
+    let fileDeleteCalled = LockIsolated(false)
+    let thumbnailDeleteCalled = LockIsolated(false)
+
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+    state.fileToDelete = TestData.multipleFiles[0]
+    state.showDeleteConfirmation = true
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.deleteFile = { _ in serverDeleteCalled.setValue(true); return DeleteFileResponse(
+        body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+        error: nil,
+        requestId: "test"
+      ) }
+      $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
+      $0.fileClient.fileExists = { _ in true }
+      $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in thumbnailDeleteCalled.setValue(true) }
+    }
+
+    await store.send(.confirmDeleteFile) {
+      $0.files.remove(id: TestData.multipleFiles[0].fileId)
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+    }
+
+    #expect(serverDeleteCalled.value == true)
+    #expect(coreDataDeleteCalled.value == true)
+    #expect(fileDeleteCalled.value == true)
+    #expect(thumbnailDeleteCalled.value == true)
+  }
+
+  @MainActor
+  @Test("Delete server failure reinserts file and shows alert")
+  func deleteServerFailureReinserts() async {
+    let serverDeleteCalled = LockIsolated(false)
+
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+    state.fileToDelete = TestData.multipleFiles[0]
+    state.showDeleteConfirmation = true
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.serverClient.deleteFile = { _ in
+        serverDeleteCalled.setValue(true)
+        throw ServerClientError.internalServerError(message: "DB down", requestId: "test", correlationId: nil)
+      }
+    }
+
+    await store.send(.confirmDeleteFile) {
+      $0.files.remove(id: TestData.multipleFiles[0].fileId)
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+    }
+
+    await store.receive { action in
+      guard case let .deleteFileFailed(file, _) = action else { return false }
+      return file.fileId == TestData.multipleFiles[0].fileId
+    } {
+      $0.files.append(FileCellFeature.State(file: TestData.multipleFiles[0]))
+      $0.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.alert = AlertState {
+        TextState("Delete Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Failed to delete \"\(TestData.multipleFiles[0].title ?? TestData.multipleFiles[0].key)\": DB down")
+      }
+    }
+
+    #expect(serverDeleteCalled.value == true)
+    #expect(store.state.files.contains(where: { $0.file.fileId == TestData.multipleFiles[0].fileId }))
   }
 
   // MARK: - Video Playback Tests

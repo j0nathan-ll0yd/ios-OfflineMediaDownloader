@@ -175,7 +175,7 @@ let package = Package(
 
     .target(name: "FileDetailFeature", dependencies: [
       "SharedModels", "DesignSystem", "DownloadBehavior",
-      "PersistenceClient", "FileClient", "DownloadClient",
+      "ServerClient", "PersistenceClient", "FileClient", "DownloadClient",
       "ThumbnailCacheClient", "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
