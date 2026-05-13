@@ -1037,4 +1037,246 @@ struct FileListFeatureTests {
       $0.isLoading = false
     }
   }
+
+  // MARK: - Merge Behavior Tests
+
+  @MainActor
+  @Test("Remote response merges with local downloaded files instead of replacing")
+  func remoteFilesResponseMergesWithLocalDownloaded() async {
+    let localOnlyFile = File(
+      fileId: "local-only",
+      key: "LocalVideo.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_700_000_000),
+      size: 500_000,
+      url: URL(string: "https://example.com/local.mp4")
+    )
+    var localCell = FileCellFeature.State(file: localOnlyFile)
+    localCell.isDownloaded = true
+
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = [localCell]
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: TestData.multipleFiles, keyCount: 3),
+      error: nil,
+      requestId: "request-merge-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      var expected = IdentifiedArrayOf<FileCellFeature.State>()
+      for file in TestData.multipleFiles {
+        expected.append(FileCellFeature.State(file: file))
+      }
+      expected.append(localCell)
+      expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = expected
+    }
+  }
+
+  @MainActor
+  @Test("Remote response removes non-downloaded files missing from server")
+  func remoteFilesResponseRemovesNonDownloaded() async {
+    let nonDownloadedFile = File(
+      fileId: "non-downloaded",
+      key: "OldVideo.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_600_000_000),
+      size: 200_000,
+      url: URL(string: "https://example.com/old.mp4")
+    )
+    let nonDownloadedCell = FileCellFeature.State(file: nonDownloadedFile)
+
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = [nonDownloadedCell]
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: TestData.multipleFiles, keyCount: 3),
+      error: nil,
+      requestId: "request-remove-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      var expected = IdentifiedArrayOf<FileCellFeature.State>()
+      for file in TestData.multipleFiles {
+        expected.append(FileCellFeature.State(file: file))
+      }
+      expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = expected
+    }
+  }
+
+  @MainActor
+  @Test("Remote response updates metadata for files existing both locally and on server")
+  func remoteFilesResponseUpdatesMetadata() async {
+    let outdatedFile = File(
+      fileId: TestData.sampleFile.fileId,
+      key: "OldName.mp4",
+      publishDate: TestData.sampleFile.publishDate,
+      size: 100_000,
+      url: URL(string: "https://example.com/old-name.mp4")
+    )
+    var outdatedCell = FileCellFeature.State(file: outdatedFile)
+    outdatedCell.isDownloaded = true
+    outdatedCell.downloadProgress = 1.0
+
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = [outdatedCell]
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: [TestData.sampleFile], keyCount: 1),
+      error: nil,
+      requestId: "request-update-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+    }
+
+    await store.send(.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      var updatedCell = FileCellFeature.State(file: TestData.sampleFile)
+      updatedCell.isDownloaded = true
+      updatedCell.downloadProgress = 1.0
+      $0.files = [updatedCell]
+    }
+  }
+
+  @MainActor
+  @Test("Remote response adds new server files not in local state")
+  func remoteFilesResponseAddsNewFiles() async {
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = []
+
+    let serverResponse = FileResponse(
+      body: FileList(contents: TestData.multipleFiles, keyCount: 3),
+      error: nil,
+      requestId: "request-add-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+    }
+
+    await store.send(.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      var expected = IdentifiedArrayOf<FileCellFeature.State>()
+      for file in TestData.multipleFiles {
+        expected.append(FileCellFeature.State(file: file))
+      }
+      expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.files = expected
+    }
+  }
+
+  @MainActor
+  @Test("Remote response maintains sort order by publishDate descending")
+  func remoteFilesResponseMaintainsSortOrder() async {
+    let oldFile = File(
+      fileId: "old-local",
+      key: "Old.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_600_000_000),
+      size: 100_000,
+      url: URL(string: "https://example.com/old.mp4")
+    )
+    var oldCell = FileCellFeature.State(file: oldFile)
+    oldCell.isDownloaded = true
+
+    var state = FileListFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+    state.$isRegistered.withLock { $0 = true }
+    state.files = [oldCell]
+
+    let newFile = File(
+      fileId: "new-server",
+      key: "New.mp4",
+      publishDate: Date(timeIntervalSince1970: 1_800_000_000),
+      size: 300_000,
+      url: URL(string: "https://example.com/new.mp4")
+    )
+    let serverResponse = FileResponse(
+      body: FileList(contents: [newFile], keyCount: 1),
+      error: nil,
+      requestId: "request-sort-test"
+    )
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.getFiles = { _ in serverResponse }
+      $0.coreDataClient.cacheFiles = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.analytics.track = { _, _ in }
+    }
+
+    await store.send(.refreshButtonTapped)
+
+    await store.receive(\.remoteFilesResponse.success) {
+      $0.isLoading = false
+      $0.hasCompletedInitialLoad = true
+      $0.isRefreshing = false
+      let newCell = FileCellFeature.State(file: newFile)
+      $0.files = [newCell, oldCell]
+    }
+  }
 }

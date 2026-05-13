@@ -187,10 +187,13 @@ public struct FileListFeature: Sendable {
         let localCount = state.files.count
         if let fileList = response.body {
           let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
-          let filesToShow = state.isRegistered
+          let serverFiles = state.isRegistered
             ? fileList.contents
             : fileList.contents.filter { $0.fileId != "default" }
-          state.files = IdentifiedArray(uniqueElements: filesToShow.map { file in
+          let serverFileIds = Set(serverFiles.map(\.fileId))
+
+          var mergedFiles = IdentifiedArrayOf<FileCellFeature.State>()
+          for file in serverFiles {
             var newState = FileCellFeature.State(file: file)
             if let existing = existingStates[file.fileId] {
               newState.isDownloaded = existing.isDownloaded
@@ -198,21 +201,31 @@ public struct FileListFeature: Sendable {
               newState.isServerDownloading = existing.isServerDownloading
               newState.downloadProgress = existing.downloadProgress
             }
-            return newState
-          })
+            mergedFiles.append(newState)
+          }
+
+          for existingFile in state.files {
+            if !serverFileIds.contains(existingFile.id), existingFile.isDownloaded {
+              mergedFiles.append(existingFile)
+            }
+          }
+
+          mergedFiles.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+          state.files = mergedFiles
+
           let availableIds = Set(fileList.contents.map(\.fileId))
           state.pendingFileIds.removeAll { availableIds.contains($0) }
 
-          let serverCount = filesToShow.count
-          if localCount > 0, localCount != serverCount {
+          let serverCount = serverFiles.count
+          if localCount > 0, localCount != mergedFiles.count {
             let localIds = Set(existingStates.keys)
-            let serverIds = Set(filesToShow.map(\.fileId))
-            let missingFromServer = localIds.subtracting(serverIds)
+            let missingFromServer = localIds.subtracting(serverFileIds)
             let analytics = analytics
             analytics.track(.fileSyncMismatch, [
               "localCount": String(localCount),
               "serverCount": String(serverCount),
               "missingFileIds": missingFromServer.sorted().joined(separator: ","),
+              "keptLocalDownloaded": String(mergedFiles.count - serverFiles.count),
             ])
           }
         }
