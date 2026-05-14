@@ -753,9 +753,14 @@ struct FileListFeatureTests {
     }
 
     await store.send(.confirmDeleteFile) {
-      $0.files.remove(id: fileToDelete.fileId)
       $0.fileToDelete = nil
       $0.showDeleteConfirmation = false
+      $0.deletingFileId = fileToDelete.fileId
+    }
+
+    await store.receive(\.deleteFileSucceeded) {
+      $0.deletingFileId = nil
+      $0.files.remove(id: fileToDelete.fileId)
     }
   }
 
@@ -812,14 +817,16 @@ struct FileListFeatureTests {
     }
 
     await store.send(.confirmDeleteFile) {
-      $0.files.remove(id: fileToDelete.fileId)
       $0.fileToDelete = nil
       $0.showDeleteConfirmation = false
+      $0.deletingFileId = fileToDelete.fileId
     }
 
-    await store.receive(\.deleteFileFailed) {
-      $0.files.append(FileCellFeature.State(file: fileToDelete))
-      $0.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+    await store.receive { action in
+      guard case let .deleteFileFailed(file, _) = action else { return false }
+      return file.fileId == fileToDelete.fileId
+    } {
+      $0.deletingFileId = nil
       $0.alert = AlertState {
         TextState("Delete Failed")
       } actions: {
@@ -827,7 +834,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Failed to delete \"\(fileToDelete.title ?? fileToDelete.key)\": Session expired - please login again")
+        TextState("Session expired - please login again")
       }
     }
   }
