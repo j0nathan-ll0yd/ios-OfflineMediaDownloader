@@ -1156,8 +1156,8 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Remote response removes non-downloaded files missing from server")
-  func remoteFilesResponseRemovesNonDownloaded() async {
+  @Test("Remote response preserves local files missing from server regardless of download status")
+  func remoteFilesResponsePreservesLocalFiles() async {
     let nonDownloadedFile = File(
       fileId: "non-downloaded",
       key: "OldVideo.mp4",
@@ -1199,6 +1199,7 @@ struct FileListFeatureTests {
       for file in TestData.multipleFiles {
         expected.append(FileCellFeature.State(file: file))
       }
+      expected.append(nonDownloadedCell)
       expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
       $0.files = expected
     }

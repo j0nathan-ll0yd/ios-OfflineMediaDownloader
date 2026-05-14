@@ -139,9 +139,7 @@ public struct FileListFeature: Sendable {
 
       case let .localFilesLoaded(files):
         let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
-        let filesToShow = state.isRegistered
-          ? files
-          : files.filter { $0.fileId != "default" }
+        let filesToShow = files.filter { $0.fileId != "default" }
         state.files = IdentifiedArray(uniqueElements: filesToShow.map { file in
           var newState = FileCellFeature.State(file: file)
           if let existing = existingStates[file.fileId] {
@@ -213,7 +211,7 @@ public struct FileListFeature: Sendable {
           }
 
           for existingFile in state.files {
-            if !serverFileIds.contains(existingFile.id), existingFile.isDownloaded {
+            if !serverFileIds.contains(existingFile.id) {
               mergedFiles.append(existingFile)
             }
           }

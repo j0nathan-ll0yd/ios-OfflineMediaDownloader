@@ -210,27 +210,30 @@ public struct FileListView: View {
   }
 
   private var fileList: some View {
-    ScrollView {
-      LazyVStack(spacing: 0) {
-        ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
-          FileCellView(store: cellStore)
-            .contentShape(Rectangle())
-            .onTapGesture {
-              store.send(.fileTapped(cellStore.state))
-            }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-              Button(role: .destructive) {
-                if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
-                  store.send(.deleteFiles(IndexSet(integer: index)))
-                }
-              } label: {
-                Label("Delete", systemImage: "trash")
+    List {
+      ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
+        FileCellView(store: cellStore)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            store.send(.fileTapped(cellStore.state))
+          }
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+              if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
+                store.send(.deleteFiles(IndexSet(integer: index)))
               }
+            } label: {
+              Label("Delete", systemImage: "trash")
             }
-        }
+            .tint(.red)
+          }
       }
-      .padding(.vertical, 12)
     }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .background(theme.backgroundColor)
     .refreshable {
       store.send(.refreshButtonTapped)
     }

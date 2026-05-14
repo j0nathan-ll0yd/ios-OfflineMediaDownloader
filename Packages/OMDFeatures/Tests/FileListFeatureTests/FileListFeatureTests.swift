@@ -980,8 +980,8 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Remote response removes non-downloaded files missing from server")
-  func remoteFilesResponseRemovesNonDownloaded() async {
+  @Test("Remote response preserves all local files missing from server regardless of download status")
+  func remoteFilesResponsePreservesLocalFiles() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
     state.isLoading = false
@@ -1019,12 +1019,13 @@ struct FileListFeatureTests {
 
     await store.receive(\.remoteFilesResponse.success) {
       $0.isLoading = false
-      // Server file added, downloaded file kept, pending file REMOVED
+      // Server file added, downloaded file kept, pending file ALSO kept (Option B)
       var merged = IdentifiedArrayOf<FileCellFeature.State>()
       merged.append(FileCellFeature.State(file: serverFile))
-      var kept = FileCellFeature.State(file: TestData.downloadedFile)
-      kept.isDownloaded = true
-      merged.append(kept)
+      var keptDownloaded = FileCellFeature.State(file: TestData.downloadedFile)
+      keptDownloaded.isDownloaded = true
+      merged.append(keptDownloaded)
+      merged.append(pendingCell)
       merged.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
       $0.files = merged
     }
