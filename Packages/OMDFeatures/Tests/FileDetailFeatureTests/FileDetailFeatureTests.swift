@@ -341,6 +341,7 @@ struct FileDetailFeatureTests {
 
     await store.send(.alert(.presented(.confirmDelete))) {
       $0.alert = nil
+      $0.isDeleting = true
     }
 
     await store.receive(\.delegate.fileDeleted)
@@ -411,6 +412,13 @@ struct FileDetailFeatureTests {
     let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
       FileDetailFeature()
     } withDependencies: {
+      $0.serverClient.deleteFile = { _ in
+        DeleteFileResponse(
+          body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+          error: nil,
+          requestId: "test"
+        )
+      }
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -419,6 +427,7 @@ struct FileDetailFeatureTests {
 
     await store.send(.alert(.presented(.confirmDelete))) {
       $0.alert = nil
+      $0.isDeleting = true
     }
 
     await store.receive(\.delegate.fileDeleted)

@@ -755,9 +755,14 @@ struct FileListFeatureTests {
     }
 
     await store.send(.confirmDeleteFile) {
-      $0.files.remove(id: TestData.multipleFiles[0].fileId)
       $0.fileToDelete = nil
       $0.showDeleteConfirmation = false
+      $0.deletingFileId = TestData.multipleFiles[0].fileId
+    }
+
+    await store.receive(\.deleteFileSucceeded) {
+      $0.deletingFileId = nil
+      $0.files.remove(id: TestData.multipleFiles[0].fileId)
     }
 
     #expect(serverDeleteCalled.value == true)
@@ -767,8 +772,8 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Delete server failure reinserts file and shows alert")
-  func deleteServerFailureReinserts() async {
+  @Test("Delete server failure shows alert and file remains in list")
+  func deleteServerFailureShowsAlert() async {
     let serverDeleteCalled = LockIsolated(false)
 
     var state = FileListFeature.State()
@@ -788,17 +793,16 @@ struct FileListFeatureTests {
     }
 
     await store.send(.confirmDeleteFile) {
-      $0.files.remove(id: TestData.multipleFiles[0].fileId)
       $0.fileToDelete = nil
       $0.showDeleteConfirmation = false
+      $0.deletingFileId = TestData.multipleFiles[0].fileId
     }
 
     await store.receive { action in
       guard case let .deleteFileFailed(file, _) = action else { return false }
       return file.fileId == TestData.multipleFiles[0].fileId
     } {
-      $0.files.append(FileCellFeature.State(file: TestData.multipleFiles[0]))
-      $0.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
+      $0.deletingFileId = nil
       $0.alert = AlertState {
         TextState("Delete Failed")
       } actions: {
@@ -806,7 +810,7 @@ struct FileListFeatureTests {
           TextState("OK")
         }
       } message: {
-        TextState("Failed to delete \"\(TestData.multipleFiles[0].title ?? TestData.multipleFiles[0].key)\": DB down")
+        TextState("DB down")
       }
     }
 
