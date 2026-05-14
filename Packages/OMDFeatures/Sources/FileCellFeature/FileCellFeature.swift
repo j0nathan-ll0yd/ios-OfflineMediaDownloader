@@ -43,7 +43,6 @@ public struct FileCellFeature: Sendable {
     case playButtonTapped
     case downloadButtonTapped
     case cancelDownloadButtonTapped
-    case deleteButtonTapped
     case downloadProgressUpdated(Double)
     case downloadCompleted(URL)
     case downloadFailed(String)
@@ -58,7 +57,6 @@ public struct FileCellFeature: Sendable {
 
     @CasePathable
     public enum Delegate: Equatable {
-      case fileDeleted(File)
       case playFile(File)
       case downloadStarted(File)
       case downloadProgressUpdated(fileId: String, percent: Int)
@@ -67,7 +65,6 @@ public struct FileCellFeature: Sendable {
     }
   }
 
-  @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
@@ -173,21 +170,10 @@ public struct FileCellFeature: Sendable {
       case .alert:
         return .none
 
-      case .deleteButtonTapped:
-        let file = state.file
-        return .run { [thumbnailCacheClient] send in
-          try await coreDataClient.deleteFile(file)
-          if let url = file.url, fileClient.fileExists(url) {
-            try await fileClient.deleteFile(url)
-          }
-          await thumbnailCacheClient.deleteThumbnail(file.fileId)
-          await send(.delegate(.fileDeleted(file)))
-        }
-
       case .delegate:
         return .none
       }
     }
-    .ifLet(\.$alert, action: \.alert)
+    .ifLet(\.alert, action: \.alert)
   }
 }

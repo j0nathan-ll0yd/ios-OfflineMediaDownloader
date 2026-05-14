@@ -722,8 +722,9 @@ struct FileListFeatureTests {
   // MARK: - Delete Tests
 
   @MainActor
-  @Test("Delete files removes from state and calls server")
-  func deleteFilesRemoves() async {
+  @Test("Delete files shows confirmation then removes on confirm")
+  func deleteFilesShowsConfirmationThenRemoves() async {
+    let fileToDelete = TestData.multipleFiles[0]
     var state = FileListFeature.State()
     state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
       FileCellFeature.State(file: $0)
@@ -743,18 +744,34 @@ struct FileListFeatureTests {
       }
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in }
     }
 
     await store.send(.deleteFiles(IndexSet(integer: 0))) {
-      $0.files.remove(at: 0)
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
+    }
+
+    await store.send(.confirmDeleteFile) {
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+      $0.deletingFileId = fileToDelete.fileId
+    }
+
+    await store.receive(\.deleteFileSucceeded) {
+      $0.deletingFileId = nil
+      $0.files.remove(id: fileToDelete.fileId)
     }
   }
 
   @MainActor
-  @Test("File deleted delegate removes file from list", .disabled("Flaky test - passes alone but fails in suite, TCA/Swift Testing interaction issue"))
-  func fileDeletedDelegate() async {
+  @Test("Delete files can be dismissed")
+  func deleteFilesDismissed() async {
+    let fileToDelete = TestData.multipleFiles[0]
     var state = FileListFeature.State()
-    state.files = [FileCellFeature.State(file: TestData.downloadedFile)]
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
 
     let store = TestStore(initialState: state) {
       FileListFeature()
@@ -763,8 +780,62 @@ struct FileListFeatureTests {
       $0.pasteboardClient = TestData.noopPasteboardClient
     }
 
-    await store.send(.files(.element(id: TestData.downloadedFile.fileId, action: .delegate(.fileDeleted(TestData.downloadedFile))))) {
-      $0.files.remove(id: TestData.downloadedFile.fileId)
+    await store.send(.deleteFiles(IndexSet(integer: 0))) {
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
+    }
+
+    await store.send(.dismissDeleteConfirmation) {
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+    }
+  }
+
+  @MainActor
+  @Test("Delete files failure reinserts and shows alert")
+  func deleteFilesFailureReinserts() async {
+    let fileToDelete = TestData.multipleFiles[0]
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.deleteFile = { _ in throw ServerClientError.unauthorized(requestId: nil, correlationId: nil) }
+      $0.coreDataClient.deleteFile = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in }
+    }
+
+    await store.send(.deleteFiles(IndexSet(integer: 0))) {
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
+    }
+
+    await store.send(.confirmDeleteFile) {
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+      $0.deletingFileId = fileToDelete.fileId
+    }
+
+    await store.receive { action in
+      guard case let .deleteFileFailed(file, _) = action else { return false }
+      return file.fileId == fileToDelete.fileId
+    } assert: {
+      $0.deletingFileId = nil
+      $0.alert = AlertState {
+        TextState("Delete Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Session expired - please login again")
+      }
     }
   }
 
@@ -932,7 +1003,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Registered user with cached files completes initial load immediately from CoreData")
   func onAppear_registeredWithCachedFiles_loadsImmediately() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.$isRegistered.withLock { $0 = true }
 
@@ -958,7 +1029,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("After initial load, refreshButtonTapped sets isRefreshing instead of isLoading")
   func refreshAfterInitialLoad_setsRefreshing_notLoading() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.$isRegistered.withLock { $0 = true }
 
@@ -997,7 +1068,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Registered but unauthenticated user: refreshButtonTapped exits loading state before auth delegate")
   func refreshButtonTapped_registeredUnauthenticated_exitsLoadingState() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
 
     let store = TestStore(initialState: state) {
@@ -1018,7 +1089,7 @@ struct FileListFeatureTests {
   @MainActor
   @Test("Registered user with empty local files shows empty state (not skeleton) after CoreData load")
   func onAppear_registeredEmptyLocal_showsEmptyStateNotSkeleton() async {
-    var state = FileListFeature.State()
+    let state = FileListFeature.State()
     state.$isAuthenticated.withLock { $0 = true }
     state.$isRegistered.withLock { $0 = true }
 
@@ -1092,8 +1163,8 @@ struct FileListFeatureTests {
   }
 
   @MainActor
-  @Test("Remote response removes non-downloaded files missing from server")
-  func remoteFilesResponseRemovesNonDownloaded() async {
+  @Test("Remote response preserves local files missing from server regardless of download status")
+  func remoteFilesResponsePreservesLocalFiles() async {
     let nonDownloadedFile = File(
       fileId: "non-downloaded",
       key: "OldVideo.mp4",
@@ -1135,6 +1206,7 @@ struct FileListFeatureTests {
       for file in TestData.multipleFiles {
         expected.append(FileCellFeature.State(file: file))
       }
+      expected.append(nonDownloadedCell)
       expected.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
       $0.files = expected
     }

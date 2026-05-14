@@ -17,6 +17,7 @@ public struct FileDetailFeature: Sendable {
     public var isDownloaded: Bool = false
     public var isDownloading: Bool = false
     public var downloadProgress: Double = 0
+    public var isDeleting: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?
 
     public init(file: File, isDownloaded: Bool = false, isDownloading: Bool = false, downloadProgress: Double = 0) {
@@ -41,6 +42,8 @@ public struct FileDetailFeature: Sendable {
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
 
+    case showDeleteError(fileName: String, message: String)
+
     @CasePathable
     public enum Alert: Equatable {
       case retryDownload
@@ -60,6 +63,7 @@ public struct FileDetailFeature: Sendable {
   @Dependency(\.fileClient) var fileClient
   @Dependency(\.downloadClient) var downloadClient
   @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
+  @Dependency(\.serverClient) var serverClient
   @Dependency(\.logger) var logger
 
   private enum CancelID { case download }
@@ -171,15 +175,39 @@ public struct FileDetailFeature: Sendable {
         return .send(.downloadButtonTapped)
 
       case .alert(.presented(.confirmDelete)):
+        state.isDeleting = true
         let file = state.file
-        return .run { [thumbnailCacheClient] send in
-          try await coreDataClient.deleteFile(file)
-          if let url = file.url, fileClient.fileExists(url) {
-            try await fileClient.deleteFile(url)
+        let serverClient = serverClient
+        let fileClient = fileClient
+        let thumbnailCacheClient = thumbnailCacheClient
+        return .run { send in
+          do {
+            _ = try await serverClient.deleteFile(file.fileId)
+            try await coreDataClient.deleteFile(file)
+            if let url = file.url, fileClient.fileExists(url) {
+              try await fileClient.deleteFile(url)
+            }
+            await thumbnailCacheClient.deleteThumbnail(file.fileId)
+            await send(.delegate(.fileDeleted(file)))
+          } catch {
+            let message = error.localizedDescription
+            let fileName = file.title ?? file.key
+            await send(.showDeleteError(fileName: fileName, message: message))
           }
-          await thumbnailCacheClient.deleteThumbnail(file.fileId)
-          await send(.delegate(.fileDeleted(file)))
         }
+
+      case let .showDeleteError(fileName, message):
+        state.isDeleting = false
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState("Could not delete \"\(fileName)\": \(message)")
+        }
+        return .none
 
       case .alert:
         return .none

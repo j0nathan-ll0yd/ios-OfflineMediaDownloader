@@ -1,7 +1,9 @@
+import APIClient
 import ComposableArchitecture
 import ConcurrencyExtras
 @testable import FileDetailFeature
 import Foundation
+import ServerClient
 import SharedModels
 import TestData
 import Testing
@@ -310,18 +312,39 @@ struct FileDetailFeatureTests {
   }
 
   @MainActor
-  @Test("confirmDelete deletes file and sends delegate fileDeleted")
+  @Test("confirmDelete deletes file via server, CoreData, filesystem and thumbnail cache")
   func confirmDeleteDeletesFile() async {
+    let serverDeleteCalled = LockIsolated(false)
     let coreDataDeleteCalled = LockIsolated(false)
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloaded = true
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure?")
+    }
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.serverClient.deleteFile = { _ in
+        serverDeleteCalled.setValue(true)
+        return DeleteFileResponse(
+          body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+          error: nil,
+          requestId: "test-request-id"
+        )
+      }
       $0.coreDataClient.deleteFile = { _ in coreDataDeleteCalled.setValue(true) }
       $0.fileClient.fileExists = { _ in true }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -330,13 +353,66 @@ struct FileDetailFeatureTests {
 
     await store.send(.alert(.presented(.confirmDelete))) {
       $0.alert = nil
+      $0.isDeleting = true
     }
 
     await store.receive(\.delegate.fileDeleted)
 
+    #expect(serverDeleteCalled.value == true)
     #expect(coreDataDeleteCalled.value == true)
     #expect(fileDeleteCalled.value == true)
     #expect(thumbnailDeleteCalled.value == true)
+  }
+
+  @MainActor
+  @Test("confirmDelete server failure shows error alert without dismissing")
+  func confirmDeleteServerFailureShowsAlert() async {
+    let serverDeleteCalled = LockIsolated(false)
+
+    var state = FileDetailFeature.State(file: TestData.sampleFile)
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure?")
+    }
+
+    let store = TestStore(initialState: state) {
+      FileDetailFeature()
+    } withDependencies: {
+      $0.serverClient.deleteFile = { _ in
+        serverDeleteCalled.setValue(true)
+        throw ServerClientError.internalServerError(
+          message: "Server busy",
+          requestId: "req-id",
+          correlationId: nil
+        )
+      }
+      $0.coreDataClient.deleteFile = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.fileClient.deleteFile = { _ in }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in }
+    }
+
+    await store.send(.alert(.presented(.confirmDelete))) {
+      $0.alert = AlertState {
+        TextState("Delete Failed")
+      } actions: {
+        ButtonState(role: .cancel, action: .dismiss) {
+          TextState("OK")
+        }
+      } message: {
+        TextState("Could not delete \"Test Video.mp4\": Server busy")
+      }
+    }
+
+    #expect(serverDeleteCalled.value == true)
   }
 
   @MainActor
@@ -345,9 +421,30 @@ struct FileDetailFeatureTests {
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
-    let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
+    var state = FileDetailFeature.State(file: TestData.sampleFile)
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure?")
+    }
+
+    let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
+      $0.serverClient.deleteFile = { _ in
+        DeleteFileResponse(
+          body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+          error: nil,
+          requestId: "test"
+        )
+      }
       $0.coreDataClient.deleteFile = { _ in }
       $0.fileClient.fileExists = { _ in false }
       $0.fileClient.deleteFile = { _ in fileDeleteCalled.setValue(true) }
@@ -356,6 +453,7 @@ struct FileDetailFeatureTests {
 
     await store.send(.alert(.presented(.confirmDelete))) {
       $0.alert = nil
+      $0.isDeleting = true
     }
 
     await store.receive(\.delegate.fileDeleted)

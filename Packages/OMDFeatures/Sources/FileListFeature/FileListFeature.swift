@@ -3,6 +3,7 @@ import APIClient
 import ComposableArchitecture
 import DefaultFilesFeature
 import FileCellFeature
+import FileClient
 import FileDetailFeature
 import Foundation
 import LiveActivityClient
@@ -39,6 +40,9 @@ public struct FileListFeature: Sendable {
     public var pendingAddUrl: URL?
     public var pendingYoutubeId: String?
     public var sharingFileURL: URL?
+    public var fileToDelete: File?
+    public var showDeleteConfirmation: Bool = false
+    public var deletingFileId: String?
     public var defaultFiles: DefaultFilesFeature.State = .init()
 
     public init() {}
@@ -58,6 +62,10 @@ public struct FileListFeature: Sendable {
     case addFileResponse(Result<DownloadFileResponse, Error>)
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
+    case confirmDeleteFile
+    case deleteFileSucceeded(File)
+    case dismissDeleteConfirmation
+    case deleteFileFailed(File, String)
     case dismissPlayer
     case startPlayer(File)
     case dismissShareSheet
@@ -79,6 +87,7 @@ public struct FileListFeature: Sendable {
       case retryRefresh
       case retryAddFile
       case dismiss
+      case confirmDelete
     }
 
     @CasePathable
@@ -100,6 +109,7 @@ public struct FileListFeature: Sendable {
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.pasteboardClient) var pasteboardClient
   @Dependency(\.thumbnailCacheClient) var thumbnailCacheClient
+  @Dependency(\.fileClient) var fileClient
 
   private enum CancelID {
     case loadFiles
@@ -131,9 +141,7 @@ public struct FileListFeature: Sendable {
 
       case let .localFilesLoaded(files):
         let existingStates = Dictionary(uniqueKeysWithValues: state.files.map { ($0.id, $0) })
-        let filesToShow = state.isRegistered
-          ? files
-          : files.filter { $0.fileId != "default" }
+        let filesToShow = files.filter { $0.fileId != "default" }
         state.files = IdentifiedArray(uniqueElements: filesToShow.map { file in
           var newState = FileCellFeature.State(file: file)
           if let existing = existingStates[file.fileId] {
@@ -205,7 +213,7 @@ public struct FileListFeature: Sendable {
           }
 
           for existingFile in state.files {
-            if !serverFileIds.contains(existingFile.id), existingFile.isDownloaded {
+            if !serverFileIds.contains(existingFile.id) {
               mergedFiles.append(existingFile)
             }
           }
@@ -312,6 +320,9 @@ public struct FileListFeature: Sendable {
           }))
         }
 
+      case .alert(.presented(.confirmDelete)):
+        return .send(.confirmDeleteFile)
+
       case .alert(.presented(.dismiss)):
         state.pendingYoutubeId = nil
         state.pendingAddUrl = nil
@@ -404,13 +415,58 @@ public struct FileListFeature: Sendable {
         return .none
 
       case let .deleteFiles(indexSet):
-        for index in indexSet {
-          state.files.remove(at: index)
+        guard let firstIndex = indexSet.first, state.files.indices.contains(firstIndex) else {
+          return .none
         }
+        let file = state.files[firstIndex].file
+        state.fileToDelete = file
+        state.showDeleteConfirmation = true
         return .none
 
-      case let .files(.element(id: _, action: .delegate(.fileDeleted(file)))):
+      case .dismissDeleteConfirmation:
+        state.fileToDelete = nil
+        state.showDeleteConfirmation = false
+        return .none
+
+      case .confirmDeleteFile:
+        guard let file = state.fileToDelete else { return .none }
+        state.fileToDelete = nil
+        state.showDeleteConfirmation = false
+        state.deletingFileId = file.fileId
+        let serverClient = serverClient
+        let coreDataClient = coreDataClient
+        let fileClient = fileClient
+        let thumbnailCacheClient = thumbnailCacheClient
+        return .run { send in
+          do {
+            _ = try await serverClient.deleteFile(file.fileId)
+            await send(.deleteFileSucceeded(file))
+            try await coreDataClient.deleteFile(file)
+            if let url = file.url, fileClient.fileExists(url) {
+              try await fileClient.deleteFile(url)
+            }
+            await thumbnailCacheClient.deleteThumbnail(file.fileId)
+          } catch {
+            await send(.deleteFileFailed(file, error.localizedDescription))
+          }
+        }
+
+      case let .deleteFileSucceeded(file):
+        state.deletingFileId = nil
         state.files.remove(id: file.fileId)
+        return .none
+
+      case let .deleteFileFailed(_, errorMessage):
+        state.deletingFileId = nil
+        state.alert = AlertState {
+          TextState("Delete Failed")
+        } actions: {
+          ButtonState(role: .cancel, action: .dismiss) {
+            TextState("OK")
+          }
+        } message: {
+          TextState(errorMessage)
+        }
         return .none
 
       case let .files(.element(id: _, action: .delegate(.playFile(file)))):
