@@ -17,6 +17,7 @@ public struct FileDetailFeature: Sendable {
     public var isDownloaded: Bool = false
     public var isDownloading: Bool = false
     public var downloadProgress: Double = 0
+    public var isDeleting: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?
 
     public init(file: File, isDownloaded: Bool = false, isDownloading: Bool = false, downloadProgress: Double = 0) {
@@ -174,6 +175,7 @@ public struct FileDetailFeature: Sendable {
         return .send(.downloadButtonTapped)
 
       case .alert(.presented(.confirmDelete)):
+        state.isDeleting = true
         let file = state.file
         let serverClient = serverClient
         let fileClient = fileClient
@@ -195,6 +197,7 @@ public struct FileDetailFeature: Sendable {
         }
 
       case let .showDeleteError(fileName, message):
+        state.isDeleting = false
         state.alert = AlertState {
           TextState("Delete Failed")
         } actions: {

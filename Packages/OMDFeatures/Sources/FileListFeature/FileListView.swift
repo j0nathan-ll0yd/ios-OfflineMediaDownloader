@@ -47,19 +47,6 @@ public struct FileListView: View {
           store.send(.confirmationDismissed)
         }
       }
-      .confirmationDialog(
-        "Delete Video?",
-        isPresented: Binding(
-          get: { store.showDeleteConfirmation },
-          set: { _ in store.send(.dismissDeleteConfirmation) }
-        ),
-        titleVisibility: .visible
-      ) {
-        Button("Delete", role: .destructive) {
-          store.send(.confirmDeleteFile)
-        }
-        Button("Cancel", role: .cancel) {}
-      }
       .alert($store.scope(state: \.alert, action: \.alert))
       .navigationDestination(
         item: $store.scope(state: \.selectedFile, action: \.detail)
@@ -211,24 +198,20 @@ public struct FileListView: View {
 
   private var fileList: some View {
     List {
-      ForEach(store.scope(state: \.files, action: \.files)) { cellStore in
-        FileCellView(store: cellStore)
-          .contentShape(Rectangle())
-          .onTapGesture {
+      ForEach(Array(store.scope(state: \.files, action: \.files).enumerated()), id: \.element.id) { index, cellStore in
+        SwipeableRow(
+          cellStore: cellStore,
+          isDeleting: store.deletingFileId == cellStore.id,
+          onConfirmDelete: {
+            store.send(.deleteFiles(IndexSet(integer: index)))
+            store.send(.confirmDeleteFile)
+          },
+          onTap: {
             store.send(.fileTapped(cellStore.state))
           }
-          .listRowSeparator(.hidden)
-          .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button {
-              if let index = store.files.firstIndex(where: { $0.id == cellStore.state.id }) {
-                store.send(.deleteFiles(IndexSet(integer: index)))
-              }
-            } label: {
-              Label("Delete", systemImage: "trash")
-            }
-            .tint(.red)
-          }
+        )
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
       }
     }
     .listStyle(.plain)
@@ -286,6 +269,121 @@ public struct FileListView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
+  }
+}
+
+// MARK: - SwipeableRow
+
+private struct SwipeableRow: View {
+  let cellStore: StoreOf<FileCellFeature>
+  let isDeleting: Bool
+  let onConfirmDelete: () -> Void
+  let onTap: () -> Void
+
+  @State private var baseOffset: CGFloat = 0
+  @State private var dragTranslation: CGFloat = 0
+  @State private var showConfirmation = false
+
+  private let revealWidth: CGFloat = 80
+  private let theme = DarkProfessionalTheme()
+
+  private var offset: CGFloat {
+    min(0, max(-revealWidth, baseOffset + dragTranslation))
+  }
+
+  var body: some View {
+    ZStack(alignment: .trailing) {
+      // Delete button visual (behind foreground, not interactive)
+      HStack {
+        Spacer()
+        Image(systemName: "trash")
+          .font(.title3)
+          .foregroundColor(.white)
+          .frame(width: revealWidth)
+          .frame(maxHeight: .infinity)
+          .background(Color.red)
+      }
+
+      // Foreground cell
+      FileCellView(store: cellStore)
+        .background(theme.backgroundColor)
+        .offset(x: offset)
+        .contentShape(Rectangle())
+        .onTapGesture {
+          if offset < -5 {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+              baseOffset = 0
+            }
+          } else {
+            onTap()
+          }
+        }
+    }
+    .clipped()
+    .overlay(alignment: .trailing) {
+      // Invisible tap target over revealed delete area (renders on top, gets hit priority)
+      if offset < -5 {
+        Color.clear
+          .frame(width: -offset)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            showConfirmation = true
+          }
+      }
+    }
+    .simultaneousGesture(
+      DragGesture(minimumDistance: 30)
+        .onChanged { value in
+          guard abs(value.translation.width) > abs(value.translation.height) else { return }
+          dragTranslation = value.translation.width
+        }
+        .onEnded { value in
+          let finalOffset = baseOffset + value.translation.width
+          baseOffset = min(0, max(-revealWidth, finalOffset))
+          dragTranslation = 0
+          withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            if baseOffset < -revealWidth / 2 || value.velocity.width < -500 {
+              baseOffset = -revealWidth
+            } else {
+              baseOffset = 0
+            }
+          }
+        }
+    )
+    .confirmationDialog(
+      "Delete Video?",
+      isPresented: $showConfirmation,
+      titleVisibility: .visible
+    ) {
+      Button("Delete", role: .destructive) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          baseOffset = 0
+        }
+        onConfirmDelete()
+      }
+      Button("Cancel", role: .cancel) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          baseOffset = 0
+        }
+      }
+    }
+    .onChange(of: showConfirmation) { _, isShowing in
+      if !isShowing {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          baseOffset = 0
+        }
+      }
+    }
+    .overlay {
+      if isDeleting {
+        ZStack {
+          theme.surfaceColor.opacity(0.6)
+          ProgressView()
+            .tint(.white)
+        }
+      }
+    }
+    .allowsHitTesting(!isDeleting)
   }
 }
 

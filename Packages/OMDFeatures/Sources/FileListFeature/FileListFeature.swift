@@ -42,6 +42,7 @@ public struct FileListFeature: Sendable {
     public var sharingFileURL: URL?
     public var fileToDelete: File?
     public var showDeleteConfirmation: Bool = false
+    public var deletingFileId: String?
     public var defaultFiles: DefaultFilesFeature.State = .init()
 
     public init() {}
@@ -62,6 +63,7 @@ public struct FileListFeature: Sendable {
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
     case confirmDeleteFile
+    case deleteFileSucceeded(File)
     case dismissDeleteConfirmation
     case deleteFileFailed(File, String)
     case dismissPlayer
@@ -428,9 +430,9 @@ public struct FileListFeature: Sendable {
 
       case .confirmDeleteFile:
         guard let file = state.fileToDelete else { return .none }
-        state.files.remove(id: file.fileId)
         state.fileToDelete = nil
         state.showDeleteConfirmation = false
+        state.deletingFileId = file.fileId
         let serverClient = serverClient
         let coreDataClient = coreDataClient
         let fileClient = fileClient
@@ -438,6 +440,7 @@ public struct FileListFeature: Sendable {
         return .run { send in
           do {
             _ = try await serverClient.deleteFile(file.fileId)
+            await send(.deleteFileSucceeded(file))
             try await coreDataClient.deleteFile(file)
             if let url = file.url, fileClient.fileExists(url) {
               try await fileClient.deleteFile(url)
@@ -448,10 +451,13 @@ public struct FileListFeature: Sendable {
           }
         }
 
-      case let .deleteFileFailed(file, errorMessage):
-        state.files.append(FileCellFeature.State(file: file))
-        state.files.sort { ($0.file.publishDate ?? .distantPast) > ($1.file.publishDate ?? .distantPast) }
-        let fileName = file.title ?? file.key
+      case let .deleteFileSucceeded(file):
+        state.deletingFileId = nil
+        state.files.remove(id: file.fileId)
+        return .none
+
+      case let .deleteFileFailed(_, errorMessage):
+        state.deletingFileId = nil
         state.alert = AlertState {
           TextState("Delete Failed")
         } actions: {
@@ -459,7 +465,7 @@ public struct FileListFeature: Sendable {
             TextState("OK")
           }
         } message: {
-          TextState("Failed to delete \"\(fileName)\": \(errorMessage)")
+          TextState(errorMessage)
         }
         return .none
 

@@ -237,7 +237,16 @@ public struct FileDetailView: View {
 
   private var actionSection: some View {
     VStack(spacing: 12) {
-      if store.isDownloading {
+      if store.isDeleting {
+        HStack(spacing: 12) {
+          ProgressView()
+            .tint(.white)
+          Text("Deleting…")
+            .foregroundStyle(theme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+      } else if store.isDownloading {
         Button(role: .cancel) {
           store.send(.cancelDownloadButtonTapped)
         } label: {
@@ -250,6 +259,8 @@ public struct FileDetailView: View {
         ProgressView(value: store.downloadProgress)
           .progressViewStyle(.linear)
           .tint(theme.primaryColor)
+
+        deleteButton
       } else if store.isDownloaded {
         Button {
           store.send(.playButtonTapped)
@@ -262,13 +273,7 @@ public struct FileDetailView: View {
         .buttonStyle(.borderedProminent)
         .tint(theme.primaryColor)
 
-        Button(role: .destructive) {
-          store.send(.deleteButtonTapped)
-        } label: {
-          Label("Delete", systemImage: "trash")
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
+        deleteButton
       } else if store.file.url != nil {
         Button {
           store.send(.downloadButtonTapped)
@@ -280,8 +285,22 @@ public struct FileDetailView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(theme.primaryColor)
+
+        deleteButton
+      } else {
+        deleteButton
       }
     }
+  }
+
+  private var deleteButton: some View {
+    Button(role: .destructive) {
+      store.send(.deleteButtonTapped)
+    } label: {
+      Label("Delete", systemImage: "trash")
+        .frame(maxWidth: .infinity)
+    }
+    .buttonStyle(.bordered)
   }
 
   // MARK: - Helpers
