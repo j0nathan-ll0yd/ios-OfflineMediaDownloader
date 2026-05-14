@@ -801,7 +801,7 @@ struct FileListFeatureTests {
     await store.receive { action in
       guard case let .deleteFileFailed(file, _) = action else { return false }
       return file.fileId == TestData.multipleFiles[0].fileId
-    } {
+    } assert: {
       $0.deletingFileId = nil
       $0.alert = AlertState {
         TextState("Delete Failed")
