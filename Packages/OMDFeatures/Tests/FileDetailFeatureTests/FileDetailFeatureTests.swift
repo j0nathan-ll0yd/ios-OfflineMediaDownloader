@@ -321,6 +321,18 @@ struct FileDetailFeatureTests {
 
     var state = FileDetailFeature.State(file: TestData.sampleFile)
     state.isDownloaded = true
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure?")
+    }
 
     let store = TestStore(initialState: state) {
       FileDetailFeature()
@@ -409,7 +421,21 @@ struct FileDetailFeatureTests {
     let fileDeleteCalled = LockIsolated(false)
     let thumbnailDeleteCalled = LockIsolated(false)
 
-    let store = TestStore(initialState: FileDetailFeature.State(file: TestData.sampleFile)) {
+    var state = FileDetailFeature.State(file: TestData.sampleFile)
+    state.alert = AlertState {
+      TextState("Delete File?")
+    } actions: {
+      ButtonState(role: .destructive, action: .confirmDelete) {
+        TextState("Delete")
+      }
+      ButtonState(role: .cancel, action: .dismiss) {
+        TextState("Cancel")
+      }
+    } message: {
+      TextState("Are you sure?")
+    }
+
+    let store = TestStore(initialState: state) {
       FileDetailFeature()
     } withDependencies: {
       $0.serverClient.deleteFile = { _ in
