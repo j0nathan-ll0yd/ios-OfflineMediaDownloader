@@ -21,11 +21,7 @@ struct OfflineMediaDownloaderApp: App {
 
   var body: some Scene {
     WindowGroup {
-      if CommandLine.arguments.contains("-showPreviewCatalog") {
-        RedesignPreviewCatalog()
-      } else {
-        AppContentView(store: appDelegate.store)
-      }
+      AppContentView(store: appDelegate.store)
     }
   }
 }
