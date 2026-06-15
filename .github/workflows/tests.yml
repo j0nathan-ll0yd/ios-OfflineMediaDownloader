@@ -174,7 +174,7 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | xcbeautify --report junit --report-path build-results.xml
+            2>&1 | tee build.log | { xcbeautify --report junit --report-path build-results.xml || cat; }
 
       - name: Check build warnings
         run: bash Scripts/check-build-warnings.sh
@@ -194,7 +194,7 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee test.log | xcbeautify --report junit --report-path test-results.xml
+            2>&1 | tee test.log | { xcbeautify --report junit --report-path test-results.xml || cat; }
 
       - name: Upload test results (always)
         if: always()
@@ -293,7 +293,7 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee release-build.log | xcbeautify
+            2>&1 | tee release-build.log | { xcbeautify || cat; }
 
       - name: Archive error summary
         if: failure()
