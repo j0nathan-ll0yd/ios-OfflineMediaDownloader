@@ -4,6 +4,7 @@ import DesignSystem
 import FileCellFeature
 import FileClient
 import FileDetailFeature
+import LifegamesTemplates
 import OrderedCollections
 import SharedModels
 import SwiftUI
@@ -197,28 +198,24 @@ public struct FileListView: View {
   }
 
   private var fileList: some View {
-    List {
-      ForEach(Array(store.scope(state: \.files, action: \.files).enumerated()), id: \.element.id) { index, cellStore in
-        SwipeableRow(
-          cellStore: cellStore,
-          isDeleting: store.deletingFileId == cellStore.id,
-          onConfirmDelete: {
-            store.send(.deleteFiles(IndexSet(integer: index)))
-            store.send(.confirmDeleteFile)
-          },
-          onTap: {
-            store.send(.fileTapped(cellStore.state))
-          }
-        )
-        .listRowSeparator(.hidden)
-        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-      }
-    }
-    .listStyle(.plain)
-    .scrollContentBackground(.hidden)
-    .background(theme.backgroundColor)
-    .refreshable {
-      store.send(.refreshButtonTapped)
+    ListTemplate(
+      items: Array(store.scope(state: \.files, action: \.files)),
+      accent: OMDPalette.primary,
+      emptyState: nil,
+      onRefresh: { await store.send(.refreshButtonTapped) }
+    ) { cellStore in
+      SwipeableRow(
+        cellStore: cellStore,
+        isDeleting: store.deletingFileId == cellStore.id,
+        onConfirmDelete: {
+          store.send(.deleteFile(id: cellStore.id))
+        },
+        onTap: {
+          store.send(.fileTapped(cellStore.state))
+        }
+      )
+      .listRowSeparator(.hidden)
+      .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
   }
 

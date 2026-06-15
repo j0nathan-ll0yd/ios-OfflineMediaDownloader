@@ -706,6 +706,40 @@ struct FileListFeatureTests {
   }
 
   @MainActor
+  @Test("Delete by id sets confirmation dialog state")
+  func deleteFileByIdSetsConfirmation() async {
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    let fileToDelete = TestData.multipleFiles[0]
+    await store.send(.deleteFile(id: fileToDelete.fileId)) {
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
+    }
+  }
+
+  @MainActor
+  @Test("Delete by unknown id is a no-op")
+  func deleteFileByUnknownIdIsNoOp() async {
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    }
+
+    await store.send(.deleteFile(id: "does-not-exist"))
+  }
+
+  @MainActor
   @Test("Delete confirmation dismissed clears state")
   func deleteConfirmationDismissed() async {
     var state = FileListFeature.State()
