@@ -14,6 +14,7 @@ let package = Package(
     .library(name: "FileListFeature", targets: ["FileListFeature"]),
     .library(name: "LoginFeature", targets: ["LoginFeature"]),
     .library(name: "MainFeature", targets: ["MainFeature"]),
+    .library(name: "ProfileFeature", targets: ["ProfileFeature"]),
     .library(name: "ActiveDownloadsFeature", targets: ["ActiveDownloadsFeature"]),
     .library(name: "DiagnosticFeature", targets: ["DiagnosticFeature"]),
     .library(name: "DefaultFilesFeature", targets: ["DefaultFilesFeature"]),
@@ -215,6 +216,12 @@ let package = Package(
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
+    .target(name: "ProfileFeature", dependencies: [
+      "SharedModels", "DesignSystem",
+      "KeychainClient", "PersistenceClient", "LoggerClient",
+      .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+    ]),
+
     // ─── Composite Features ────────────────────────────────────────────
 
     .target(name: "FileListFeature", dependencies: [
@@ -227,7 +234,7 @@ let package = Package(
 
     .target(name: "MainFeature", dependencies: [
       "SharedModels", "DesignSystem",
-      "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature",
+      "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature", "ProfileFeature",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 

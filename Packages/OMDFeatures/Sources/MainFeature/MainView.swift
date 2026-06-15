@@ -4,6 +4,7 @@ import DesignSystem
 import DiagnosticFeature
 import FileListFeature
 import LoginFeature
+import ProfileFeature
 import SwiftUI
 
 public struct MainView: View {
@@ -61,7 +62,25 @@ public struct MainView: View {
   @ViewBuilder
   private var accountTabContent: some View {
     if store.isAuthenticated {
-      DiagnosticView(store: store.scope(state: \.diagnostic, action: \.diagnostic))
+      NavigationStack {
+        ProfileView(store: store.scope(state: \.profile, action: \.profile))
+          .navigationDestination(
+            item: $store.scope(
+              state: \.accountDestination?.downloadSettings,
+              action: \.accountDestination.downloadSettings
+            )
+          ) { downloadSettingsStore in
+            DownloadSettingsView(store: downloadSettingsStore)
+          }
+          .navigationDestination(
+            item: $store.scope(
+              state: \.accountDestination?.diagnostics,
+              action: \.accountDestination.diagnostics
+            )
+          ) { diagnosticStore in
+            DiagnosticView(store: diagnosticStore)
+          }
+      }
     } else {
       LoginView(store: store.scope(state: \.accountLogin, action: \.accountLogin))
     }

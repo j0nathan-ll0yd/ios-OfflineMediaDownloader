@@ -60,6 +60,40 @@ struct MainFeatureTests {
     await store.receive(\.delegate.authenticationRequired)
   }
 
+  @MainActor
+  @Test("Profile sign-out delegate routes to signedOut and clears auth")
+  func profileSignOutRoutesToSignedOut() async {
+    let state = MainFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.profile(.delegate(.signOut))) {
+      $0.$isAuthenticated.withLock { $0 = false }
+    }
+    await store.receive(\.delegate.signedOut)
+  }
+
+  @MainActor
+  @Test("Profile openDownloadSettings delegate pushes download settings destination")
+  func profileOpenDownloadSettingsPushesDestination() async {
+    let store = TestStore(initialState: MainFeature.State()) {
+      MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.profile(.delegate(.openDownloadSettings))) {
+      $0.accountDestination = .downloadSettings(DownloadSettingsFeature.State())
+    }
+  }
+
   // MARK: - Child Feature Action Pass-through Tests
 
   @MainActor
