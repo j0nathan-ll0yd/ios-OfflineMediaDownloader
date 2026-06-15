@@ -43,6 +43,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
     .package(path: "../../APITypes"),
+    .package(path: "../../../design-system-Lifegames"),
     .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.9.0"),
   ],
   targets: [
@@ -54,6 +55,10 @@ let package = Package(
 
     .target(name: "DesignSystem", dependencies: [
       "SharedModels",
+      .product(name: "LifegamesTokens", package: "design-system-Lifegames"),
+      .product(name: "LifegamesComponentsCore", package: "design-system-Lifegames"),
+      .product(name: "LifegamesComponents", package: "design-system-Lifegames"),
+      .product(name: "LifegamesTemplates", package: "design-system-Lifegames"),
     ]),
 
     // ─── Standalone Dependency Clients ─────────────────────────────────

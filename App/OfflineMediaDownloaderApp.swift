@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import DesignSystem
 import Network
 import RootFeature
 import SwiftUI
@@ -13,6 +14,10 @@ import SwiftUI
 @main
 struct OfflineMediaDownloaderApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+  init() {
+    OMDFontBootstrap.registerFonts()
+  }
 
   var body: some Scene {
     WindowGroup {
