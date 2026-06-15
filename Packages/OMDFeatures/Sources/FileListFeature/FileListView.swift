@@ -208,7 +208,11 @@ public struct FileListView: View {
         cellStore: cellStore,
         isDeleting: store.deletingFileId == cellStore.id,
         onConfirmDelete: {
+          // SwipeableRow already confirmed via its local dialog: set the delete
+          // target by id, then execute it (mirrors the original two-step flow;
+          // .deleteFile(id:) only stages state.fileToDelete and returns .none).
           store.send(.deleteFile(id: cellStore.id))
+          store.send(.confirmDeleteFile)
         },
         onTap: {
           store.send(.fileTapped(cellStore.state))
