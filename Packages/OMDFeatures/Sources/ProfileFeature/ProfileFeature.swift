@@ -1,4 +1,7 @@
 import ComposableArchitecture
+#if DEBUG
+  import DiagnosticFeature
+#endif
 import Foundation
 import KeychainClient
 import LoggerClient
@@ -24,6 +27,9 @@ public struct ProfileFeature: Sendable {
     public var user: User?
     public var metrics: FileMetrics?
     public var isLoadingMetrics: Bool = false
+    #if DEBUG
+      public var diagnostic = DiagnosticFeature.State()
+    #endif
 
     public init(
       user: User? = nil,
@@ -45,7 +51,7 @@ public struct ProfileFeature: Sendable {
     case downloadSettingsTapped
     case signOutTapped
     #if DEBUG
-      case diagnosticsTapped
+      case diagnostic(DiagnosticFeature.Action)
     #endif
     case delegate(Delegate)
 
@@ -53,7 +59,6 @@ public struct ProfileFeature: Sendable {
     public enum Delegate: Equatable {
       case signOut
       case openDownloadSettings
-      case openDiagnostics
     }
   }
 
@@ -66,6 +71,12 @@ public struct ProfileFeature: Sendable {
   // MARK: - Body
 
   public var body: some ReducerOf<Self> {
+    #if DEBUG
+      Scope(state: \.diagnostic, action: \.diagnostic) {
+        DiagnosticFeature()
+      }
+    #endif
+
     Reduce { state, action in
       switch action {
       case .onAppear:
@@ -100,8 +111,15 @@ public struct ProfileFeature: Sendable {
         return .send(.delegate(.signOut))
 
       #if DEBUG
-        case .diagnosticsTapped:
-          return .send(.delegate(.openDiagnostics))
+        // Deleting the JWT/userData keychain items (or signing out from the
+        // inline diagnostics) invalidates the session — route up so the
+        // coordinator clears auth.
+        case .diagnostic(.delegate(.authenticationInvalidated)),
+             .diagnostic(.delegate(.signedOut)):
+          return .send(.delegate(.signOut))
+
+        case .diagnostic:
+          return .none
       #endif
 
       case .delegate:

@@ -219,6 +219,10 @@ let package = Package(
     .target(name: "ProfileFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "KeychainClient", "PersistenceClient", "LoggerClient",
+      // ProfileFeature is the coordinator of DiagnosticFeature: the Account
+      // screen embeds the diagnostics tools inline (DEBUG). See S77 — a parent
+      // may import its child.
+      "DiagnosticFeature",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 

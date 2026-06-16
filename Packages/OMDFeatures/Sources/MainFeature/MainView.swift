@@ -1,7 +1,6 @@
 import ActiveDownloadsFeature
 import ComposableArchitecture
 import DesignSystem
-import DiagnosticFeature
 import FileListFeature
 import LoginFeature
 import ProfileFeature
@@ -71,14 +70,6 @@ public struct MainView: View {
             )
           ) { downloadSettingsStore in
             DownloadSettingsView(store: downloadSettingsStore)
-          }
-          .navigationDestination(
-            item: $store.scope(
-              state: \.accountDestination?.diagnostics,
-              action: \.accountDestination.diagnostics
-            )
-          ) { diagnosticStore in
-            DiagnosticView(store: diagnosticStore)
           }
       }
     } else {

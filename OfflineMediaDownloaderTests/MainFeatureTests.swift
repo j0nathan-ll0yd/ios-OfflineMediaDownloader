@@ -116,21 +116,6 @@ struct MainFeatureTests {
     }
   }
 
-  @MainActor
-  @Test("Diagnostic actions pass through without state change")
-  func diagnosticActionsPassThrough() async {
-    let store = TestStore(initialState: MainFeature.State()) {
-      MainFeature()
-    } withDependencies: {
-      $0.logger = TestData.noopLogger
-      $0.pasteboardClient = TestData.noopPasteboardClient
-    }
-
-    await store.send(.diagnostic(.toggleDebugMode)) {
-      $0.diagnostic.showDebugActions = true
-    }
-  }
-
   // MARK: - Initial State Tests
 
   @MainActor
@@ -145,13 +130,6 @@ struct MainFeatureTests {
   func initialStateEmptyFileList() {
     let state = MainFeature.State()
     #expect(state.fileList.files.isEmpty)
-  }
-
-  @MainActor
-  @Test("Initial state has empty keychain items in diagnostic")
-  func initialStateEmptyDiagnostic() {
-    let state = MainFeature.State()
-    #expect(state.diagnostic.keychainItems.isEmpty)
   }
 
   // MARK: - Tab Enum Tests

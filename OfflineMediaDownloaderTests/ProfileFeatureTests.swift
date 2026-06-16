@@ -57,14 +57,24 @@ struct ProfileFeatureTests {
   }
 
   #if DEBUG
-    @Test("diagnosticsTapped emits openDiagnostics delegate")
-    func diagnosticsTappedEmitsDelegate() async {
+    @Test("inline diagnostics signedOut delegate forwards to signOut")
+    func diagnosticSignedOutForwardsToSignOut() async {
       let store = TestStore(initialState: ProfileFeature.State()) {
         ProfileFeature()
       }
 
-      await store.send(.diagnosticsTapped)
-      await store.receive(\.delegate.openDiagnostics)
+      await store.send(.diagnostic(.delegate(.signedOut)))
+      await store.receive(\.delegate.signOut)
+    }
+
+    @Test("inline diagnostics authenticationInvalidated delegate forwards to signOut")
+    func diagnosticAuthInvalidatedForwardsToSignOut() async {
+      let store = TestStore(initialState: ProfileFeature.State()) {
+        ProfileFeature()
+      }
+
+      await store.send(.diagnostic(.delegate(.authenticationInvalidated)))
+      await store.receive(\.delegate.signOut)
     }
   #endif
 }

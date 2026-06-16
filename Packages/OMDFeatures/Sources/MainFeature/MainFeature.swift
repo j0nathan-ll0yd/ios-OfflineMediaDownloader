@@ -1,6 +1,5 @@
 import ActiveDownloadsFeature
 import ComposableArchitecture
-import DiagnosticFeature
 import FileListFeature
 import Foundation
 import LoginFeature
@@ -17,7 +16,6 @@ public struct MainFeature: Sendable {
     @Shared(.inMemory("isAuthenticated")) public var isAuthenticated = false
     @Shared(.inMemory("isRegistered")) public var isRegistered = false
     public var fileList: FileListFeature.State = .init()
-    public var diagnostic: DiagnosticFeature.State = .init()
     public var profile: ProfileFeature.State = .init()
     public var accountLogin: LoginFeature.State = .init()
     public var activeDownloads: ActiveDownloadsFeature.State = .init()
@@ -35,7 +33,6 @@ public struct MainFeature: Sendable {
   public enum Action {
     case tabSelected(State.Tab)
     case fileList(FileListFeature.Action)
-    case diagnostic(DiagnosticFeature.Action)
     case profile(ProfileFeature.Action)
     case accountLogin(LoginFeature.Action)
     case activeDownloads(ActiveDownloadsFeature.Action)
@@ -56,16 +53,11 @@ public struct MainFeature: Sendable {
   @Reducer(state: .equatable)
   public enum AccountDestination {
     case downloadSettings(DownloadSettingsFeature)
-    case diagnostics(DiagnosticFeature)
   }
 
   public var body: some ReducerOf<Self> {
     Scope(state: \.fileList, action: \.fileList) {
       FileListFeature()
-    }
-
-    Scope(state: \.diagnostic, action: \.diagnostic) {
-      DiagnosticFeature()
     }
 
     Scope(state: \.profile, action: \.profile) {
@@ -141,30 +133,12 @@ public struct MainFeature: Sendable {
       case .fileList:
         return .none
 
-      case .diagnostic(.delegate(.authenticationInvalidated)):
-        state.$isAuthenticated.withLock { $0 = false }
-        return .run { send in
-          await send(.fileList(.clearAllFiles))
-          await send(.delegate(.authenticationRequired))
-        }
-
-      case .diagnostic(.delegate(.signedOut)):
-        state.$isAuthenticated.withLock { $0 = false }
-        return .send(.delegate(.signedOut))
-
-      case .diagnostic:
-        return .none
-
       case .profile(.delegate(.signOut)):
         state.$isAuthenticated.withLock { $0 = false }
         return .send(.delegate(.signedOut))
 
       case .profile(.delegate(.openDownloadSettings)):
         state.accountDestination = .downloadSettings(DownloadSettingsFeature.State())
-        return .none
-
-      case .profile(.delegate(.openDiagnostics)):
-        state.accountDestination = .diagnostics(DiagnosticFeature.State())
         return .none
 
       case .profile:

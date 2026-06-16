@@ -1,5 +1,8 @@
 import ComposableArchitecture
 import DesignSystem
+#if DEBUG
+  import DiagnosticFeature
+#endif
 import LifegamesComponents
 import LifegamesComponentsCore
 import LifegamesTemplates
@@ -106,18 +109,10 @@ public struct ProfileView: View {
       .buttonStyle(.plain)
 
       #if DEBUG
-        Button {
-          store.send(.diagnosticsTapped)
-        } label: {
-          SettingRowView(
-            systemImage: "ladybug",
-            label: "Diagnostics",
-            accessory: .chevron,
-            accent: OMDPalette.playback
-          )
-          .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
+        DiagnosticSection(
+          store: store.scope(state: \.diagnostic, action: \.diagnostic)
+        )
+        .padding(.top, Spacing.s200)
       #endif
 
       LGButton("Sign Out", variant: .destructive) {
