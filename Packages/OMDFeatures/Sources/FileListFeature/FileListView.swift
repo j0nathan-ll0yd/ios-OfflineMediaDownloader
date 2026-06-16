@@ -5,6 +5,7 @@ import FileCellFeature
 import FileClient
 import FileDetailFeature
 import LifegamesTemplates
+import LifegamesTokens
 import OrderedCollections
 import SharedModels
 import SwiftUI
@@ -15,8 +16,6 @@ public struct FileListView: View {
   @Bindable var store: StoreOf<FileListFeature>
   @Dependency(\.fileClient) var fileClient // For fullScreenCover local URL conversion
 
-  private let theme = DarkProfessionalTheme()
-
   public init(store: StoreOf<FileListFeature>) {
     self.store = store
   }
@@ -24,7 +23,7 @@ public struct FileListView: View {
   public var body: some View {
     NavigationStack {
       ZStack {
-        theme.backgroundColor
+        LGColor.surfaceBase
           .ignoresSafeArea()
 
         fileListContent
@@ -131,21 +130,21 @@ public struct FileListView: View {
   private var skeletonCell: some View {
     HStack(spacing: 14) {
       RoundedRectangle(cornerRadius: 8)
-        .fill(theme.surfaceColor)
+        .fill(LGColor.surfaceRaised)
         .frame(width: 120, height: 68)
 
       VStack(alignment: .leading, spacing: 3) {
         RoundedRectangle(cornerRadius: 4)
-          .fill(theme.surfaceColor)
+          .fill(LGColor.surfaceRaised)
           .frame(height: 16)
           .frame(maxWidth: .infinity, alignment: .leading)
 
         RoundedRectangle(cornerRadius: 4)
-          .fill(theme.surfaceColor)
+          .fill(LGColor.surfaceRaised)
           .frame(width: 100, height: 12)
 
         RoundedRectangle(cornerRadius: 4)
-          .fill(theme.surfaceColor)
+          .fill(LGColor.surfaceRaised)
           .frame(width: 140, height: 12)
       }
 
@@ -160,12 +159,12 @@ public struct FileListView: View {
     VStack(spacing: 20) {
       ZStack {
         Circle()
-          .fill(theme.primaryColor.opacity(0.15))
+          .fill(OMDPalette.primary.opacity(0.15))
           .frame(width: 100, height: 100)
 
         Image(systemName: "film.stack")
           .font(.system(size: 40))
-          .foregroundStyle(theme.primaryColor)
+          .foregroundStyle(OMDPalette.primary)
       }
 
       VStack(spacing: 8) {
@@ -176,7 +175,7 @@ public struct FileListView: View {
 
         Text("Tap + to add your first video")
           .font(.subheadline)
-          .foregroundStyle(theme.textSecondary)
+          .foregroundStyle(LGColor.textSubtle)
       }
 
       Button {
@@ -190,7 +189,7 @@ public struct FileListView: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
-        .background(theme.primaryColor)
+        .background(OMDPalette.primary)
         .clipShape(Capsule())
       }
     }
@@ -232,7 +231,7 @@ public struct FileListView: View {
         if !store.pendingFileIds.isEmpty {
           NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
             Image(systemName: "clock.arrow.circlepath")
-              .foregroundStyle(theme.warningColor)
+              .foregroundStyle(OMDPalette.queued)
           }
         }
 
@@ -240,7 +239,7 @@ public struct FileListView: View {
           store.send(.refreshButtonTapped)
         } label: {
           Image(systemName: "arrow.clockwise")
-            .foregroundStyle(theme.primaryColor)
+            .foregroundStyle(OMDPalette.primary)
         }
         .disabled(store.isLoading)
 
@@ -249,7 +248,7 @@ public struct FileListView: View {
         } label: {
           Image(systemName: "plus.circle.fill")
             .font(.title3)
-            .foregroundStyle(theme.primaryColor)
+            .foregroundStyle(OMDPalette.primary)
         }
       }
     }
@@ -286,7 +285,6 @@ private struct SwipeableRow: View {
   @State private var showConfirmation = false
 
   private let revealWidth: CGFloat = 80
-  private let theme = DarkProfessionalTheme()
 
   private var offset: CGFloat {
     min(0, max(-revealWidth, baseOffset + dragTranslation))
@@ -302,12 +300,12 @@ private struct SwipeableRow: View {
           .foregroundColor(.white)
           .frame(width: revealWidth)
           .frame(maxHeight: .infinity)
-          .background(Color.red)
+          .background(OMDPalette.destructive)
       }
 
       // Foreground cell
       FileCellView(store: cellStore)
-        .background(theme.backgroundColor)
+        .background(LGColor.surfaceBase)
         .offset(x: offset)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -378,7 +376,7 @@ private struct SwipeableRow: View {
     .overlay {
       if isDeleting {
         ZStack {
-          theme.surfaceColor.opacity(0.6)
+          LGColor.surfaceRaised.opacity(0.6)
           ProgressView()
             .tint(.white)
         }
@@ -393,15 +391,13 @@ private struct SwipeableRow: View {
 public struct PendingFilesView: View {
   let fileIds: OrderedSet<String>
 
-  private let theme = DarkProfessionalTheme()
-
   public init(fileIds: OrderedSet<String>) {
     self.fileIds = fileIds
   }
 
   public var body: some View {
     ZStack {
-      theme.backgroundColor
+      LGColor.surfaceBase
         .ignoresSafeArea()
 
       ScrollView {
@@ -411,14 +407,14 @@ public struct PendingFilesView: View {
             Text("PENDING DOWNLOADS")
               .font(.caption)
               .fontWeight(.semibold)
-              .foregroundStyle(theme.textSecondary)
+              .foregroundStyle(LGColor.textSubtle)
               .frame(maxWidth: .infinity, alignment: .leading)
 
             ForEach(fileIds, id: \.self) { id in
               HStack(spacing: 12) {
                 Image(systemName: "clock")
                   .font(.system(size: 18))
-                  .foregroundStyle(theme.warningColor)
+                  .foregroundStyle(OMDPalette.queued)
 
                 Text(id)
                   .font(.subheadline)
@@ -429,7 +425,7 @@ public struct PendingFilesView: View {
               }
               .padding(.horizontal, 16)
               .padding(.vertical, 14)
-              .background(theme.surfaceColor)
+              .background(LGColor.surfaceRaised)
               .clipShape(RoundedRectangle(cornerRadius: 12))
             }
           }
@@ -437,14 +433,14 @@ public struct PendingFilesView: View {
           // Info section
           HStack(spacing: 12) {
             Image(systemName: "info.circle.fill")
-              .foregroundStyle(theme.primaryColor)
+              .foregroundStyle(OMDPalette.primary)
 
             Text("These videos are being processed by the server. They will appear in your Files list when ready.")
               .font(.caption)
-              .foregroundStyle(theme.textSecondary)
+              .foregroundStyle(LGColor.textSubtle)
           }
           .padding(16)
-          .background(theme.surfaceColor)
+          .background(LGColor.surfaceRaised)
           .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(16)

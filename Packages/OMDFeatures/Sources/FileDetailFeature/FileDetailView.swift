@@ -39,19 +39,6 @@ public struct FileDetailView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarColorScheme(.dark, for: .navigationBar)
     #endif
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          if store.isDownloaded {
-            Button {
-              store.send(.shareButtonTapped)
-            } label: {
-              Image(systemName: "square.and.arrow.up")
-                .foregroundStyle(OMDPalette.primary)
-            }
-            .accessibilityLabel("Share")
-          }
-        }
-      }
       .task { store.send(.onAppear) }
       .alert($store.scope(state: \.alert, action: \.alert))
       .preferredColorScheme(.dark)
@@ -340,8 +327,9 @@ public struct FileDetailView: View {
           .shadow(color: accent.opacity(0.5), radius: 4)
 
         Text(label)
-          .font(OMDFont.medium(10))
+          .font(OMDFont.medium(11))
           .foregroundStyle(LGColor.textMuted)
+          .textCase(.uppercase)
           .lineLimit(1)
           .minimumScaleFactor(0.7)
       }

@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import DesignSystem
+import LifegamesTokens
 import SwiftUI
 import ThumbnailCacheClient
 
@@ -8,7 +9,6 @@ import ThumbnailCacheClient
 public struct FileCellView: View {
   @Bindable var store: StoreOf<FileCellFeature>
 
-  private let theme = DarkProfessionalTheme()
   private let thumbnailSize = CGSize(width: 120, height: 68)
 
   public init(store: StoreOf<FileCellFeature>) {
@@ -51,16 +51,15 @@ public struct FileCellView: View {
       // File info
       VStack(alignment: .leading, spacing: 3) {
         Text(store.file.title ?? store.file.key)
-          .font(.subheadline)
-          .fontWeight(.medium)
-          .foregroundStyle(.white)
+          .font(OMDFont.semibold(15))
+          .foregroundStyle(LGColor.textTitle)
           .lineLimit(2)
 
-        // Author with accent color
+        // Author with playback/identity accent (cyan)
         if let author = store.file.authorName {
           Text(author)
-            .font(.caption)
-            .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4))
+            .font(OMDFont.medium(12))
+            .foregroundStyle(OMDPalette.playback)
         }
 
         // Views + Size
@@ -75,8 +74,8 @@ public struct FileCellView: View {
             Text(formatFileSize(store.file.size))
           }
         }
-        .font(.caption)
-        .foregroundStyle(theme.textSecondary)
+        .font(OMDFont.mono(12))
+        .foregroundStyle(LGColor.textSubtle)
 
         statusText
       }
@@ -90,10 +89,10 @@ public struct FileCellView: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
-    .background(theme.surfaceColor)
+    .background(LGColor.surfaceRaised)
     .overlay(
       Rectangle()
-        .fill(DarkProfessionalTheme.divider)
+        .fill(LGColor.borderSubtle)
         .frame(height: 0.5),
       alignment: .bottom
     )
@@ -108,23 +107,23 @@ public struct FileCellView: View {
     if store.state.isPending {
       Image(systemName: "clock")
         .font(.system(size: 22))
-        .foregroundStyle(theme.warningColor)
+        .foregroundStyle(OMDPalette.queued)
         .shadow(color: .black.opacity(0.5), radius: 2)
     } else if store.isServerDownloading {
       Image(systemName: "icloud.and.arrow.down")
         .font(.system(size: 22))
-        .foregroundStyle(.cyan)
+        .foregroundStyle(OMDPalette.playback)
         .shadow(color: .black.opacity(0.5), radius: 2)
     } else if store.isDownloading {
       // Show mini progress in thumbnail during download
       ZStack {
         Circle()
-          .stroke(theme.primaryColor.opacity(0.3), lineWidth: 2)
+          .stroke(OMDPalette.primary.opacity(0.3), lineWidth: 2)
           .frame(width: 28, height: 28)
 
         Circle()
           .trim(from: 0, to: store.downloadProgress)
-          .stroke(theme.primaryColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+          .stroke(OMDPalette.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round))
           .frame(width: 28, height: 28)
           .rotationEffect(.degrees(-90))
       }
@@ -142,21 +141,20 @@ public struct FileCellView: View {
   private var statusText: some View {
     if store.state.isPending {
       Text("Processing...")
-        .font(.caption2)
-        .foregroundStyle(theme.warningColor)
+        .font(OMDFont.medium(11))
+        .foregroundStyle(OMDPalette.queued)
     } else if store.isServerDownloading {
       Text("Server downloading...")
-        .font(.caption2)
-        .foregroundStyle(.cyan)
+        .font(OMDFont.medium(11))
+        .foregroundStyle(OMDPalette.playback)
     } else if store.isDownloading {
       Text("Downloading \(Int(store.downloadProgress * 100))%")
-        .font(.caption2)
-        .foregroundStyle(theme.primaryColor)
-        .monospacedDigit()
+        .font(OMDFont.mono(11))
+        .foregroundStyle(OMDPalette.primary)
     } else if store.isDownloaded {
       Text("Downloaded")
-        .font(.caption2)
-        .foregroundStyle(theme.successColor)
+        .font(OMDFont.medium(11))
+        .foregroundStyle(OMDPalette.complete)
     }
   }
 
@@ -164,13 +162,13 @@ public struct FileCellView: View {
     ZStack {
       // Glow
       Circle()
-        .fill(theme.primaryColor.opacity(0.2))
+        .fill(OMDPalette.primary.opacity(0.2))
         .frame(width: 44, height: 44)
         .blur(radius: 8)
 
       // Track
       Circle()
-        .stroke(theme.primaryColor.opacity(0.2), lineWidth: 3)
+        .stroke(OMDPalette.primary.opacity(0.2), lineWidth: 3)
         .frame(width: 36, height: 36)
 
       // Progress
@@ -178,7 +176,7 @@ public struct FileCellView: View {
         .trim(from: 0, to: store.downloadProgress)
         .stroke(
           LinearGradient(
-            colors: [theme.primaryColor, theme.accentColor],
+            colors: [OMDPalette.primary, OMDPalette.playback],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
           ),
@@ -188,9 +186,8 @@ public struct FileCellView: View {
         .rotationEffect(.degrees(-90))
 
       Text("\(Int(store.downloadProgress * 100))")
-        .font(.system(size: 10, weight: .bold))
+        .font(OMDFont.mono(10))
         .foregroundStyle(.white)
-        .monospacedDigit()
     }
   }
 }
