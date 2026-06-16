@@ -14,6 +14,7 @@ let package = Package(
     .library(name: "FileListFeature", targets: ["FileListFeature"]),
     .library(name: "LoginFeature", targets: ["LoginFeature"]),
     .library(name: "MainFeature", targets: ["MainFeature"]),
+    .library(name: "ProfileFeature", targets: ["ProfileFeature"]),
     .library(name: "ActiveDownloadsFeature", targets: ["ActiveDownloadsFeature"]),
     .library(name: "DiagnosticFeature", targets: ["DiagnosticFeature"]),
     .library(name: "DefaultFilesFeature", targets: ["DefaultFilesFeature"]),
@@ -43,6 +44,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
     .package(path: "../../APITypes"),
+    .package(path: "../../../design-system-Lifegames"),
     .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.9.0"),
   ],
   targets: [
@@ -54,6 +56,10 @@ let package = Package(
 
     .target(name: "DesignSystem", dependencies: [
       "SharedModels",
+      .product(name: "LifegamesTokens", package: "design-system-Lifegames"),
+      .product(name: "LifegamesComponentsCore", package: "design-system-Lifegames"),
+      .product(name: "LifegamesComponents", package: "design-system-Lifegames"),
+      .product(name: "LifegamesTemplates", package: "design-system-Lifegames"),
     ]),
 
     // ─── Standalone Dependency Clients ─────────────────────────────────
@@ -210,6 +216,16 @@ let package = Package(
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
+    .target(name: "ProfileFeature", dependencies: [
+      "SharedModels", "DesignSystem",
+      "KeychainClient", "PersistenceClient", "LoggerClient",
+      // ProfileFeature is the coordinator of DiagnosticFeature: the Account
+      // screen embeds the diagnostics tools inline (DEBUG). See S77 — a parent
+      // may import its child.
+      "DiagnosticFeature",
+      .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+    ]),
+
     // ─── Composite Features ────────────────────────────────────────────
 
     .target(name: "FileListFeature", dependencies: [
@@ -222,7 +238,7 @@ let package = Package(
 
     .target(name: "MainFeature", dependencies: [
       "SharedModels", "DesignSystem",
-      "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature",
+      "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature", "ProfileFeature",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 

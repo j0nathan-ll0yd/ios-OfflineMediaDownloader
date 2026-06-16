@@ -765,6 +765,67 @@ struct FileListFeatureTests {
   }
 
   @MainActor
+  @Test("Delete file by id shows confirmation then removes on confirm")
+  func deleteFileByIdShowsConfirmationThenRemoves() async {
+    let fileToDelete = TestData.multipleFiles[0]
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+      $0.serverClient.deleteFile = { _ in
+        DeleteFileResponse(
+          body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
+          error: nil,
+          requestId: "test"
+        )
+      }
+      $0.coreDataClient.deleteFile = { _ in }
+      $0.fileClient.fileExists = { _ in false }
+      $0.thumbnailCacheClient.deleteThumbnail = { _ in }
+    }
+
+    await store.send(.deleteFile(id: fileToDelete.fileId)) {
+      $0.fileToDelete = fileToDelete
+      $0.showDeleteConfirmation = true
+    }
+
+    await store.send(.confirmDeleteFile) {
+      $0.fileToDelete = nil
+      $0.showDeleteConfirmation = false
+      $0.deletingFileId = fileToDelete.fileId
+    }
+
+    await store.receive(\.deleteFileSucceeded) {
+      $0.deletingFileId = nil
+      $0.files.remove(id: fileToDelete.fileId)
+    }
+  }
+
+  @MainActor
+  @Test("Delete file by unknown id is a no-op")
+  func deleteFileByUnknownIdIsNoOp() async {
+    var state = FileListFeature.State()
+    state.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
+      FileCellFeature.State(file: $0)
+    })
+
+    let store = TestStore(initialState: state) {
+      FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.deleteFile(id: "does-not-exist"))
+  }
+
+  @MainActor
   @Test("Delete files can be dismissed")
   func deleteFilesDismissed() async {
     let fileToDelete = TestData.multipleFiles[0]

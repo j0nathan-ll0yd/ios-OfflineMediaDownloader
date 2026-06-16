@@ -1,9 +1,9 @@
 import ActiveDownloadsFeature
 import ComposableArchitecture
-import DiagnosticFeature
 import FileListFeature
 import Foundation
 import LoginFeature
+import ProfileFeature
 import SharedModels
 
 @Reducer
@@ -16,10 +16,11 @@ public struct MainFeature: Sendable {
     @Shared(.inMemory("isAuthenticated")) public var isAuthenticated = false
     @Shared(.inMemory("isRegistered")) public var isRegistered = false
     public var fileList: FileListFeature.State = .init()
-    public var diagnostic: DiagnosticFeature.State = .init()
+    public var profile: ProfileFeature.State = .init()
     public var accountLogin: LoginFeature.State = .init()
     public var activeDownloads: ActiveDownloadsFeature.State = .init()
     @Presents public var loginSheet: LoginFeature.State?
+    @Presents public var accountDestination: AccountDestination.State?
 
     public enum Tab: Equatable, Sendable {
       case files
@@ -32,11 +33,12 @@ public struct MainFeature: Sendable {
   public enum Action {
     case tabSelected(State.Tab)
     case fileList(FileListFeature.Action)
-    case diagnostic(DiagnosticFeature.Action)
+    case profile(ProfileFeature.Action)
     case accountLogin(LoginFeature.Action)
     case activeDownloads(ActiveDownloadsFeature.Action)
     case presentLoginSheet
     case loginSheet(PresentationAction<LoginFeature.Action>)
+    case accountDestination(PresentationAction<AccountDestination.Action>)
     case delegate(Delegate)
 
     @CasePathable
@@ -48,13 +50,18 @@ public struct MainFeature: Sendable {
     }
   }
 
+  @Reducer(state: .equatable)
+  public enum AccountDestination {
+    case downloadSettings(DownloadSettingsFeature)
+  }
+
   public var body: some ReducerOf<Self> {
     Scope(state: \.fileList, action: \.fileList) {
       FileListFeature()
     }
 
-    Scope(state: \.diagnostic, action: \.diagnostic) {
-      DiagnosticFeature()
+    Scope(state: \.profile, action: \.profile) {
+      ProfileFeature()
     }
 
     Scope(state: \.accountLogin, action: \.accountLogin) {
@@ -126,18 +133,18 @@ public struct MainFeature: Sendable {
       case .fileList:
         return .none
 
-      case .diagnostic(.delegate(.authenticationInvalidated)):
-        state.$isAuthenticated.withLock { $0 = false }
-        return .run { send in
-          await send(.fileList(.clearAllFiles))
-          await send(.delegate(.authenticationRequired))
-        }
-
-      case .diagnostic(.delegate(.signedOut)):
+      case .profile(.delegate(.signOut)):
         state.$isAuthenticated.withLock { $0 = false }
         return .send(.delegate(.signedOut))
 
-      case .diagnostic:
+      case .profile(.delegate(.openDownloadSettings)):
+        state.accountDestination = .downloadSettings(DownloadSettingsFeature.State())
+        return .none
+
+      case .profile:
+        return .none
+
+      case .accountDestination:
         return .none
 
       case .activeDownloads:
@@ -150,5 +157,6 @@ public struct MainFeature: Sendable {
     .ifLet(\.$loginSheet, action: \.loginSheet) {
       LoginFeature()
     }
+    .ifLet(\.$accountDestination, action: \.accountDestination)
   }
 }

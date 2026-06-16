@@ -60,6 +60,40 @@ struct MainFeatureTests {
     await store.receive(\.delegate.authenticationRequired)
   }
 
+  @MainActor
+  @Test("Profile sign-out delegate routes to signedOut and clears auth")
+  func profileSignOutRoutesToSignedOut() async {
+    let state = MainFeature.State()
+    state.$isAuthenticated.withLock { $0 = true }
+
+    let store = TestStore(initialState: state) {
+      MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.profile(.delegate(.signOut))) {
+      $0.$isAuthenticated.withLock { $0 = false }
+    }
+    await store.receive(\.delegate.signedOut)
+  }
+
+  @MainActor
+  @Test("Profile openDownloadSettings delegate pushes download settings destination")
+  func profileOpenDownloadSettingsPushesDestination() async {
+    let store = TestStore(initialState: MainFeature.State()) {
+      MainFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.pasteboardClient = TestData.noopPasteboardClient
+    }
+
+    await store.send(.profile(.delegate(.openDownloadSettings))) {
+      $0.accountDestination = .downloadSettings(DownloadSettingsFeature.State())
+    }
+  }
+
   // MARK: - Child Feature Action Pass-through Tests
 
   @MainActor
@@ -82,21 +116,6 @@ struct MainFeatureTests {
     }
   }
 
-  @MainActor
-  @Test("Diagnostic actions pass through without state change")
-  func diagnosticActionsPassThrough() async {
-    let store = TestStore(initialState: MainFeature.State()) {
-      MainFeature()
-    } withDependencies: {
-      $0.logger = TestData.noopLogger
-      $0.pasteboardClient = TestData.noopPasteboardClient
-    }
-
-    await store.send(.diagnostic(.toggleDebugMode)) {
-      $0.diagnostic.showDebugActions = true
-    }
-  }
-
   // MARK: - Initial State Tests
 
   @MainActor
@@ -111,13 +130,6 @@ struct MainFeatureTests {
   func initialStateEmptyFileList() {
     let state = MainFeature.State()
     #expect(state.fileList.files.isEmpty)
-  }
-
-  @MainActor
-  @Test("Initial state has empty keychain items in diagnostic")
-  func initialStateEmptyDiagnostic() {
-    let state = MainFeature.State()
-    #expect(state.diagnostic.keychainItems.isEmpty)
   }
 
   // MARK: - Tab Enum Tests

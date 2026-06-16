@@ -62,6 +62,7 @@ public struct FileListFeature: Sendable {
     case addFileResponse(Result<DownloadFileResponse, Error>)
     case files(IdentifiedActionOf<FileCellFeature>)
     case deleteFiles(IndexSet)
+    case deleteFile(id: String)
     case confirmDeleteFile
     case deleteFileSucceeded(File)
     case dismissDeleteConfirmation
@@ -419,6 +420,12 @@ public struct FileListFeature: Sendable {
           return .none
         }
         let file = state.files[firstIndex].file
+        state.fileToDelete = file
+        state.showDeleteConfirmation = true
+        return .none
+
+      case let .deleteFile(id):
+        guard let file = state.files[id: id]?.file else { return .none }
         state.fileToDelete = file
         state.showDeleteConfirmation = true
         return .none

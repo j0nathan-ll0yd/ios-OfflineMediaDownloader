@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import DesignSystem
 import Network
 import RootFeature
 import SwiftUI
@@ -14,13 +15,13 @@ import SwiftUI
 struct OfflineMediaDownloaderApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+  init() {
+    OMDFontBootstrap.registerFonts()
+  }
+
   var body: some Scene {
     WindowGroup {
-      if CommandLine.arguments.contains("-showPreviewCatalog") {
-        RedesignPreviewCatalog()
-      } else {
-        AppContentView(store: appDelegate.store)
-      }
+      AppContentView(store: appDelegate.store)
     }
   }
 }

@@ -113,6 +113,36 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Clone design-system-Lifegames as sibling of workspace
+        env:
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          # Packages/OMDFeatures/Package.swift references the DS via the relative
+          # path ../../../design-system-Lifegames, which resolves to a sibling of
+          # the OMD repo root. actions/checkout cannot write outside
+          # $GITHUB_WORKSPACE, so clone the DS there with raw git so SPM can find
+          # it. For coordinated cross-repo PRs, prefer a same-named DS branch if it
+          # exists; otherwise fall back to main (mirrors ios-LifegamesPortal CI).
+          DS_REPO_URL=https://github.com/j0nathan-ll0yd/design-system-Lifegames.git
+          DS_DIR="$(dirname "$GITHUB_WORKSPACE")/design-system-Lifegames"
+          DS_REF=main
+          if [ -n "$HEAD_REF" ] && [ "$HEAD_REF" != "main" ]; then
+            if git ls-remote --exit-code "$DS_REPO_URL" "refs/heads/$HEAD_REF" >/dev/null 2>&1; then
+              DS_REF="$HEAD_REF"
+              echo "Using matching DS branch: $DS_REF"
+            else
+              echo "No matching DS branch for '$HEAD_REF'; falling back to main"
+            fi
+          fi
+          if [ -d "$DS_DIR/.git" ]; then
+            git -C "$DS_DIR" fetch --depth 1 origin "$DS_REF"
+            git -C "$DS_DIR" reset --hard FETCH_HEAD
+          else
+            rm -rf "$DS_DIR"
+            git clone --depth 1 --branch "$DS_REF" "$DS_REPO_URL" "$DS_DIR"
+          fi
+          ls -la "$DS_DIR" | head -5
+
       - uses: ./.github/actions/setup-xcode-env
         id: env
 
@@ -144,7 +174,7 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | xcbeautify --report junit --report-path build-results.xml
+            2>&1 | tee build.log | { xcbeautify --report junit --report-path build-results.xml || cat; }
 
       - name: Check build warnings
         run: bash Scripts/check-build-warnings.sh
@@ -164,7 +194,7 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee test.log | xcbeautify --report junit --report-path test-results.xml
+            2>&1 | tee test.log | { xcbeautify --report junit --report-path test-results.xml || cat; }
 
       - name: Upload test results (always)
         if: always()
@@ -215,6 +245,35 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Clone design-system-Lifegames as sibling of workspace
+        env:
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          # The Release archive builds the app, which depends on the DS via the
+          # relative path ../../../design-system-Lifegames (a sibling of the OMD
+          # repo root). actions/checkout cannot write outside $GITHUB_WORKSPACE,
+          # so clone the DS there with raw git; prefer a same-named DS branch for
+          # coordinated PRs, else fall back to main (mirrors the test job above).
+          DS_REPO_URL=https://github.com/j0nathan-ll0yd/design-system-Lifegames.git
+          DS_DIR="$(dirname "$GITHUB_WORKSPACE")/design-system-Lifegames"
+          DS_REF=main
+          if [ -n "$HEAD_REF" ] && [ "$HEAD_REF" != "main" ]; then
+            if git ls-remote --exit-code "$DS_REPO_URL" "refs/heads/$HEAD_REF" >/dev/null 2>&1; then
+              DS_REF="$HEAD_REF"
+              echo "Using matching DS branch: $DS_REF"
+            else
+              echo "No matching DS branch for '$HEAD_REF'; falling back to main"
+            fi
+          fi
+          if [ -d "$DS_DIR/.git" ]; then
+            git -C "$DS_DIR" fetch --depth 1 origin "$DS_REF"
+            git -C "$DS_DIR" reset --hard FETCH_HEAD
+          else
+            rm -rf "$DS_DIR"
+            git clone --depth 1 --branch "$DS_REF" "$DS_REPO_URL" "$DS_DIR"
+          fi
+          ls -la "$DS_DIR" | head -5
+
       - uses: ./.github/actions/setup-xcode-env
 
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
@@ -234,7 +293,7 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee release-build.log | xcbeautify
+            2>&1 | tee release-build.log | { xcbeautify || cat; }
 
       - name: Archive error summary
         if: failure()

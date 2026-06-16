@@ -1,234 +1,151 @@
 import ComposableArchitecture
 import DesignSystem
+import LifegamesTemplates
+import LifegamesTokens
 import SwiftUI
 
+/// DownloadSettings migrated onto the Lifegames `SettingsTemplate`.
+///
+/// The download-quality picker does NOT fit `SettingsTemplate`'s closed row
+/// taxonomy (navigation / toggle / value / destructive) — its radio-card UI
+/// (selection ring, glow, checkmark) is rendered as a HOST sibling section
+/// ABOVE the template. The cellular toggle DOES fit, so it lives inside
+/// `SettingsTemplate`; the storage/quality help copy is the section footer.
+///
+/// `SettingsTemplate` renders its own `List`, so it is given a bounded height
+/// and `.scrollDisabled(true)` to stack cleanly under the host `ScrollView`
+/// (mirrors the gallery DownloadSettings layout).
 public struct DownloadSettingsView: View {
   @Bindable var store: StoreOf<DownloadSettingsFeature>
-
-  private let theme = DarkProfessionalTheme()
 
   public init(store: StoreOf<DownloadSettingsFeature>) {
     self.store = store
   }
 
   public var body: some View {
-    ZStack {
-      theme.backgroundColor
-        .ignoresSafeArea()
-
-      ScrollView {
-        VStack(spacing: 24) {
-          headerSection
-          qualitySection
-          cellularSection
-          infoSection
-        }
-        .padding(16)
+    ScrollView {
+      VStack(spacing: Spacing.s500) {
+        qualitySection
+        cellularSettings
       }
+      .padding(Spacing.s400)
     }
+    .background(LGColor.surfaceBase.ignoresSafeArea())
     .navigationTitle("Download Settings")
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbarColorScheme(.dark, for: .navigationBar)
-    .preferredColorScheme(.dark)
-    .task { store.send(.onAppear) }
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+    #endif
+      .preferredColorScheme(.dark)
+      .task { store.send(.onAppear) }
   }
 
-  // MARK: - Header Section
-
-  private var headerSection: some View {
-    VStack(spacing: 12) {
-      ZStack {
-        Circle()
-          .fill(theme.primaryColor.opacity(0.15))
-          .frame(width: 80, height: 80)
-
-        Image(systemName: "arrow.down.circle.fill")
-          .font(.system(size: 40))
-          .foregroundStyle(theme.primaryColor)
-      }
-
-      Text("Download Preferences")
-        .font(.title2)
-        .fontWeight(.bold)
-        .foregroundStyle(.white)
-
-      Text("Configure how media files are downloaded")
-        .font(.subheadline)
-        .foregroundStyle(theme.textSecondary)
-        .multilineTextAlignment(.center)
-    }
-    .padding(.top, 8)
-  }
-
-  // MARK: - Quality Section
+  // MARK: - Quality Section (host sibling — radio cards)
 
   private var qualitySection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("DOWNLOAD QUALITY")
-        .font(.caption)
-        .fontWeight(.semibold)
-        .foregroundStyle(theme.textSecondary)
+    VStack(alignment: .leading, spacing: Spacing.s300) {
+      Text("Quality")
+        .font(OMDFont.semibold(11))
+        .foregroundStyle(OMDPalette.playback)
         .textCase(.uppercase)
-        .padding(.leading, 4)
+        .tracking(1.5)
 
-      VStack(spacing: 0) {
+      VStack(spacing: Spacing.s300) {
         ForEach(DownloadQuality.allCases, id: \.self) { quality in
-          qualityRow(quality)
-
-          if quality != DownloadQuality.allCases.last {
-            Divider()
-              .background(DarkProfessionalTheme.divider)
-              .padding(.leading, 52)
-          }
+          qualityCard(quality, isSelected: store.downloadQuality == quality)
         }
       }
-      .background(DarkProfessionalTheme.cardBackground)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
     }
   }
 
-  private func qualityRow(_ quality: DownloadQuality) -> some View {
+  private func qualityCard(_ quality: DownloadQuality, isSelected: Bool) -> some View {
     Button(action: { store.send(.qualitySelected(quality)) }) {
-      HStack(spacing: 12) {
+      HStack(spacing: Spacing.s400) {
         ZStack {
-          RoundedRectangle(cornerRadius: 8)
-            .fill(iconColor(for: quality).opacity(0.15))
-            .frame(width: 36, height: 36)
-
-          Image(systemName: iconName(for: quality))
-            .font(.system(size: 16))
-            .foregroundStyle(iconColor(for: quality))
+          Circle()
+            .stroke(
+              isSelected ? OMDPalette.playback : LGColor.borderSubtle,
+              lineWidth: isSelected ? 2 : 1
+            )
+            .frame(width: 20, height: 20)
+          if isSelected {
+            Circle()
+              .fill(OMDPalette.playback)
+              .frame(width: 10, height: 10)
+              .shadow(color: OMDPalette.playback.opacity(0.8), radius: 4)
+          }
         }
 
         VStack(alignment: .leading, spacing: 2) {
           Text(quality.displayName)
-            .font(.body)
-            .foregroundStyle(.white)
+            .font(isSelected ? OMDFont.semibold(15) : OMDFont.regular(15))
+            .foregroundStyle(isSelected ? LGColor.textTitle : LGColor.textMuted)
 
           Text(quality.qualityDescription)
-            .font(.caption)
-            .foregroundStyle(theme.textSecondary)
-            .lineLimit(1)
+            .font(OMDFont.regular(11))
+            .foregroundStyle(LGColor.textSubtle)
+            .lineLimit(2)
         }
 
-        Spacer()
+        Spacer(minLength: Spacing.s300)
 
-        if store.downloadQuality == quality {
+        if isSelected {
           Image(systemName: "checkmark.circle.fill")
-            .font(.system(size: 22))
-            .foregroundStyle(theme.primaryColor)
-        } else {
-          Image(systemName: "circle")
-            .font(.system(size: 22))
-            .foregroundStyle(theme.textSecondary.opacity(0.5))
+            .font(.system(size: 18))
+            .foregroundStyle(OMDPalette.playback)
+            .shadow(color: OMDPalette.playback.opacity(0.6), radius: 6)
         }
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 12)
-      .contentShape(Rectangle())
+      .padding(Spacing.s450)
+      .frame(minHeight: 44)
+      .background(
+        isSelected
+          ? OMDPalette.playback.opacity(0.08)
+          : LGColor.surfaceRaised.opacity(0.6)
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(
+            isSelected ? OMDPalette.playback.opacity(0.6) : LGColor.borderSubtle,
+            lineWidth: isSelected ? 1.5 : 1
+          )
+      )
+      .clipShape(RoundedRectangle(cornerRadius: 16))
+      .shadow(
+        color: isSelected ? OMDPalette.playback.opacity(0.2) : .clear,
+        radius: isSelected ? 10 : 0
+      )
+      .contentShape(.rect)
     }
     .buttonStyle(.plain)
+    .accessibilityLabel(quality.displayName)
+    .accessibilityValue(isSelected ? "Selected" : "Not selected")
   }
 
-  private func iconName(for quality: DownloadQuality) -> String {
-    switch quality {
-    case .auto:
-      "sparkles"
-    case .high:
-      "4k.tv"
-    case .medium:
-      "film"
-    case .low:
-      "antenna.radiowaves.left.and.right"
-    }
-  }
+  // MARK: - Cellular Section (SettingsTemplate)
 
-  private func iconColor(for quality: DownloadQuality) -> Color {
-    switch quality {
-    case .auto:
-      theme.primaryColor
-    case .high:
-      theme.accentColor
-    case .medium:
-      theme.warningColor
-    case .low:
-      theme.successColor
-    }
-  }
-
-  // MARK: - Cellular Section
-
-  private var cellularSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("NETWORK")
-        .font(.caption)
-        .fontWeight(.semibold)
-        .foregroundStyle(theme.textSecondary)
-        .textCase(.uppercase)
-        .padding(.leading, 4)
-
-      HStack(spacing: 12) {
-        ZStack {
-          RoundedRectangle(cornerRadius: 8)
-            .fill(theme.successColor.opacity(0.15))
-            .frame(width: 36, height: 36)
-
-          Image(systemName: "antenna.radiowaves.left.and.right")
-            .font(.system(size: 16))
-            .foregroundStyle(theme.successColor)
-        }
-
-        VStack(alignment: .leading, spacing: 2) {
-          Text("Cellular Downloads")
-            .font(.body)
-            .foregroundStyle(.white)
-
-          Text("Download files using mobile data")
-            .font(.caption)
-            .foregroundStyle(theme.textSecondary)
-        }
-
-        Spacer()
-
-        Toggle("", isOn: Binding(
-          get: { store.cellularDownloadsEnabled },
-          set: { store.send(.cellularToggled($0)) }
-        ))
-        .labelsHidden()
-        .tint(theme.primaryColor)
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 12)
-      .background(DarkProfessionalTheme.cardBackground)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-  }
-
-  // MARK: - Info Section
-
-  private var infoSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 8) {
-        Image(systemName: "info.circle")
-          .font(.system(size: 14))
-          .foregroundStyle(theme.textSecondary)
-
-        Text("Note")
-          .font(.caption)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.textSecondary)
-      }
-
-      Text(
-        "Quality selection will be applied to future downloads when the backend supports multiple quality options. Current downloads use the available quality from the server."
-      )
-      .font(.caption)
-      .foregroundStyle(theme.textSecondary)
-      .padding(12)
-      .background(theme.backgroundColor.opacity(0.5))
-      .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-    .padding(.top, 8)
+  private var cellularSettings: some View {
+    SettingsTemplate(
+      sections: [
+        SettingsTemplate.Section(
+          title: "Network",
+          footer: "Higher quality requires more storage space and longer download times. Files already downloaded are not affected by quality changes.",
+          rows: [
+            .toggle(
+              label: "Cellular Downloads",
+              systemImage: "antenna.radiowaves.left.and.right",
+              isOn: Binding(
+                get: { store.cellularDownloadsEnabled },
+                set: { store.send(.cellularToggled($0)) }
+              )
+            ),
+          ]
+        ),
+      ],
+      accent: OMDPalette.playback
+    )
+    .frame(height: 200)
+    .scrollDisabled(true)
   }
 }
 
@@ -238,4 +155,5 @@ public struct DownloadSettingsView: View {
       DownloadSettingsFeature()
     })
   }
+  .preferredColorScheme(.dark)
 }
