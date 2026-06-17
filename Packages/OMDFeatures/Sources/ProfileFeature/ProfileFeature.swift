@@ -48,6 +48,8 @@ public struct ProfileFeature: Sendable {
     case onAppear
     case userLoaded(User?)
     case metricsResponse(FileMetrics)
+    case editProfileTapped
+    case notificationsTapped
     case downloadSettingsTapped
     case signOutTapped
     #if DEBUG
@@ -59,6 +61,8 @@ public struct ProfileFeature: Sendable {
     public enum Delegate: Equatable {
       case signOut
       case openDownloadSettings
+      case openEditProfile
+      case openNotifications
     }
   }
 
@@ -103,6 +107,12 @@ public struct ProfileFeature: Sendable {
         state.isLoadingMetrics = false
         state.metrics = metrics
         return .none
+
+      case .editProfileTapped:
+        return .send(.delegate(.openEditProfile))
+
+      case .notificationsTapped:
+        return .send(.delegate(.openNotifications))
 
       case .downloadSettingsTapped:
         return .send(.delegate(.openDownloadSettings))

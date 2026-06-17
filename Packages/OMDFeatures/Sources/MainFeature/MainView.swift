@@ -9,8 +9,6 @@ import SwiftUI
 public struct MainView: View {
   @Bindable var store: StoreOf<MainFeature>
 
-  private let theme = DarkProfessionalTheme()
-
   public init(store: StoreOf<MainFeature>) {
     self.store = store
   }
@@ -20,18 +18,18 @@ public struct MainView: View {
       TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
         FileListView(store: store.scope(state: \.fileList, action: \.fileList))
           .tabItem {
-            Label("Files", systemImage: "film.stack")
+            Label("Files", systemImage: "folder.fill")
           }
           .tag(MainFeature.State.Tab.files)
 
         accountTabContent
           .id(store.isAuthenticated)
           .tabItem {
-            Label("Account", systemImage: "person.crop.circle")
+            Label("Account", systemImage: "person.crop.circle.fill")
           }
           .tag(MainFeature.State.Tab.account)
       }
-      .tint(theme.primaryColor)
+      .tint(OMDPalette.primary)
 
       // Active downloads banner - positioned above tab bar
       VStack {
@@ -70,6 +68,22 @@ public struct MainView: View {
             )
           ) { downloadSettingsStore in
             DownloadSettingsView(store: downloadSettingsStore)
+          }
+          .navigationDestination(
+            item: $store.scope(
+              state: \.accountDestination?.editProfile,
+              action: \.accountDestination.editProfile
+            )
+          ) { editProfileStore in
+            EditProfileView(store: editProfileStore)
+          }
+          .navigationDestination(
+            item: $store.scope(
+              state: \.accountDestination?.notifications,
+              action: \.accountDestination.notifications
+            )
+          ) { notificationsStore in
+            NotificationsView(store: notificationsStore)
           }
       }
     } else {

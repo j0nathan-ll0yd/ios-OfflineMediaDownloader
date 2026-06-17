@@ -22,7 +22,7 @@ public struct RootView: View {
       MainView(store: store.scope(state: \.main, action: \.main))
 
       if store.isLaunching {
-        LaunchView(status: store.launchStatus)
+        LaunchView()
           .transition(.opacity.animation(.easeInOut(duration: 0.5)))
           .zIndex(1)
       }
@@ -47,17 +47,12 @@ public struct RootView: View {
 // MARK: - LaunchView (Pure SwiftUI - not TCA managed)
 
 public struct LaunchView: View {
-  let status: String
-  @State private var dotOffset: CGFloat = 0 // non-tca
-
-  public init(status: String) {
-    self.status = status
-  }
+  public init() {}
 
   public var body: some View {
     // Pure Launch on AuthTemplate: no primaryAction / no footer. The OFFLINE
-    // wordmark + Lifegames mark + animated loading dots + status live in the
-    // branding slot; the OMD color washes fill the template's background slot.
+    // wordmark + buffering play-ring live in the branding slot; the OMD color
+    // washes fill the template's background slot.
     AuthTemplate(
       title: nil,
       accent: OMDPalette.primary,
@@ -74,13 +69,10 @@ public struct LaunchView: View {
       }
     )
     .preferredColorScheme(.dark)
-    .onAppear {
-      dotOffset = -10
-    }
   }
 
   private var branding: some View {
-    VStack(spacing: Spacing.s700) {
+    VStack(spacing: 0) {
       // Wordmark
       VStack(spacing: Spacing.s300) {
         Text("OFFLINE")
@@ -98,29 +90,9 @@ public struct LaunchView: View {
           .foregroundStyle(LGColor.accentCyan.opacity(0.9))
       }
 
-      LifegamesLogo(size: .medium, showSubtitle: false, animated: true)
-
-      // Animated loading dots + status
-      VStack(spacing: Spacing.s400) {
-        HStack(spacing: 8) {
-          ForEach(0 ..< 3, id: \.self) { index in
-            Circle()
-              .fill(OMDBrand.wordmarkGradient)
-              .frame(width: 12, height: 12)
-              .offset(y: dotOffset)
-              .animation(
-                .easeInOut(duration: 0.4)
-                  .repeatForever(autoreverses: true)
-                  .delay(Double(index) * 0.15),
-                value: dotOffset
-              )
-          }
-        }
-
-        Text(status)
-          .font(OMDFont.medium(14))
-          .foregroundStyle(LGColor.textMuted)
-      }
+      BufferRingAnimation()
+        .frame(height: 200)
+        .padding(.top, Spacing.s700)
     }
   }
 }
@@ -219,6 +191,6 @@ public struct DownloadInitiatingOverlay: View {
 // MARK: - Preview
 
 #Preview("Launch") {
-  LaunchView(status: "Loading your library…")
+  LaunchView()
     .preferredColorScheme(.dark)
 }
