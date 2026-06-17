@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import DesignSystem
+import LifegamesComponentsCore
 import LifegamesTokens
 import SwiftUI
 import ThumbnailCacheClient
@@ -31,10 +32,11 @@ public struct FileCellView: View {
   }
 
   public var body: some View {
-    HStack(spacing: 14) {
-      // Thumbnail with duration badge
+    HStack(alignment: .top, spacing: Spacing.s300) {
+      // Thumbnail with duration badge — real artwork, neon-card styling
       ZStack(alignment: .bottomTrailing) {
         ThumbnailImage(fileId: store.file.fileId, url: thumbnailURL, size: thumbnailSize)
+          .clipShape(RoundedRectangle(cornerRadius: 8))
 
         if let duration = store.file.duration {
           DurationBadge(seconds: duration)
@@ -42,153 +44,114 @@ public struct FileCellView: View {
         }
       }
       .frame(width: thumbnailSize.width, height: thumbnailSize.height)
-      .overlay { stateOverlay }
+      .overlay { playOverlay }
       .contentShape(Rectangle())
       .onTapGesture {
         thumbnailAction?()
       }
 
       // File info
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: Spacing.s150) {
         Text(store.file.title ?? store.file.key)
-          .font(OMDFont.semibold(15))
+          .font(OMDFont.semibold(14))
           .foregroundStyle(LGColor.textTitle)
           .lineLimit(2)
+          .truncationMode(.tail)
 
         // Author with playback/identity accent (cyan)
         if let author = store.file.authorName {
-          Text(author)
-            .font(OMDFont.medium(12))
-            .foregroundStyle(OMDPalette.playback)
+          HStack(spacing: Spacing.s100) {
+            Image(systemName: "person.circle.fill")
+              .font(.system(size: 11))
+              .foregroundStyle(OMDPalette.playback)
+            Text(author)
+              .font(OMDFont.medium(12))
+              .foregroundStyle(OMDPalette.playback)
+              .lineLimit(1)
+          }
         }
 
-        // Views + Size
-        HStack(spacing: 6) {
+        // Icon-based meta line: size + views (duration lives on the badge)
+        HStack(spacing: Spacing.s300) {
+          if let size = store.file.size, size > 0 {
+            metaItem(icon: "arrow.down.doc.fill", text: formatFileSize(size))
+          }
           if let viewCount = store.file.viewCount {
-            Text(MetadataFormatters.formatViewCount(viewCount))
-          }
-          if store.file.viewCount != nil, store.file.size != nil {
-            Text("•")
-          }
-          if store.file.size != nil {
-            Text(formatFileSize(store.file.size))
+            metaItem(icon: "eye.fill", text: MetadataFormatters.formatViewCount(viewCount))
           }
         }
-        .font(OMDFont.mono(12))
-        .foregroundStyle(LGColor.textSubtle)
-
-        statusText
       }
 
-      Spacer()
+      Spacer(minLength: Spacing.s200)
 
-      // Progress ring for downloading
-      if store.isDownloading {
-        glowingProgressRing
-      }
+      statusIndicator
+        .frame(maxHeight: .infinity, alignment: .center)
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
-    .background(LGColor.surfaceRaised)
-    .overlay(
-      Rectangle()
-        .fill(LGColor.borderSubtle)
-        .frame(height: 0.5),
-      alignment: .bottom
-    )
+    .neonCard(accent: OMDPalette.primary)
     .task {
       store.send(.onAppear)
     }
     .alert($store.scope(state: \.alert, action: \.alert))
   }
 
+  /// Play affordance over a downloaded thumbnail. The row's status itself lives
+  /// on the trailing indicator, so the overlay only signals playability.
   @ViewBuilder
-  private var stateOverlay: some View {
-    if store.state.isPending {
-      Image(systemName: "clock")
-        .font(.system(size: 22))
-        .foregroundStyle(OMDPalette.queued)
-        .shadow(color: .black.opacity(0.5), radius: 2)
-    } else if store.isServerDownloading {
-      Image(systemName: "icloud.and.arrow.down")
-        .font(.system(size: 22))
-        .foregroundStyle(OMDPalette.playback)
-        .shadow(color: .black.opacity(0.5), radius: 2)
-    } else if store.isDownloading {
-      // Show mini progress in thumbnail during download
-      ZStack {
-        Circle()
-          .stroke(OMDPalette.primary.opacity(0.3), lineWidth: 2)
-          .frame(width: 28, height: 28)
-
-        Circle()
-          .trim(from: 0, to: store.downloadProgress)
-          .stroke(OMDPalette.primary, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-          .frame(width: 28, height: 28)
-          .rotationEffect(.degrees(-90))
-      }
-      .shadow(color: .black.opacity(0.5), radius: 2)
-    } else if store.isDownloaded {
+  private var playOverlay: some View {
+    if store.isDownloaded {
       Image(systemName: "play.fill")
         .font(.system(size: 22))
         .foregroundStyle(.white)
         .shadow(color: .black.opacity(0.5), radius: 2)
     }
-    // No overlay for available (not downloaded) state - thumbnail speaks for itself
   }
 
+  /// Trailing download-status indicator mirroring the design system's
+  /// DownloadProgressView (check / ring / clock / arrow), plus OMD's pending
+  /// and server-downloading states.
   @ViewBuilder
-  private var statusText: some View {
+  private var statusIndicator: some View {
     if store.state.isPending {
-      Text("Processing...")
-        .font(OMDFont.medium(11))
-        .foregroundStyle(OMDPalette.queued)
+      Image(systemName: "clock.fill")
+        .font(.system(size: 18))
+        .foregroundStyle(LGColor.textSubtle)
     } else if store.isServerDownloading {
-      Text("Server downloading...")
-        .font(OMDFont.medium(11))
+      Image(systemName: "icloud.and.arrow.down")
+        .font(.system(size: 18))
         .foregroundStyle(OMDPalette.playback)
     } else if store.isDownloading {
-      Text("Downloading \(Int(store.downloadProgress * 100))%")
-        .font(OMDFont.mono(11))
-        .foregroundStyle(OMDPalette.primary)
+      ZStack {
+        Circle()
+          .stroke(OMDPalette.primary.opacity(0.2), lineWidth: 3)
+        Circle()
+          .trim(from: 0, to: store.downloadProgress)
+          .stroke(OMDPalette.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+          .shadow(color: OMDPalette.primary.opacity(0.5), radius: 4)
+      }
+      .frame(width: 24, height: 24)
+      .accessibilityLabel("Downloading")
+      .accessibilityValue("\(Int(store.downloadProgress * 100)) percent")
     } else if store.isDownloaded {
-      Text("Downloaded")
-        .font(OMDFont.medium(11))
-        .foregroundStyle(OMDPalette.complete)
+      Image(systemName: "checkmark.circle.fill")
+        .font(.system(size: 18))
+        .foregroundStyle(OMDPalette.primary)
+    } else {
+      Image(systemName: "arrow.down.circle")
+        .font(.system(size: 18))
+        .foregroundStyle(LGColor.textSubtle)
     }
   }
 
-  private var glowingProgressRing: some View {
-    ZStack {
-      // Glow
-      Circle()
-        .fill(OMDPalette.primary.opacity(0.2))
-        .frame(width: 44, height: 44)
-        .blur(radius: 8)
-
-      // Track
-      Circle()
-        .stroke(OMDPalette.primary.opacity(0.2), lineWidth: 3)
-        .frame(width: 36, height: 36)
-
-      // Progress
-      Circle()
-        .trim(from: 0, to: store.downloadProgress)
-        .stroke(
-          LinearGradient(
-            colors: [OMDPalette.primary, OMDPalette.playback],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          ),
-          style: StrokeStyle(lineWidth: 3, lineCap: .round)
-        )
-        .frame(width: 36, height: 36)
-        .rotationEffect(.degrees(-90))
-
-      Text("\(Int(store.downloadProgress * 100))")
-        .font(OMDFont.mono(10))
-        .foregroundStyle(.white)
+  private func metaItem(icon: String, text: String) -> some View {
+    HStack(spacing: 3) {
+      Image(systemName: icon)
+        .font(.system(size: 9))
+      Text(text)
+        .font(OMDFont.mono(11))
+        .lineLimit(1)
     }
+    .foregroundStyle(LGColor.textSubtle)
   }
 }
 

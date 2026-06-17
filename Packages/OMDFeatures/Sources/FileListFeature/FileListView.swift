@@ -22,13 +22,17 @@ public struct FileListView: View {
 
   public var body: some View {
     NavigationStack {
-      ZStack {
+      ZStack(alignment: .bottomTrailing) {
         LGColor.surfaceBase
           .ignoresSafeArea()
 
         fileListContent
+
+        if !store.files.isEmpty {
+          addButton
+        }
       }
-      .navigationTitle("Files")
+      .navigationTitle("Library")
       .navigationBarTitleDisplayMode(.large)
       .toolbarColorScheme(.dark, for: .navigationBar)
       .toolbar { toolbarContent }
@@ -218,7 +222,13 @@ public struct FileListView: View {
         }
       )
       .listRowSeparator(.hidden)
-      .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+      .listRowBackground(Color.clear)
+      .listRowInsets(EdgeInsets(
+        top: Spacing.s150,
+        leading: Spacing.s400,
+        bottom: Spacing.s150,
+        trailing: Spacing.s400
+      ))
     }
   }
 
@@ -228,30 +238,53 @@ public struct FileListView: View {
   private var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
       HStack(spacing: 16) {
-        if !store.pendingFileIds.isEmpty {
-          NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
-            Image(systemName: "clock.arrow.circlepath")
-              .foregroundStyle(OMDPalette.queued)
-          }
-        }
-
         Button {
           store.send(.refreshButtonTapped)
         } label: {
-          Image(systemName: "arrow.clockwise")
-            .foregroundStyle(OMDPalette.primary)
+          if store.isRefreshing {
+            ProgressView()
+              .tint(LGColor.accentCyan)
+          } else {
+            Image(systemName: "arrow.clockwise")
+              .foregroundStyle(LGColor.accentCyan)
+              .shadow(color: LGColor.accentCyan.opacity(0.5), radius: 4)
+          }
         }
-        .disabled(store.isLoading)
+        .disabled(store.isLoading || store.isRefreshing)
+        .accessibilityLabel("Refresh")
 
-        Button {
-          store.send(.addButtonTapped)
-        } label: {
-          Image(systemName: "plus.circle.fill")
-            .font(.title3)
-            .foregroundStyle(OMDPalette.primary)
+        if !store.pendingFileIds.isEmpty {
+          NavigationLink(destination: PendingFilesView(fileIds: store.pendingFileIds)) {
+            Image(systemName: "clock.badge.fill")
+              .foregroundStyle(LGColor.accentPink)
+              .shadow(color: LGColor.accentPink.opacity(0.5), radius: 4)
+          }
+          .accessibilityLabel("Pending downloads")
         }
       }
     }
+  }
+
+  // MARK: - Floating Add Button
+
+  private var addButton: some View {
+    Button {
+      store.send(.addButtonTapped)
+    } label: {
+      ZStack {
+        Circle()
+          .fill(OMDPalette.primary)
+          .shadow(color: OMDPalette.primary.opacity(0.6), radius: 12, x: 0, y: 4)
+        Image(systemName: "plus")
+          .font(.system(size: 22, weight: .semibold))
+          .foregroundStyle(LGColor.textTitle)
+      }
+      .frame(width: 56, height: 56)
+    }
+    .contentShape(.rect)
+    .padding(.trailing, Spacing.s500)
+    .padding(.bottom, Spacing.s600)
+    .accessibilityLabel("Add video")
   }
 
   // MARK: - Video Player
@@ -290,22 +323,31 @@ private struct SwipeableRow: View {
     min(0, max(-revealWidth, baseOffset + dragTranslation))
   }
 
+  private var deleteBackground: some View {
+    ZStack(alignment: .trailing) {
+      OMDPalette.destructive
+      Image(systemName: "trash")
+        .font(.title3)
+        .foregroundStyle(.white)
+        .frame(width: revealWidth)
+    }
+    .frame(width: max(0, -offset))
+    .frame(maxHeight: .infinity)
+    .clipped()
+  }
+
   var body: some View {
     ZStack(alignment: .trailing) {
-      // Delete button visual (behind foreground, not interactive)
-      HStack {
-        Spacer()
-        Image(systemName: "trash")
-          .font(.title3)
-          .foregroundColor(.white)
-          .frame(width: revealWidth)
-          .frame(maxHeight: .infinity)
-          .background(OMDPalette.destructive)
-      }
+      // Delete area — grows with the swipe so it is invisible at rest (width 0
+      // when offset == 0). This avoids the trash showing through the neon card's
+      // rounded corners / under a non-full-width card.
+      deleteBackground
 
-      // Foreground cell
+      // Foreground cell — forced to fill the row so the neon card spans full
+      // width (trailing status icon sits at the card edge) and fully covers the
+      // delete area at rest. The card supplies its own surface.
       FileCellView(store: cellStore)
-        .background(LGColor.surfaceBase)
+        .frame(maxWidth: .infinity)
         .offset(x: offset)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -318,7 +360,7 @@ private struct SwipeableRow: View {
           }
         }
     }
-    .clipped()
+    .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(alignment: .trailing) {
       // Invisible tap target over revealed delete area (renders on top, gets hit priority)
       if offset < -5 {

@@ -205,6 +205,7 @@ public struct FileRow: View {
       Spacer(minLength: Spacing.s200)
 
       DownloadProgressView(state: state, style: .neonConsole)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
     .neonCard(accent: OMDPalette.primary)
   }

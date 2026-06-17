@@ -1,7 +1,6 @@
 import AuthenticationServices
 import ComposableArchitecture
 import DesignSystem
-import LifegamesComponents
 import LifegamesComponentsCore
 import LifegamesTemplates
 import LifegamesTokens
@@ -11,6 +10,7 @@ import SwiftUI
 
 public struct LoginView: View {
   @Bindable var store: StoreOf<LoginFeature>
+  @State private var appleController = AppleSignInController()
 
   public init(store: StoreOf<LoginFeature>) {
     self.store = store
@@ -51,12 +51,26 @@ public struct LoginView: View {
     }
     .preferredColorScheme(.dark)
     .alert($store.scope(state: \.alert, action: \.alert))
+    .sheet(item: $store.scope(state: \.emailLogin, action: \.emailLogin)) { emailStore in
+      NavigationStack {
+        EmailLoginView(store: emailStore)
+          .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+              Button("Cancel") {
+                store.send(.emailLogin(.dismiss))
+              }
+              .foregroundStyle(LGColor.textTitle)
+            }
+          }
+      }
+      .presentationDetents([.medium, .large])
+    }
   }
 
   // MARK: - Branding
 
   private var branding: some View {
-    VStack(spacing: Spacing.s600) {
+    VStack(spacing: 0) {
       VStack(spacing: Spacing.s300) {
         Text("WELCOME")
           .font(OMDFont.bold(34))
@@ -70,21 +84,30 @@ public struct LoginView: View {
           .multilineTextAlignment(.center)
       }
 
-      LifegamesLogo(size: .medium, showSubtitle: false, animated: true)
+      BufferRingAnimation()
+        .frame(height: 170)
+        .padding(.top, Spacing.s600)
     }
   }
 
-  // MARK: - Primary Action (REAL Sign in with Apple — ported verbatim)
+  // MARK: - Primary Action
 
   private var primaryAction: some View {
-    VStack(spacing: 14) {
-      // Sign in with Apple - native button styled for dark mode
-      SignInWithAppleButton(.continue) { request in
-        request.requestedScopes = [.fullName, .email]
-        request.nonce = ""
-        request.state = ""
-        store.send(.loginButtonTapped)
-      } onCompletion: { result in
+    VStack(spacing: Spacing.s300) {
+      appleButton
+      emailButton
+    }
+    .disabled(store.isSigningIn)
+    .opacity(store.isSigningIn ? 0.6 : 1.0)
+  }
+
+  /// Custom gradient-bordered button that drives the REAL Sign in with Apple
+  /// flow via `AppleSignInController` (so it can be styled beyond the native
+  /// button's fixed appearance).
+  private var appleButton: some View {
+    Button {
+      store.send(.loginButtonTapped)
+      appleController.start { result in
         switch result {
         case let .success(authorization):
           store.send(.signInWithAppleButtonTapped(.success(authorization)))
@@ -92,22 +115,53 @@ public struct LoginView: View {
           store.send(.signInWithAppleButtonTapped(.failure(error)))
         }
       }
-      .signInWithAppleButtonStyle(.white)
-      .frame(height: 54)
-      .clipShape(Capsule())
-
-      // Disabled Google button (Coming Soon)
-      AuthButton(provider: .google, style: .dark) {}
-        .disabled(true)
-        .opacity(0.5)
-
-      // Disabled Email button (Coming Soon)
-      AuthButton(provider: .email, style: .dark) {}
-        .disabled(true)
-        .opacity(0.5)
+    } label: {
+      HStack(spacing: Spacing.s300) {
+        Image(systemName: "apple.logo")
+          .font(.system(size: 18))
+        Text("Sign in with Apple")
+          .font(OMDFont.semibold(16))
+      }
+      .foregroundStyle(LGColor.textTitle)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, Spacing.s400)
+      .background(LGColor.surfaceRaised)
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .stroke(OMDBrand.wordmarkGradient, lineWidth: 1.5)
+      )
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+      .shadow(color: LGColor.accentBlue.opacity(0.5), radius: 10)
     }
-    .disabled(store.isSigningIn)
-    .opacity(store.isSigningIn ? 0.6 : 1.0)
+    .frame(minWidth: 44, minHeight: 44)
+    .contentShape(.rect)
+    .accessibilityLabel("Sign in with Apple")
+  }
+
+  /// Secondary outline button that opens the email-entry sheet.
+  private var emailButton: some View {
+    Button {
+      store.send(.emailButtonTapped)
+    } label: {
+      HStack(spacing: Spacing.s300) {
+        Image(systemName: "envelope.fill")
+          .font(.system(size: 16))
+        Text("Continue with Email")
+          .font(OMDFont.semibold(16))
+      }
+      .foregroundStyle(LGColor.textPrimary)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, Spacing.s400)
+      .background(LGColor.surfaceRaised.opacity(0.6))
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .stroke(LGColor.borderSubtle, lineWidth: 1)
+      )
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    .frame(minWidth: 44, minHeight: 44)
+    .contentShape(.rect)
+    .accessibilityLabel("Continue with Email")
   }
 
   // MARK: - Footer

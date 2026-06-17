@@ -53,6 +53,8 @@ public struct MainFeature: Sendable {
   @Reducer(state: .equatable)
   public enum AccountDestination {
     case downloadSettings(DownloadSettingsFeature)
+    case editProfile(EditProfileFeature)
+    case notifications(NotificationsFeature)
   }
 
   public var body: some ReducerOf<Self> {
@@ -141,7 +143,21 @@ public struct MainFeature: Sendable {
         state.accountDestination = .downloadSettings(DownloadSettingsFeature.State())
         return .none
 
+      case .profile(.delegate(.openEditProfile)):
+        state.accountDestination = .editProfile(EditProfileFeature.State(user: state.profile.user))
+        return .none
+
+      case .profile(.delegate(.openNotifications)):
+        state.accountDestination = .notifications(NotificationsFeature.State())
+        return .none
+
       case .profile:
+        return .none
+
+      // Reflect the edited profile back into the Account screen, then dismiss.
+      case let .accountDestination(.presented(.editProfile(.delegate(.saved(user))))):
+        state.profile.user = user
+        state.accountDestination = nil
         return .none
 
       case .accountDestination:

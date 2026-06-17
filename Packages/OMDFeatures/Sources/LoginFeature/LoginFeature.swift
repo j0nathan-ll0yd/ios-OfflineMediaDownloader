@@ -52,6 +52,7 @@ public struct LoginFeature: Sendable {
     public var isSigningIn: Bool = false
     public var isCompletingRegistration: Bool = false
     @Presents public var alert: AlertState<Action.Alert>?
+    @Presents public var emailLogin: EmailLoginFeature.State?
     public var pendingUserData: User?
     public var pendingUserIdentifier: String?
 
@@ -63,6 +64,8 @@ public struct LoginFeature: Sendable {
     case loginResponse(Result<LoginResponse, Error>)
     case registrationResponse(Result<LoginResponse, Error>)
     case signInWithAppleButtonTapped(Result<ASAuthorization, Error>)
+    case emailButtonTapped
+    case emailLogin(PresentationAction<EmailLoginFeature.Action>)
     case showError(AppError)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
@@ -206,6 +209,13 @@ public struct LoginFeature: Sendable {
         }
         return .none
 
+      case .emailButtonTapped:
+        state.emailLogin = EmailLoginFeature.State()
+        return .none
+
+      case .emailLogin:
+        return .none
+
       case .alert:
         return .none
 
@@ -214,5 +224,8 @@ public struct LoginFeature: Sendable {
       }
     }
     .ifLet(\.$alert, action: \.alert)
+    .ifLet(\.$emailLogin, action: \.emailLogin) {
+      EmailLoginFeature()
+    }
   }
 }
