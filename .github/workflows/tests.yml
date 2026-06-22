@@ -75,7 +75,7 @@ jobs:
     runs-on: [self-hosted, linux, arm64, swift-lint]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Validate iOS version targets
         run: bash Scripts/validate-ios-version.sh
@@ -98,7 +98,7 @@ jobs:
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-xcode-env
       - name: Build APITypes package
         run: xcrun swift build --package-path APITypes --disable-sandbox
@@ -111,7 +111,7 @@ jobs:
     env:
       SNAPSHOT_TESTING_RECORD: never
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
@@ -243,7 +243,7 @@ jobs:
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
