@@ -11,19 +11,19 @@ import SharedModels
 /// types. Previews reference these members instead of constructing domain
 /// models inline, so preview data cannot drift from the wire data model.
 public enum PreviewFixtures {
-  public enum FileVariant: String {
+  public enum FileVariant: String, Sendable {
     case downloaded = "media-file.downloaded"
     case pending = "media-file.pending"
     case longMetadata = "media-file.long-metadata"
   }
 
-  public enum LibraryVariant: String {
+  public enum LibraryVariant: String, Sendable {
     case populatedMax = "media-library.populated-max"
     case populatedMin = "media-library.populated-min"
     case empty = "media-library.empty"
   }
 
-  public enum ProfileVariant: String {
+  public enum ProfileVariant: String, Sendable {
     case standard = "media-profile.standard"
     case newUser = "media-profile.new-user"
   }

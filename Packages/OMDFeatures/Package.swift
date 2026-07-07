@@ -272,6 +272,9 @@ let package = Package(
     .target(name: "TestData", dependencies: ["SharedModels", "APIClient"], path: "Tests/TestData"),
 
     .testTarget(name: "SharedModelsTests", dependencies: ["SharedModels", "TestData"]),
+    // Executes every fixture accessor so a design-system fixture/decode
+    // regression fails CI instead of crashing previews (S98).
+    .testTarget(name: "PreviewFixturesTests", dependencies: ["PreviewFixtures"]),
     .testTarget(name: "FileCellFeatureTests", dependencies: [
       "FileCellFeature", "TestData",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
