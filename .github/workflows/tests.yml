@@ -310,3 +310,22 @@ jobs:
           name: release-build-log
           path: release-build.log
           retention-days: 7
+
+  s98-preview-fixtures:
+    name: S98 Preview Fixtures Scan
+    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan Preview blocks for inline domain construction
+        run: |
+          # Deterministic S98 check (agent-enforcement). Uses the runner's
+          # enforcement checkout; loud skip if absent (mirrors the best-effort
+          # cross-repo pattern used elsewhere in this org's workflows).
+          CHECK="$HOME/Repositories/agent-enforcement/home/.claude/hooks/lib/preview-fixtures-check.mjs"
+          if [ ! -f "$CHECK" ]; then
+            echo "::warning::agent-enforcement checkout not found on runner — S98 scan SKIPPED (not passed)."
+            exit 0
+          fi
+          node "$CHECK" --scan .
