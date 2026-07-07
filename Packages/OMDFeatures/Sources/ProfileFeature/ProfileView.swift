@@ -8,6 +8,7 @@ import LifegamesComponentsCore
 import LifegamesTemplates
 import LifegamesTokens
 import PersistenceClient
+import PreviewFixtures
 import SharedModels
 import SwiftUI
 
@@ -255,8 +256,8 @@ public struct ProfileView: View {
   ProfileView(
     store: Store(
       initialState: ProfileFeature.State(
-        user: User(email: "ada@example.com", firstName: "Ada", identifier: "id-1", lastName: "Lovelace"),
-        metrics: FileMetrics(downloadCount: 12, totalStorageBytes: 2_400_000_000, playCount: 47)
+        user: PreviewFixtures.user(.standard),
+        metrics: PreviewFixtures.fileMetrics(.standard)
       )
     ) {
       ProfileFeature()
