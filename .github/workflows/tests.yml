@@ -196,6 +196,23 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test.log | { xcbeautify --report junit --report-path test-results.xml || cat; }
 
+      - name: Run PreviewFixtures package tests (S98)
+        working-directory: Packages/OMDFeatures
+        run: |
+          # The app scheme's Testables only include the app test bundles, so
+          # SPM package test targets don't run above. This executes every
+          # fixture accessor so a design-system fixture/decode regression
+          # fails CI instead of crashing previews (S98).
+          set -o pipefail
+          xcodebuild test \
+            -scheme OMDFeatures-Package \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
+            -only-testing:PreviewFixturesTests \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee package-test.log | { xcbeautify || cat; }
+
       - name: Upload test results (always)
         if: always()
         uses: actions/upload-artifact@v7
@@ -310,3 +327,40 @@ jobs:
           name: release-build-log
           path: release-build.log
           retention-days: 7
+
+  s98-preview-fixtures:
+    name: S98 Preview Fixtures Scan
+    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch agent-enforcement checker
+        env:
+          # Fine-grained PAT with Contents:Read on agent-enforcement. Falls back
+          # to a runner-local checkout, then to GITHUB_TOKEN (which cannot read
+          # other private repos) — a loud SKIP means the deterministic CI tier
+          # is not running and the secret should be added.
+          AE_TOKEN: ${{ secrets.AGENT_ENFORCEMENT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          CHECK_LOCAL="$HOME/Repositories/agent-enforcement/home/.claude/hooks/lib/preview-fixtures-check.mjs"
+          if [ -f "$CHECK_LOCAL" ]; then
+            cp "$CHECK_LOCAL" "$RUNNER_TEMP/preview-fixtures-check.mjs"
+            echo "Using runner-local enforcement checkout."
+          elif git clone --depth 1 "https://x-access-token:${AE_TOKEN}@github.com/j0nathan-ll0yd/agent-enforcement.git" "$RUNNER_TEMP/agent-enforcement" 2>/dev/null; then
+            cp "$RUNNER_TEMP/agent-enforcement/home/.claude/hooks/lib/preview-fixtures-check.mjs" "$RUNNER_TEMP/preview-fixtures-check.mjs"
+            echo "Cloned agent-enforcement via token."
+          else
+            echo "::warning::Cannot obtain the agent-enforcement checker (add the AGENT_ENFORCEMENT_TOKEN secret) — S98 scan SKIPPED (not passed)."
+            exit 0
+          fi
+          echo "have_checker=1" >> "$GITHUB_ENV"
+
+      - name: Scan Preview blocks for inline domain construction
+        if: env.have_checker == '1'
+        run: node "$RUNNER_TEMP/preview-fixtures-check.mjs" --scan .

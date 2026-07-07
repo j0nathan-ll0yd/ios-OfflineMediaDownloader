@@ -34,6 +34,7 @@ let package = Package(
     .library(name: "AnalyticsClient", targets: ["AnalyticsClient"]),
     .library(name: "CorrelationClient", targets: ["CorrelationClient"]),
     .library(name: "PerformanceClient", targets: ["PerformanceClient"]),
+    .library(name: "PreviewFixtures", targets: ["PreviewFixtures"]),
   ],
   dependencies: [
     .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.22.2"),
@@ -182,7 +183,7 @@ let package = Package(
     .target(name: "FileDetailFeature", dependencies: [
       "SharedModels", "DesignSystem", "DownloadBehavior",
       "ServerClient", "PersistenceClient", "FileClient", "DownloadClient",
-      "ThumbnailCacheClient", "LoggerClient",
+      "ThumbnailCacheClient", "LoggerClient", "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
@@ -223,6 +224,7 @@ let package = Package(
       // screen embeds the diagnostics tools inline (DEBUG). See S77 — a parent
       // may import its child.
       "DiagnosticFeature",
+      "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
@@ -239,7 +241,7 @@ let package = Package(
     .target(name: "MainFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature", "ProfileFeature",
-      "KeychainClient",
+      "KeychainClient", "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
@@ -253,11 +255,26 @@ let package = Package(
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ]),
 
+    // ─── Preview Fixtures (S98) ────────────────────────────────────────
+
+    // Decodes canonical design-system fixture JSON (media/*.json) into app
+    // domain types for #Preview blocks. Linked in all configurations because
+    // #Preview bodies compile in Release; only preview/test code may
+    // reference it (S98).
+    .target(name: "PreviewFixtures", dependencies: [
+      "SharedModels",
+      "PersistenceClient",
+      .product(name: "LifegamesWidgets", package: "design-system-Lifegames"),
+    ]),
+
     // ─── Tests ─────────────────────────────────────────────────────────
 
     .target(name: "TestData", dependencies: ["SharedModels", "APIClient"], path: "Tests/TestData"),
 
     .testTarget(name: "SharedModelsTests", dependencies: ["SharedModels", "TestData"]),
+    // Executes every fixture accessor so a design-system fixture/decode
+    // regression fails CI instead of crashing previews (S98).
+    .testTarget(name: "PreviewFixturesTests", dependencies: ["PreviewFixtures"]),
     .testTarget(name: "FileCellFeatureTests", dependencies: [
       "FileCellFeature", "TestData",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),

@@ -4,6 +4,7 @@ import LifegamesComponents
 import LifegamesComponentsCore
 import LifegamesTemplates
 import LifegamesTokens
+import PreviewFixtures
 import SharedModels
 import SwiftUI
 import ThumbnailCacheClient
@@ -378,19 +379,7 @@ public struct FileDetailView: View {
     FileDetailView(
       store: Store(
         initialState: FileDetailFeature.State(
-          file: File(
-            fileId: "preview-1",
-            key: "sample.mp4",
-            publishDate: Date(),
-            size: 1_258_291_200,
-            url: URL(string: "https://example.com/sample.mp4"),
-            title: "SwiftUI State Management Deep Dive",
-            description: "A deep dive into SwiftUI's state management system, exploring how data flows through your app.",
-            authorName: "Point-Free",
-            duration: 6138,
-            viewCount: 142_300,
-            thumbnailUrl: nil
-          ),
+          file: PreviewFixtures.file(.downloaded),
           isDownloaded: true
         )
       ) {

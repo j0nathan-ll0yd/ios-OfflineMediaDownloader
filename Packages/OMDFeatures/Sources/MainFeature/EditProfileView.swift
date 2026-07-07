@@ -2,6 +2,7 @@ import ComposableArchitecture
 import DesignSystem
 import LifegamesComponents
 import LifegamesTokens
+import PreviewFixtures
 import SharedModels
 import SwiftUI
 
@@ -87,7 +88,7 @@ public struct EditProfileView: View {
     EditProfileView(
       store: Store(
         initialState: EditProfileFeature.State(
-          user: User(email: "ada@example.com", firstName: "Ada", identifier: "id-1", lastName: "Lovelace")
+          user: PreviewFixtures.user(.standard)
         )
       ) {
         EditProfileFeature()
