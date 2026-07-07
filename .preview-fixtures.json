@@ -1,0 +1,9 @@
+{
+  "fixtureModules": ["PreviewFixtures"],
+  "domainModulePaths": [
+    "Packages/OMDFeatures/Sources/SharedModels",
+    "Packages/OMDFeatures/Sources/PersistenceClient"
+  ],
+  "extraDomainTypes": [],
+  "allowTypes": []
+}
