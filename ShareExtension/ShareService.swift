@@ -123,7 +123,7 @@ private struct ShareAPIKeyMiddleware: ClientMiddleware {
     body: OpenAPIRuntime.HTTPBody?,
     baseURL: URL,
     operationID _: String,
-    next: (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
+    next: @concurrent @Sendable (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
     if let currentPath = request.path {
@@ -143,7 +143,7 @@ private struct ShareAuthMiddleware: ClientMiddleware {
     body: OpenAPIRuntime.HTTPBody?,
     baseURL: URL,
     operationID _: String,
-    next: (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
+    next: @concurrent @Sendable (HTTPTypes.HTTPRequest, OpenAPIRuntime.HTTPBody?, URL) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?)
   ) async throws -> (HTTPTypes.HTTPResponse, OpenAPIRuntime.HTTPBody?) {
     var request = request
     request.headerFields[.authorization] = "Bearer \(token)"

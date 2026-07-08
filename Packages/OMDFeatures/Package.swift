@@ -1,6 +1,11 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
+let approachableConcurrency: [SwiftSetting] = [
+  .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+  .enableUpcomingFeature("InferIsolatedConformances"),
+]
+
 let package = Package(
   name: "OMDFeatures",
   platforms: [.iOS(.v26)],
@@ -53,7 +58,7 @@ let package = Package(
 
     .target(name: "SharedModels", dependencies: [
       .product(name: "CustomDump", package: "swift-custom-dump"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "DesignSystem", dependencies: [
       "SharedModels",
@@ -61,7 +66,7 @@ let package = Package(
       .product(name: "LifegamesComponentsCore", package: "design-system-Lifegames"),
       .product(name: "LifegamesComponents", package: "design-system-Lifegames"),
       .product(name: "LifegamesTemplates", package: "design-system-Lifegames"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Standalone Dependency Clients ─────────────────────────────────
 
@@ -69,55 +74,55 @@ let package = Package(
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "AnalyticsClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "CorrelationClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "PerformanceClient", dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "FileClient", dependencies: [
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "ThumbnailCacheClient", dependencies: [
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "PasteboardClient", dependencies: [
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "NotificationRegistrationClient", dependencies: [
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "AuthenticationClient", dependencies: [
       "SharedModels",
       "KeychainClient",
       "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "KeychainClient", dependencies: [
       "SharedModels",
       "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       .product(name: "Valet", package: "Valet"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── API & Networking ──────────────────────────────────────────────
 
@@ -126,7 +131,7 @@ let package = Package(
       .product(name: "APITypes", package: "APITypes"),
       .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
       .product(name: "HTTPTypes", package: "swift-http-types"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "ServerClient", dependencies: [
       "SharedModels",
@@ -140,7 +145,7 @@ let package = Package(
       .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
       .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
       .product(name: "HTTPTypes", package: "swift-http-types"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Data Clients ──────────────────────────────────────────────────
 
@@ -149,18 +154,18 @@ let package = Package(
       "APIClient",
       "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "DownloadClient", dependencies: [
       "LoggerClient",
       "ServerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "LiveActivityClient", dependencies: [
       "SharedModels",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Shared Feature Utilities ──────────────────────────────────────
 
@@ -169,7 +174,7 @@ let package = Package(
       "FileClient",
       "DownloadClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Leaf Features ─────────────────────────────────────────────────
 
@@ -178,44 +183,44 @@ let package = Package(
       "ServerClient", "PersistenceClient", "FileClient",
       "DownloadClient", "ThumbnailCacheClient", "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "FileDetailFeature", dependencies: [
       "SharedModels", "DesignSystem", "DownloadBehavior",
       "ServerClient", "PersistenceClient", "FileClient", "DownloadClient",
       "ThumbnailCacheClient", "LoggerClient", "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "DefaultFilesFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "DownloadClient", "FileClient", "ServerClient", "PersistenceClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "LoginFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "ServerClient", "KeychainClient", "LoggerClient",
       "AuthenticationClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "ActiveDownloadsFeature", dependencies: [
       "SharedModels", "DesignSystem",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "DownloadTrackingFeature", dependencies: [
       "SharedModels",
       "AnalyticsClient", "DownloadClient", "LiveActivityClient", "PersistenceClient", "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "DiagnosticFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "KeychainClient", "PersistenceClient", "ServerClient", "LoggerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "ProfileFeature", dependencies: [
       "SharedModels", "DesignSystem",
@@ -226,7 +231,7 @@ let package = Package(
       "DiagnosticFeature",
       "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Composite Features ────────────────────────────────────────────
 
@@ -236,14 +241,14 @@ let package = Package(
       "AnalyticsClient", "ServerClient", "PersistenceClient", "LoggerClient",
       "LiveActivityClient", "PasteboardClient", "ThumbnailCacheClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "MainFeature", dependencies: [
       "SharedModels", "DesignSystem",
       "FileListFeature", "LoginFeature", "ActiveDownloadsFeature", "DiagnosticFeature", "ProfileFeature",
       "KeychainClient", "PreviewFixtures",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     .target(name: "RootFeature", dependencies: [
       "SharedModels", "DesignSystem",
@@ -253,7 +258,7 @@ let package = Package(
       "LoggerClient", "NotificationRegistrationClient", "LiveActivityClient",
       "ThumbnailCacheClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Preview Fixtures (S98) ────────────────────────────────────────
 
@@ -265,11 +270,11 @@ let package = Package(
       "SharedModels",
       "PersistenceClient",
       .product(name: "LifegamesWidgets", package: "design-system-Lifegames"),
-    ]),
+    ], swiftSettings: approachableConcurrency),
 
     // ─── Tests ─────────────────────────────────────────────────────────
 
-    .target(name: "TestData", dependencies: ["SharedModels", "APIClient"], path: "Tests/TestData"),
+    .target(name: "TestData", dependencies: ["SharedModels", "APIClient"], path: "Tests/TestData", swiftSettings: approachableConcurrency),
 
     .testTarget(name: "SharedModelsTests", dependencies: ["SharedModels", "TestData"]),
     // Executes every fixture accessor so a design-system fixture/decode
