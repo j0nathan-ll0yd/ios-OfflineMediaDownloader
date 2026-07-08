@@ -7,6 +7,7 @@ import SharedModels
 // It is safe to send across isolation boundaries when the State type is Sendable.
 extension ActivityContent: @retroactive @unchecked Sendable where State: Sendable {}
 
+// SANCTIONED-SINK: LiveActivityManager's local os.log logger; nonisolated-safe let on an actor (Phase-4 LA-4 disposition)
 private let liveActivityLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "OfflineMediaDownloader", category: "LiveActivity")
 
 public actor LiveActivityManager {
@@ -140,13 +141,17 @@ public actor LiveActivityManager {
     state.progressPercent = status == .downloaded ? 100 : 0
     state.errorMessage = errorMessage
 
-    // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .update() from async context
+    // Remove entries before the await so that reentrant calls (updateProgress, updateMetadata,
+    // or a second endActivity for the same fileId) that suspend on the actor during .end()
+    // find no live entry and bail early rather than operating on a dying activity.
+    activeActivities[fileId] = nil
+    currentStates[fileId] = nil
+
+    // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .end() from async context
     nonisolated(unsafe) let unsafeActivity = activity
     // SAFETY: ActivityContent is not Sendable; constructed outside actor isolation for use with nonisolated Activity .end() API
     nonisolated(unsafe) let endState = state
     await unsafeActivity.end(ActivityContent(state: endState, staleDate: nil), dismissalPolicy: .default)
-    activeActivities[fileId] = nil
-    currentStates[fileId] = nil
     liveActivityLog.info("Live Activity ended for fileId: \(fileId), status: \(status.rawValue)")
   }
 }

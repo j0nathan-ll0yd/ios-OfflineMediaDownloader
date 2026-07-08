@@ -214,7 +214,13 @@ extension AnalyticsClient: DependencyKey {
       UIDevice.current.identifierForVendor?.uuidString ?? ""
     }
     UserDefaults(suiteName: "group.lifegames.OfflineMediaDownloader")?.set(deviceId, forKey: "deviceUUID")
-    let buffer = EventBuffer(flushHandler: EventBuffer.makeFlushHandler(deviceId: deviceId))
+    let buffer = EventBuffer(
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: deviceId),
+      logHandler: { message in
+        // SANCTIONED-SINK: AnalyticsClient's error-path relay for EventBuffer flush/retry failures
+        os_log("%{public}@", log: analyticsLog, type: .error, message)
+      }
+    )
     Task { await buffer.start() }
 
     return .init(
@@ -224,8 +230,10 @@ extension AnalyticsClient: DependencyKey {
             dict.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
           } ?? ""
           if propsString.isEmpty {
+            // SANCTIONED-SINK: AnalyticsClient's own DEBUG live sink (event name only)
             os_log("[Analytics] %{public}@", log: analyticsLog, type: .debug, event.rawValue)
           } else {
+            // SANCTIONED-SINK: AnalyticsClient's own DEBUG live sink (event + properties)
             os_log("[Analytics] %{public}@ {%{public}@}", log: analyticsLog, type: .debug, event.rawValue, propsString)
           }
         #endif
@@ -240,16 +248,19 @@ extension AnalyticsClient: DependencyKey {
       },
       setUserId: { userId in
         #if DEBUG
+          // SANCTIONED-SINK: AnalyticsClient's own DEBUG live sink (user ID)
           os_log("[Analytics] Set user ID: %{public}@", log: analyticsLog, type: .debug, userId ?? "nil")
         #endif
       },
       setUserProperty: { name, value in
         #if DEBUG
+          // SANCTIONED-SINK: AnalyticsClient's own DEBUG live sink (user property)
           os_log("[Analytics] Set user property %{public}@: %{public}@", log: analyticsLog, type: .debug, name, value ?? "nil")
         #endif
       },
       screenView: { screenName in
         #if DEBUG
+          // SANCTIONED-SINK: AnalyticsClient's own DEBUG live sink (screen view)
           os_log("[Analytics] Screen view: %{public}@", log: analyticsLog, type: .debug, screenName)
         #endif
       },

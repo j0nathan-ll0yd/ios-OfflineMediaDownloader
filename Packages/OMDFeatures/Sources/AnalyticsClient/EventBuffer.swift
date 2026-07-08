@@ -1,18 +1,21 @@
 import Foundation
-import os.log
 
 public actor EventBuffer {
   private var events: [ClientEvent] = []
   private var flushTask: Task<Void, Never>?
   private let flushHandler: @Sendable (Data) async throws -> Void
+  private let logHandler: @Sendable (String) -> Void
 
   private static let maxBatchSize = 50
   private static let flushInterval: TimeInterval = 60
   private static let maxRetries = 3
-  private static let bufferLog = OSLog(subsystem: "OfflineMediaDownloader", category: "EventBuffer")
 
-  public init(flushHandler: @escaping @Sendable (Data) async throws -> Void) {
+  public init(
+    flushHandler: @escaping @Sendable (Data) async throws -> Void,
+    logHandler: @escaping @Sendable (String) -> Void = { _ in }
+  ) {
     self.flushHandler = flushHandler
+    self.logHandler = logHandler
   }
 
   public func start() {
@@ -41,7 +44,7 @@ public actor EventBuffer {
       let data = try JSONEncoder().encode(batch)
       try await sendWithRetry(data)
     } catch {
-      os_log("EventBuffer flush failed: %{public}@", log: Self.bufferLog, type: .error, error.localizedDescription)
+      logHandler("EventBuffer flush failed: \(error.localizedDescription)")
     }
   }
 
@@ -56,7 +59,7 @@ public actor EventBuffer {
         return
       } catch {
         lastError = error
-        os_log("EventBuffer attempt %d failed: %{public}@", log: Self.bufferLog, type: .error, attempt + 1, error.localizedDescription)
+        logHandler("EventBuffer attempt \(attempt + 1) failed: \(error.localizedDescription)")
       }
     }
     throw lastError ?? URLError(.unknown)
