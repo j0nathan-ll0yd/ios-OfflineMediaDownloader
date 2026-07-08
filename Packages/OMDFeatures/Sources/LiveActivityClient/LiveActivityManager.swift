@@ -191,34 +191,36 @@ public actor LiveActivityManager {
 
   // MARK: - Testing support
 
-  /// Returns the current actor-side ContentState for a fileId.
-  /// Tests use this to assert that currentStates converged to the expected value
-  /// after a sequence of updateProgress/updateMetadata calls completes.
-  public func currentState(forFileId fileId: String) -> DownloadActivityAttributes.ContentState? {
-    currentStates[fileId]
-  }
+  #if DEBUG
+    /// Returns the current actor-side ContentState for a fileId.
+    /// Tests use this to assert that currentStates converged to the expected value
+    /// after a sequence of updateProgress/updateMetadata calls completes.
+    func currentState(forFileId fileId: String) -> DownloadActivityAttributes.ContentState? {
+      currentStates[fileId]
+    }
 
-  /// Returns whether a desired-state update is pending or in flight for a fileId.
-  /// Tests use this to assert that endActivity cleared the pending update queue.
-  public func hasPendingUpdate(forFileId fileId: String) -> Bool {
-    desiredStates[fileId] != nil || applyingFileIds.contains(fileId)
-  }
+    /// Returns whether a desired-state update is pending or in flight for a fileId.
+    /// Tests use this to assert that endActivity cleared the pending update queue.
+    func hasPendingUpdate(forFileId fileId: String) -> Bool {
+      desiredStates[fileId] != nil || applyingFileIds.contains(fileId)
+    }
 
-  /// Registers a mock update function for a fileId, bypassing the real ActivityKit Activity.
-  /// Call this in tests to simulate an active activity and capture applied states.
-  /// Guards in updateProgress/updateMetadata check activityUpdaters[fileId] != nil, so
-  /// registering here is sufficient to make those methods route through the mock updater.
-  /// endActivity still requires activeActivities[fileId] for its .end() call; tests that
-  /// exercise endActivity should call this then verify desiredStates is cleared directly.
-  /// Only for use in unit tests — not part of the public production API.
-  public func registerMockUpdater(
-    fileId: String,
-    initialState: DownloadActivityAttributes.ContentState,
-    updater: @escaping @Sendable (DownloadActivityAttributes.ContentState) async -> Void
-  ) {
-    currentStates[fileId] = initialState
-    activityUpdaters[fileId] = updater
-  }
+    /// Registers a mock update function for a fileId, bypassing the real ActivityKit Activity.
+    /// Call this in tests to simulate an active activity and capture applied states.
+    /// Guards in updateProgress/updateMetadata check activityUpdaters[fileId] != nil, so
+    /// registering here is sufficient to make those methods route through the mock updater.
+    /// endActivity still requires activeActivities[fileId] for its .end() call; tests that
+    /// exercise endActivity should call this then verify desiredStates is cleared directly.
+    /// Only for use in unit tests — not part of the public production API.
+    func registerMockUpdater(
+      fileId: String,
+      initialState: DownloadActivityAttributes.ContentState,
+      updater: @escaping @Sendable (DownloadActivityAttributes.ContentState) async -> Void
+    ) {
+      currentStates[fileId] = initialState
+      activityUpdaters[fileId] = updater
+    }
+  #endif
 
   // MARK: - Private
 
