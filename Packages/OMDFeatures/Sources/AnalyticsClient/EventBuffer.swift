@@ -8,7 +8,12 @@ public actor EventBuffer {
 
   private static let maxBatchSize = 50
   private static let flushInterval: TimeInterval = 60
-  private static let maxRetries = 3
+  /// Internal so tests can use it when building controlled failure sequences.
+  static let maxRetries = 3
+  // EB-1: cap on re-enqueued events after terminal send failure. If re-enqueuing the failed
+  // batch would push the buffer beyond this limit, the oldest overflow events are dropped and
+  // logged — never silently truncated.
+  static let maxReenqueueCap = 200
 
   public init(
     flushHandler: @escaping @Sendable (Data) async throws -> Void,
@@ -37,6 +42,8 @@ public actor EventBuffer {
 
   public func flush() async {
     guard !events.isEmpty else { return }
+    // Snapshot and clear before the await so events appended during the send
+    // form the next disjoint batch and are never double-sent (reentrancy-safe property).
     let batch = ClientEventBatch(events: events)
     events.removeAll()
 
@@ -44,7 +51,21 @@ public actor EventBuffer {
       let data = try JSONEncoder().encode(batch)
       try await sendWithRetry(data)
     } catch {
-      logHandler("EventBuffer flush failed: \(error.localizedDescription)")
+      // EB-1: all retries exhausted — re-enqueue the failed batch at the FRONT of events
+      // so chronological order is preserved (failed events come before any events appended
+      // during the await). Bounded by maxReenqueueCap: if the combined count exceeds the
+      // cap, the oldest overflow events are dropped and logged rather than silently lost.
+      let combined = batch.events + events
+      if combined.count > Self.maxReenqueueCap {
+        let dropCount = combined.count - Self.maxReenqueueCap
+        events = Array(combined.dropFirst(dropCount))
+        logHandler(
+          "EventBuffer flush failed (terminal): dropped \(dropCount) oldest event(s) to stay within cap(\(Self.maxReenqueueCap)). Error: \(error.localizedDescription)"
+        )
+      } else {
+        events = combined
+        logHandler("EventBuffer flush failed (terminal): re-enqueued \(batch.events.count) event(s) for next flush. Error: \(error.localizedDescription)")
+      }
     }
   }
 
