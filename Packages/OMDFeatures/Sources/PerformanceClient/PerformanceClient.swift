@@ -2,6 +2,7 @@ import Dependencies
 import DependenciesMacros
 import Foundation
 import os.log
+import Synchronization
 
 // MARK: - Performance Types
 
@@ -110,6 +111,7 @@ extension PerformanceClient: DependencyKey {
           #if DEBUG
             if let duration = trace.duration {
               let ms = duration * 1000
+              // SANCTIONED-SINK: PerformanceClient's DEBUG live sink (trace duration)
               os_log("[Perf] [%{public}@] %.2fms", log: perfLog, type: .debug, trace.name, ms)
             }
           #endif
@@ -125,6 +127,7 @@ extension PerformanceClient: DependencyKey {
         )
         storage.recordMetric(metric)
         #if DEBUG
+          // SANCTIONED-SINK: PerformanceClient's DEBUG live sink (metric value)
           os_log("[Perf] [%{public}@] %.2f %{public}@", log: perfLog, type: .debug, name, value, unit)
         #endif
       },
@@ -149,56 +152,52 @@ public extension DependencyValues {
 
 // MARK: - Storage
 
-private final class PerformanceStorage: @unchecked Sendable {
-  private let lock = NSLock()
-  private var activeTraces: [UUID: PerformanceTrace] = [:]
-  private var completedTraces: [PerformanceTrace] = []
-  private var metrics: [PerformanceMetric] = []
+private final class PerformanceStorage: Sendable {
+  private struct State {
+    var activeTraces: [UUID: PerformanceTrace] = [:]
+    var completedTraces: [PerformanceTrace] = []
+    var metrics: [PerformanceMetric] = []
+  }
+
+  private let storage = Mutex(State())
   private let maxEntries = 500
 
   func startTrace(_ trace: PerformanceTrace) {
-    lock.lock()
-    defer { lock.unlock() }
-    activeTraces[trace.id] = trace
+    storage.withLock { $0.activeTraces[trace.id] = trace }
   }
 
   func endTrace(_ id: UUID, metadata: [String: String]?) -> PerformanceTrace? {
-    lock.lock()
-    defer { lock.unlock() }
-
-    guard var trace = activeTraces.removeValue(forKey: id) else { return nil }
-    trace.endTime = Date()
-    if let metadata {
-      trace.metadata.merge(metadata) { _, new in new }
+    storage.withLock { state in
+      guard var trace = state.activeTraces.removeValue(forKey: id) else { return nil }
+      trace.endTime = Date()
+      if let metadata {
+        trace.metadata.merge(metadata) { _, new in new }
+      }
+      state.completedTraces.append(trace)
+      if state.completedTraces.count > maxEntries {
+        state.completedTraces.removeFirst(state.completedTraces.count - maxEntries)
+      }
+      // S100: PerformanceTrace is a Sendable value type — safe to return from withLock.
+      return trace
     }
-
-    completedTraces.append(trace)
-    if completedTraces.count > maxEntries {
-      completedTraces.removeFirst(completedTraces.count - maxEntries)
-    }
-
-    return trace
   }
 
   func recordMetric(_ metric: PerformanceMetric) {
-    lock.lock()
-    defer { lock.unlock() }
-
-    metrics.append(metric)
-    if metrics.count > maxEntries {
-      metrics.removeFirst(metrics.count - maxEntries)
+    storage.withLock { state in
+      state.metrics.append(metric)
+      if state.metrics.count > maxEntries {
+        state.metrics.removeFirst(state.metrics.count - maxEntries)
+      }
     }
   }
 
   func getActiveTraces() -> [PerformanceTrace] {
-    lock.lock()
-    defer { lock.unlock() }
-    return Array(activeTraces.values)
+    // S100: return a Sendable value-type copy, never the protected State itself.
+    storage.withLock { Array($0.activeTraces.values) }
   }
 
   func getRecentMetrics(_ count: Int) -> [PerformanceMetric] {
-    lock.lock()
-    defer { lock.unlock() }
-    return Array(metrics.suffix(count))
+    // S100: return a Sendable value-type copy, never the protected State itself.
+    storage.withLock { Array($0.metrics.suffix(count)) }
   }
 }

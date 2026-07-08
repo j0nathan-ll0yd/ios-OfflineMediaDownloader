@@ -2,6 +2,7 @@ import Dependencies
 import DependenciesMacros
 import Foundation
 import os.log
+import Synchronization
 
 // MARK: - Log Types
 
@@ -170,6 +171,7 @@ extension LoggerClient: DependencyKey {
         } ?? ""
 
         let fullMessage = metadataString.isEmpty ? message : "\(message) [\(metadataString)]"
+        // SANCTIONED-SINK: LoggerClient's own live os.log sink (primary system log output)
         os_log("%{public}@", log: category.osLog, type: level.osLogType, fullMessage)
 
         // Store in memory for debugging
@@ -187,6 +189,7 @@ extension LoggerClient: DependencyKey {
         #if DEBUG
           let timestamp = ISO8601DateFormatter().string(from: entry.timestamp)
           let debugMsg = "\(level.emoji) [\(timestamp)] [\(category.rawValue)] \(message)"
+          // SANCTIONED-SINK: LoggerClient's DEBUG Xcode console visibility sink
           os_log("%{public}@", log: debugConsoleLog, type: .debug, debugMsg)
         #endif
       },
@@ -217,39 +220,44 @@ public extension DependencyValues {
 
 // MARK: - Storage
 
-private final class LogStorage: @unchecked Sendable {
-  private let lock = NSLock()
-  private var entries: [LogEntry] = []
+/// `minLevel` is folded into `State` so both the level-filter read (liveValue:165) and
+/// the setMinLevel write (liveValue:203) are always covered by the same lock, closing
+/// the latent data race present in the NSLock version (where minLevel was unguarded).
+private final class LogStorage: Sendable {
+  private struct State {
+    var entries: [LogEntry] = []
+    var minLevel: LogLevel = .debug
+  }
+
+  private let storage = Mutex(State())
   private let maxEntries = 1000
 
-  var minLevel: LogLevel = .debug
+  var minLevel: LogLevel {
+    get { storage.withLock { $0.minLevel } }
+    set { storage.withLock { $0.minLevel = newValue } }
+  }
 
   func append(_ entry: LogEntry) {
-    lock.lock()
-    defer { lock.unlock() }
-
-    entries.append(entry)
-    if entries.count > maxEntries {
-      entries.removeFirst(entries.count - maxEntries)
+    storage.withLock { state in
+      state.entries.append(entry)
+      if state.entries.count > maxEntries {
+        state.entries.removeFirst(state.entries.count - maxEntries)
+      }
     }
   }
 
   func getRecent(_ count: Int) -> [LogEntry] {
-    lock.lock()
-    defer { lock.unlock() }
-
-    return Array(entries.suffix(count))
+    // S100: return a Sendable value-type copy, never the protected State itself.
+    storage.withLock { Array($0.entries.suffix(count)) }
   }
 
   func clear() {
-    lock.lock()
-    defer { lock.unlock() }
-    entries.removeAll()
+    storage.withLock { $0.entries.removeAll() }
   }
 
   func exportJSON() throws -> Data {
-    lock.lock()
-    defer { lock.unlock() }
+    // S100: extract a value-type copy before releasing the lock, then serialize outside.
+    let entries = storage.withLock { Array($0.entries) }
 
     let exportable = entries.map { entry -> [String: Any] in
       var dict: [String: Any] = [
