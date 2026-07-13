@@ -1,4 +1,5 @@
 @testable import AnalyticsClient
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -42,11 +43,9 @@ struct EventBufferTests {
 
   @Test("Successful flush clears the buffer and sends exactly once")
   func successfulFlushClearsBuffer() async {
-    // SAFETY: sentCount is accessed only from the actor-isolated flush test path;
-    // the flushHandler closure is called serially within a single await chain.
-    nonisolated(unsafe) var sentCount = 0
+    let sentCount = LockIsolated(0)
     let buffer = EventBuffer(
-      flushHandler: { _ in sentCount += 1 },
+      flushHandler: { _ in sentCount.withValue { $0 += 1 } },
       logHandler: { _ in }
     )
 
@@ -54,33 +53,34 @@ struct EventBufferTests {
       await buffer.append(makeEvent())
     }
     await buffer.flush()
-    #expect(sentCount == 1)
+    #expect(sentCount.value == 1)
 
     // A second flush with an empty buffer is a no-op.
     await buffer.flush()
-    #expect(sentCount == 1)
+    #expect(sentCount.value == 1)
   }
 
   // MARK: - EB-1: re-enqueue on terminal failure
 
   @Test("Terminal send failure logs a terminal message and re-enqueues for next flush")
   func terminalFailureLogsAndReenqueues() async {
-    // SAFETY: these vars are mutated only within the serially-called flushHandler closure
-    // and read only after all awaits complete — no concurrent access possible.
-    nonisolated(unsafe) var logMessages: [String] = []
-    nonisolated(unsafe) var callCount = 0
-    nonisolated(unsafe) var successData: Data?
+    let logMessages = LockIsolated<[String]>([])
+    let callCount = LockIsolated(0)
+    let successData = LockIsolated<Data?>(nil)
 
     let buffer = EventBuffer(
       flushHandler: { data in
-        callCount += 1
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
         // Fail first maxRetries calls; succeed on the next.
-        if callCount <= EventBuffer.maxRetries {
+        if count <= EventBuffer.maxRetries {
           throw URLError(.notConnectedToInternet)
         }
-        successData = data
+        successData.withValue { $0 = data }
       },
-      logHandler: { msg in logMessages.append(msg) }
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
 
     for _ in 0 ..< 3 {
@@ -91,13 +91,13 @@ struct EventBufferTests {
     await buffer.flush()
 
     // The log must contain a terminal-failure message (never silent).
-    let hasTerminalLog = logMessages.contains { $0.contains("terminal") }
-    #expect(hasTerminalLog, "Expected terminal-failure log; got: \(logMessages)")
+    let hasTerminalLog = logMessages.value.contains { $0.contains("terminal") }
+    #expect(hasTerminalLog, "Expected terminal-failure log; got: \(logMessages.value)")
 
     // Second flush: succeeds, must send the re-enqueued 3 events.
     await buffer.flush()
 
-    let data = successData
+    let data = successData.value
     #expect(data != nil, "Second flush should have produced data")
     if let data {
       let count = eventCount(in: data)
@@ -107,17 +107,19 @@ struct EventBufferTests {
 
   @Test("Re-enqueued events appear before events appended after the failing flush")
   func reEnqueuedEventsLeadNextBatch() async {
-    // SAFETY: callCount and batchSizes are only mutated serially inside flushHandler awaits.
-    nonisolated(unsafe) var callCount = 0
-    nonisolated(unsafe) var batchSizes: [Int] = []
+    let callCount = LockIsolated(0)
+    let batchSizes = LockIsolated<[Int]>([])
 
     let buffer = EventBuffer(
       flushHandler: { data in
-        callCount += 1
-        if callCount <= EventBuffer.maxRetries {
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
+        if count <= EventBuffer.maxRetries {
           throw URLError(.notConnectedToInternet)
         }
-        batchSizes.append(eventCount(in: data))
+        batchSizes.withValue { $0.append(eventCount(in: data)) }
       },
       logHandler: { _ in }
     )
@@ -134,7 +136,7 @@ struct EventBufferTests {
     // Second flush: must send 3 (2 re-enqueued + 1 new), in that order.
     await buffer.flush()
 
-    #expect(batchSizes == [3], "Expected one successful batch of 3; got \(batchSizes)")
+    #expect(batchSizes.value == [3], "Expected one successful batch of 3; got \(batchSizes.value)")
   }
 
   // MARK: - EB-1: cap enforcement
@@ -148,16 +150,18 @@ struct EventBufferTests {
   @Test("Re-enqueue below cap: no events are dropped and terminal log emitted")
   func reEnqueueBelowCapNoDrops() async {
     // 5 events << maxReenqueueCap (200), so re-enqueue stays well within cap.
-    // SAFETY: logMessages is mutated only within serially-called handler closures.
-    nonisolated(unsafe) var logMessages: [String] = []
-    nonisolated(unsafe) var callCount = 0
+    let logMessages = LockIsolated<[String]>([])
+    let callCount = LockIsolated(0)
 
     let buffer = EventBuffer(
       flushHandler: { _ in
-        callCount += 1
-        if callCount <= EventBuffer.maxRetries { throw URLError(.notConnectedToInternet) }
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
+        if count <= EventBuffer.maxRetries { throw URLError(.notConnectedToInternet) }
       },
-      logHandler: { msg in logMessages.append(msg) }
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
 
     for _ in 0 ..< 5 {
@@ -165,9 +169,9 @@ struct EventBufferTests {
     }
     await buffer.flush()
 
-    let hasDrop = logMessages.contains { $0.contains("dropped") }
-    #expect(!hasDrop, "Should not drop 5 events (well below cap 200); messages: \(logMessages)")
-    #expect(logMessages.contains { $0.contains("terminal") }, "Expected terminal log; got: \(logMessages)")
+    let hasDrop = logMessages.value.contains { $0.contains("dropped") }
+    #expect(!hasDrop, "Should not drop 5 events (well below cap 200); messages: \(logMessages.value)")
+    #expect(logMessages.value.contains { $0.contains("terminal") }, "Expected terminal log; got: \(logMessages.value)")
   }
 
   @Test("Re-enqueue exceeding cap drops oldest overflow and logs the count")
@@ -197,12 +201,11 @@ struct EventBufferTests {
     let expectedTotal = batchSize * rounds // 245
     let expectedDrop = expectedTotal - cap // 45
 
-    // SAFETY: logMessages is mutated only within serially-called handler closures.
-    nonisolated(unsafe) var logMessages: [String] = []
+    let logMessages = LockIsolated<[String]>([])
 
     let buffer = EventBuffer(
       flushHandler: { _ in throw URLError(.notConnectedToInternet) },
-      logHandler: { msg in logMessages.append(msg) }
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
 
     for _ in 0 ..< rounds {
@@ -212,8 +215,8 @@ struct EventBufferTests {
       await buffer.flush()
     }
 
-    let dropLog = logMessages.first { $0.contains("dropped") }
-    #expect(dropLog != nil, "Expected a drop log after \(rounds) rounds; got: \(logMessages)")
+    let dropLog = logMessages.value.first { $0.contains("dropped") }
+    #expect(dropLog != nil, "Expected a drop log after \(rounds) rounds; got: \(logMessages.value)")
     #expect(
       dropLog?.contains("\(expectedDrop)") == true,
       "Expected drop count of \(expectedDrop); got: \(dropLog ?? "nil")"
@@ -224,17 +227,19 @@ struct EventBufferTests {
 
   @Test("Events appended during a failing send are included in re-enqueued buffer, not double-sent")
   func eventsAppendedDuringFailAreNotDoubleSent() async {
-    // SAFETY: batchSizes and callCount are mutated only within serially-called handler closures.
-    nonisolated(unsafe) var batchSizes: [Int] = []
-    nonisolated(unsafe) var callCount = 0
+    let batchSizes = LockIsolated<[Int]>([])
+    let callCount = LockIsolated(0)
 
     let buffer = EventBuffer(
       flushHandler: { data in
-        callCount += 1
-        if callCount <= EventBuffer.maxRetries {
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
+        if count <= EventBuffer.maxRetries {
           throw URLError(.notConnectedToInternet)
         }
-        batchSizes.append(eventCount(in: data))
+        batchSizes.withValue { $0.append(eventCount(in: data)) }
       },
       logHandler: { _ in }
     )
@@ -255,6 +260,6 @@ struct EventBufferTests {
     // Second flush succeeds: should send exactly 5 (3 re-enqueued + 2 new).
     await buffer.flush()
 
-    #expect(batchSizes == [5], "Expected exactly one batch of 5; got \(batchSizes)")
+    #expect(batchSizes.value == [5], "Expected exactly one batch of 5; got \(batchSizes.value)")
   }
 }
