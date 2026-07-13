@@ -176,10 +176,7 @@ public actor LiveActivityManager {
     // or a second endActivity for the same fileId) that suspend on the actor during .end()
     // find no live entry and bail early rather than operating on a dying activity.
     // Also cancel any pending coalesced update so a late applier cannot re-show an ended activity.
-    activeActivities[fileId] = nil
-    currentStates[fileId] = nil
-    desiredStates[fileId] = nil
-    activityUpdaters[fileId] = nil
+    cancelActivityState(fileId: fileId)
 
     // SAFETY: Activity<T> is not Sendable; escaping actor isolation is required to call .end() from async context
     nonisolated(unsafe) let unsafeActivity = activity
@@ -220,9 +217,30 @@ public actor LiveActivityManager {
       currentStates[fileId] = initialState
       activityUpdaters[fileId] = updater
     }
+
+    /// Invokes the cancellation prologue from endActivity for a fileId without requiring a
+    /// real Activity<T>. Tests use this to simulate the endActivity-vs-applier race:
+    /// cancel the state mid-flight and assert the applier drain loop exits cleanly.
+    func cancelActivityStateForTesting(fileId: String) {
+      cancelActivityState(fileId: fileId)
+    }
   #endif
 
   // MARK: - Private
+
+  /// Clears all actor-side state for `fileId` before issuing an awaiting `.end()` call.
+  /// Extracted so that production `endActivity` and the #if DEBUG test seam both call
+  /// the same prologue — ensures no divergence between tested and production paths.
+  ///
+  /// Must be called synchronously (no await) before any suspension point in endActivity
+  /// so that concurrent applier loops see nil activityUpdaters[fileId] on their next
+  /// loop iteration and exit cleanly without issuing an update on a dying activity.
+  private func cancelActivityState(fileId: String) {
+    activeActivities[fileId] = nil
+    currentStates[fileId] = nil
+    desiredStates[fileId] = nil
+    activityUpdaters[fileId] = nil
+  }
 
   /// Single-flight coalescing applier for external Activity.update() calls (LA-2/LA-3 fix).
   ///

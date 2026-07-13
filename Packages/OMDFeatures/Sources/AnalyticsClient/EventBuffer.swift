@@ -55,6 +55,10 @@ public actor EventBuffer {
       // so chronological order is preserved (failed events come before any events appended
       // during the await). Bounded by maxReenqueueCap: if the combined count exceeds the
       // cap, the oldest overflow events are dropped and logged rather than silently lost.
+      // Note on ordering under concurrent terminal failures: if two flushes fail concurrently
+      // and both re-enqueue, their batches can interleave across each other (each batch stays
+      // internally ordered, but relative order across batches is not guaranteed). This is
+      // acceptable for best-effort analytics — the server orders events by event timestamp.
       let combined = batch.events + events
       if combined.count > Self.maxReenqueueCap {
         let dropCount = combined.count - Self.maxReenqueueCap
