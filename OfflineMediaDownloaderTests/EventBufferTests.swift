@@ -159,7 +159,9 @@ struct EventBufferTests {
           count += 1
           return count
         }
-        if count <= EventBuffer.maxRetries { throw URLError(.notConnectedToInternet) }
+        if count <= EventBuffer.maxRetries {
+          throw URLError(.notConnectedToInternet)
+        }
       },
       logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
@@ -176,47 +178,25 @@ struct EventBufferTests {
 
   @Test("Re-enqueue exceeding cap drops oldest overflow and logs the count")
   func capExceededDropsOldestAndLogs() async {
-    // Strategy: first flush re-enqueues N events (N < 50, no auto-flush). Then we append
-    // enough additional events so the second flush's re-enqueue attempt sees combined > cap
-    // and logs a drop. To keep all appends below the auto-flush threshold (50 per append
-    // session), we build up to cap+overflow across two controlled flushes:
-    //
-    //   Round 1: append 49, flush → fail → re-enqueue 49 (49 ≤ 200, no drop)
-    //   Append 49 more (49 < 50 threshold, no auto-flush) → buffer has 49+49 = 98
-    //   Round 2: flush snapshots 98, fails → re-enqueue: combined = 98 + 0 = 98 (still ≤ 200)
-    //
-    // 200-cap needs combined > 200. 4 rounds of 49 = 196 — still under cap.
-    // Use 5 rounds: 5 × 49 = 245 > 200. Drop = 245 − 200 = 45 events.
-    // Each round: append 49, flush (fails). After each flush events = previous + 49.
-    //
-    // Round 1: snap=49 fail → events=49
-    // Round 2: snap=49+49=98 fail → events=98
-    // Round 3: snap=98+49=147 fail → events=147
-    // Round 4: snap=147+49=196 fail → events=196
-    // Round 5: snap=196+49=245 fail → combined=245 > 200 → drop 45, log "dropped 45"
-
     let cap = EventBuffer.maxReenqueueCap
-    let batchSize = 49 // stay below auto-flush threshold of 50
-    let rounds = 5
-    let expectedTotal = batchSize * rounds // 245
-    let expectedDrop = expectedTotal - cap // 45
+    let expectedTotal = cap + 45
+    let expectedDrop = expectedTotal - cap
 
     let logMessages = LockIsolated<[String]>([])
 
     let buffer = EventBuffer(
       flushHandler: { _ in throw URLError(.notConnectedToInternet) },
-      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } },
+      maxBatchSize: .max
     )
 
-    for _ in 0 ..< rounds {
-      for _ in 0 ..< batchSize {
-        await buffer.append(makeEvent())
-      }
-      await buffer.flush()
+    for _ in 0 ..< expectedTotal {
+      await buffer.append(makeEvent())
     }
+    await buffer.flush()
 
     let dropLog = logMessages.value.first { $0.contains("dropped") }
-    #expect(dropLog != nil, "Expected a drop log after \(rounds) rounds; got: \(logMessages.value)")
+    #expect(dropLog != nil, "Expected a drop log; got: \(logMessages.value)")
     #expect(
       dropLog?.contains("\(expectedDrop)") == true,
       "Expected drop count of \(expectedDrop); got: \(dropLog ?? "nil")"

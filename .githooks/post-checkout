@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Seed a newly-created linked worktree. Do not run on ordinary branch switches.
+[ "$3" = "1" ] || exit 0
+[ "$1" = "0000000000000000000000000000000000000000" ] || exit 0
+[ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ] || exit 0
+
+setup="$(git rev-parse --show-toplevel)/Scripts/worktree-setup.sh"
+[ -x "$setup" ] && "$setup"
+exit 0

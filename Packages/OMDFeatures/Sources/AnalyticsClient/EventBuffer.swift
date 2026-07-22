@@ -5,8 +5,9 @@ public actor EventBuffer {
   private var flushTask: Task<Void, Never>?
   private let flushHandler: @Sendable (Data) async throws -> Void
   private let logHandler: @Sendable (String) -> Void
+  private let maxBatchSize: Int
 
-  private static let maxBatchSize = 50
+  private static let defaultMaxBatchSize = 50
   private static let flushInterval: TimeInterval = 60
   /// Internal so tests can use it when building controlled failure sequences.
   static let maxRetries = 3
@@ -19,8 +20,23 @@ public actor EventBuffer {
     flushHandler: @escaping @Sendable (Data) async throws -> Void,
     logHandler: @escaping @Sendable (String) -> Void = { _ in }
   ) {
+    self.init(
+      flushHandler: flushHandler,
+      logHandler: logHandler,
+      maxBatchSize: Self.defaultMaxBatchSize
+    )
+  }
+
+  /// Internal seam for deterministic tests of buffering behavior that would
+  /// otherwise trigger automatic background flushes at the production limit.
+  init(
+    flushHandler: @escaping @Sendable (Data) async throws -> Void,
+    logHandler: @escaping @Sendable (String) -> Void,
+    maxBatchSize: Int
+  ) {
     self.flushHandler = flushHandler
     self.logHandler = logHandler
+    self.maxBatchSize = maxBatchSize
   }
 
   public func start() {
@@ -35,7 +51,7 @@ public actor EventBuffer {
 
   public func append(_ event: ClientEvent) {
     events.append(event)
-    if events.count >= Self.maxBatchSize {
+    if events.count >= maxBatchSize {
       Task { await flush() }
     }
   }

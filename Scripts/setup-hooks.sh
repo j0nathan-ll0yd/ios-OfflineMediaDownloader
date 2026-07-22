@@ -14,10 +14,12 @@ git config core.hooksPath .githooks
 
 # Make hooks executable
 chmod +x "$PROJECT_ROOT/.githooks/commit-msg"
+chmod +x "$PROJECT_ROOT/.githooks/post-checkout"
 chmod +x "$PROJECT_ROOT/.githooks/pre-push"
 
 echo "✅ Git hooks configured successfully!"
 echo ""
 echo "Hooks installed:"
 echo "  - commit-msg: Blocks AI attribution in commit messages"
+echo "  - post-checkout: Provisions fresh linked worktrees"
 echo "  - pre-push: Blocks direct main pushes, verifies Xcode build"
