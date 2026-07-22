@@ -300,7 +300,14 @@ struct LiveActivityCoalescingTests {
       await Task.yield()
     }
 
-    // Resume the second call.
+    // The updater increments the call count just before it stores its continuation.
+    // On a fast CI runner, observing callCount == 2 does not yet guarantee that the
+    // continuation is available to resume.
+    while inFlightContinuation.value == nil {
+      await Task.yield()
+    }
+
+    // Resume the second call once its continuation has been captured.
     inFlightContinuation.value?.resume()
 
     await firstUpdate
