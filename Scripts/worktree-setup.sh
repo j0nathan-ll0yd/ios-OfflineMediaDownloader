@@ -14,14 +14,20 @@ for rel in .claude/settings.local.json Development.xcconfig; do
   dst="$worktree/$rel"
   if [ -e "$src" ] && [ ! -e "$dst" ]; then
     mkdir -p "$(dirname "$dst")"
-    cp -R "$src" "$dst" && log "seeded $rel" || log "WARN: failed to seed $rel"
+    if cp -R "$src" "$dst"; then
+      log "seeded $rel"
+    else
+      log "WARN: failed to seed $rel"
+    fi
   fi
 done
 
 if [ "${WORKTREE_SKIP_INSTALL:-0}" != "1" ]; then
-  (cd "$worktree/APITypes" && swift package resolve) >/dev/null 2>&1 \
-    && log 'resolved APITypes' \
-    || log 'WARN: APITypes resolution failed — run swift package resolve manually'
+  if (cd "$worktree/APITypes" && swift package resolve) >/dev/null 2>&1; then
+    log 'resolved APITypes'
+  else
+    log 'WARN: APITypes resolution failed — run swift package resolve manually'
+  fi
 fi
 
-log done
+log 'done'
