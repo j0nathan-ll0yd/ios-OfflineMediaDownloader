@@ -9,30 +9,31 @@ main="$(dirname "$(git rev-parse --git-common-dir)")"
 
 log() { printf 'worktree-setup: %s\n' "$1"; }
 
+# Shared SPM Module Cache export for fast package resolution
+export SWIFTPM_MODULE_CACHE_PATH="${HOME}/Library/Caches/org.swift.swiftpm/ModuleCache"
+
+# 1) Synchronous (< 100ms): Seed gitignored local files
 for rel in .claude/settings.local.json Development.xcconfig; do
   src="$main/$rel"
   dst="$worktree/$rel"
   if [ -e "$src" ] && [ ! -e "$dst" ]; then
     mkdir -p "$(dirname "$dst")"
-    if cp -R "$src" "$dst"; then
-      log "seeded $rel"
-    else
-      log "WARN: failed to seed $rel"
-    fi
+    cp -R "$src" "$dst" 2>/dev/null && log "seeded $rel"
   fi
 done
 
+# 2) Direnv auto-allow
+if command -v direnv >/dev/null 2>&1 && [ -f "$worktree/.envrc" ]; then
+  ( cd "$worktree" && direnv allow >/dev/null 2>&1 || true )
+fi
+
+# 3) Fast SPM resolve
 if [ "${WORKTREE_SKIP_INSTALL:-0}" != "1" ]; then
   if (cd "$worktree/APITypes" && swift package resolve) >/dev/null 2>&1; then
     log 'resolved APITypes'
   else
     log 'WARN: APITypes resolution failed — run swift package resolve manually'
   fi
-fi
-
-if command -v direnv >/dev/null 2>&1 && [ -f "$worktree/.envrc" ]; then
-  (cd "$worktree" && direnv allow) >/dev/null 2>&1
-  log 'allowed direnv'
 fi
 
 log 'done'
