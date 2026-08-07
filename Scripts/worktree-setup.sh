@@ -24,7 +24,11 @@ done
 
 # 2) Direnv auto-allow
 if command -v direnv >/dev/null 2>&1 && [ -f "$worktree/.envrc" ]; then
-  ( cd "$worktree" && direnv allow >/dev/null 2>&1 || true )
+  (
+    if cd "$worktree"; then
+      direnv allow >/dev/null 2>&1 || true
+    fi
+  )
 fi
 
 # 3) Fast SPM resolve
