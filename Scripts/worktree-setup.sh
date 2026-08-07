@@ -30,4 +30,9 @@ if [ "${WORKTREE_SKIP_INSTALL:-0}" != "1" ]; then
   fi
 fi
 
+if command -v direnv >/dev/null 2>&1 && [ -f "$worktree/.envrc" ]; then
+  (cd "$worktree" && direnv allow) >/dev/null 2>&1
+  log 'allowed direnv'
+fi
+
 log 'done'
