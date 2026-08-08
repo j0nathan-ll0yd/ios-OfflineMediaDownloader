@@ -100,6 +100,8 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/setup-xcode-env
+        with:
+          discover_simulator: 'false'
       - name: Build APITypes package
         run: xcrun swift build --package-path APITypes --disable-sandbox
 
@@ -146,9 +148,16 @@ jobs:
       - uses: ./.github/actions/setup-xcode-env
         id: env
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            spm-cache-${{ runner.os }}-
+
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
         with:
-          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved', '**/Package.swift', 'Development.xcconfig') }}
           restore-keys: |
             xcode-deriveddata-${{ runner.os }}-
 
@@ -189,7 +198,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 120 \
-            -parallel-testing-enabled NO \
+            -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -208,6 +217,7 @@ jobs:
             -scheme OMDFeatures-Package \
             -destination "id=${{ steps.env.outputs.device_id }}" \
             -only-testing:PreviewFixturesTests \
+            -parallel-testing-enabled YES \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
@@ -292,10 +302,19 @@ jobs:
           ls -la "$DS_DIR" | head -5
 
       - uses: ./.github/actions/setup-xcode-env
+        with:
+          discover_simulator: 'false'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            spm-cache-${{ runner.os }}-
 
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
         with:
-          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved', '**/Package.swift', 'Development.xcconfig') }}
 
       - name: Archive (no codesign)
         run: |
@@ -330,7 +349,7 @@ jobs:
 
   s98-preview-fixtures:
     name: S98 Preview Fixtures Scan
-    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    runs-on: [self-hosted, linux, arm64, base]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
