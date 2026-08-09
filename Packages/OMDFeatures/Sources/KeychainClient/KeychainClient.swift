@@ -326,17 +326,17 @@ public extension KeychainClient {
       },
       deleteJwtToken: {
         storage.withValue { (dict: inout [String: String]) in
-          dict.removeValue(forKey: KeychainKeys.jwtToken.rawValue)
+          _ = dict.removeValue(forKey: KeychainKeys.jwtToken.rawValue)
         }
       },
       deleteTokenExpiresAt: {
         storage.withValue { (dict: inout [String: String]) in
-          dict.removeValue(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+          _ = dict.removeValue(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
         }
       },
       deleteDeviceData: {
         storage.withValue { (dict: inout [String: String]) in
-          dict.removeValue(forKey: KeychainKeys.endpointArn.rawValue)
+          _ = dict.removeValue(forKey: KeychainKeys.endpointArn.rawValue)
         }
       }
     )
