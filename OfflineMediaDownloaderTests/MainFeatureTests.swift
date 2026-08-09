@@ -7,7 +7,6 @@ import LoggerClient
 import PasteboardClient
 import Testing
 
-@Suite(.serialized)
 struct MainFeatureTests {
   // MARK: - Tab Selection Tests
 

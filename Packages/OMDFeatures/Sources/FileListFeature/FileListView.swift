@@ -85,7 +85,11 @@ public struct FileListView: View {
     .sheet(
       isPresented: Binding(
         get: { store.sharingFileURL != nil },
-        set: { if !$0 { store.send(.dismissShareSheet) } }
+        set: {
+          if !$0 {
+            store.send(.dismissShareSheet)
+          }
+        }
       )
     ) {
       if let url = store.sharingFileURL {

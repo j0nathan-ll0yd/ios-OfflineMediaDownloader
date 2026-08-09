@@ -8,7 +8,6 @@ import PersistenceClient
 import SharedModels
 import Testing
 
-@Suite(.serialized)
 struct DiagnosticFeatureTests {
   // MARK: - Keychain Loading Tests
 

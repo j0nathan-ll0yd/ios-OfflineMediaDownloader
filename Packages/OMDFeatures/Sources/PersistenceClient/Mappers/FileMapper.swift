@@ -78,16 +78,36 @@ public extension File {
     thumbnailUrl: String? = nil
   ) -> File {
     var copy = self
-    if let authorName { copy.authorName = authorName }
-    if let authorUser { copy.authorUser = authorUser }
-    if let contentType { copy.contentType = contentType }
-    if let description { copy.description = description }
-    if let status { copy.status = status }
-    if let title { copy.title = title }
-    if let duration { copy.duration = duration }
-    if let uploadDate { copy.uploadDate = uploadDate }
-    if let viewCount { copy.viewCount = viewCount }
-    if let thumbnailUrl { copy.thumbnailUrl = thumbnailUrl }
+    if let authorName {
+      copy.authorName = authorName
+    }
+    if let authorUser {
+      copy.authorUser = authorUser
+    }
+    if let contentType {
+      copy.contentType = contentType
+    }
+    if let description {
+      copy.description = description
+    }
+    if let status {
+      copy.status = status
+    }
+    if let title {
+      copy.title = title
+    }
+    if let duration {
+      copy.duration = duration
+    }
+    if let uploadDate {
+      copy.uploadDate = uploadDate
+    }
+    if let viewCount {
+      copy.viewCount = viewCount
+    }
+    if let thumbnailUrl {
+      copy.thumbnailUrl = thumbnailUrl
+    }
     return copy
   }
 }

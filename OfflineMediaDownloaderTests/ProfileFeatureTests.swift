@@ -6,7 +6,6 @@ import SharedModels
 import Testing
 
 @MainActor
-@Suite(.serialized)
 struct ProfileFeatureTests {
   // MARK: - onAppear
 

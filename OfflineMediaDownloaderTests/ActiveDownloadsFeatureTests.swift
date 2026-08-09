@@ -4,7 +4,6 @@ import Foundation
 import LoggerClient
 import Testing
 
-@Suite(.serialized)
 struct ActiveDownloadsFeatureTests {
   // MARK: - Download Started Tests
 

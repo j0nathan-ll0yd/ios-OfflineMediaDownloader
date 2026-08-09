@@ -8,7 +8,6 @@ import LoggerClient
 import SharedModels
 import Testing
 
-@Suite(.serialized)
 struct LoginFeatureTests {
   // MARK: - Login Success Tests
 

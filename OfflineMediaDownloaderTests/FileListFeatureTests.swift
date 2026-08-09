@@ -13,7 +13,6 @@ import ServerClient
 import SharedModels
 import Testing
 
-@Suite(.serialized)
 struct FileListFeatureTests {
   // MARK: - Loading Tests
 

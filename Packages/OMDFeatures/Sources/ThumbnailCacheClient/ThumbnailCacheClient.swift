@@ -127,7 +127,9 @@ private actor ThumbnailCacheStorage {
   }
 
   func hasCached(fileId: String) -> Bool {
-    if memoryCache.object(forKey: fileId as NSString) != nil { return true }
+    if memoryCache.object(forKey: fileId as NSString) != nil {
+      return true
+    }
     return diskFileExists(fileId: fileId)
   }
 

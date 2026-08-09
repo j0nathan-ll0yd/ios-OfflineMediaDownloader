@@ -64,7 +64,9 @@ extension ShareViewController {
       for provider in attachments {
         if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
           if let url = try? await provider.loadItem(forTypeIdentifier: UTType.url.identifier) as? URL {
-            if YouTubeURLValidator.validate(url) { return url }
+            if YouTubeURLValidator.validate(url) {
+              return url
+            }
           }
         }
       }

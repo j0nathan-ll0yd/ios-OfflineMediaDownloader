@@ -150,7 +150,9 @@ public struct ActiveDownloadsFeature: Sendable {
 
       case .clearCompleted:
         state.activeDownloads.removeAll { download in
-          if case .completed = download.status { return true }
+          if case .completed = download.status {
+            return true
+          }
           return false
         }
         return .none
