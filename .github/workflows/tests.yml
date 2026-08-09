@@ -75,7 +75,7 @@ jobs:
     runs-on: [self-hosted, linux, arm64, swift-lint]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Validate iOS version targets
         run: bash Scripts/validate-ios-version.sh
@@ -98,8 +98,10 @@ jobs:
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-xcode-env
+        with:
+          discover_simulator: 'false'
       - name: Build APITypes package
         run: xcrun swift build --package-path APITypes --disable-sandbox
 
@@ -111,7 +113,7 @@ jobs:
     env:
       SNAPSHOT_TESTING_RECORD: never
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
@@ -146,9 +148,16 @@ jobs:
       - uses: ./.github/actions/setup-xcode-env
         id: env
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            spm-cache-${{ runner.os }}-
+
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
         with:
-          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved', '**/Package.swift', 'Development.xcconfig') }}
           restore-keys: |
             xcode-deriveddata-${{ runner.os }}-
 
@@ -208,6 +217,7 @@ jobs:
             -scheme OMDFeatures-Package \
             -destination "id=${{ steps.env.outputs.device_id }}" \
             -only-testing:PreviewFixturesTests \
+            -parallel-testing-enabled NO \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
@@ -256,11 +266,11 @@ jobs:
 
   release-build:
     name: Release Archive (no codesign)
-    needs: lint
+    needs: test
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
@@ -292,10 +302,19 @@ jobs:
           ls -la "$DS_DIR" | head -5
 
       - uses: ./.github/actions/setup-xcode-env
+        with:
+          discover_simulator: 'false'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          restore-keys: |
+            spm-cache-${{ runner.os }}-
 
       - uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f  # v1.9.2
         with:
-          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved') }}
+          key: xcode-deriveddata-release-${{ runner.os }}-${{ hashFiles('**/*.pbxproj', '**/Package.resolved', '**/Package.swift', 'Development.xcconfig') }}
 
       - name: Archive (no codesign)
         run: |
@@ -330,10 +349,10 @@ jobs:
 
   s98-preview-fixtures:
     name: S98 Preview Fixtures Scan
-    runs-on: [self-hosted, macOS, arm64, xcode-26]
+    runs-on: [self-hosted, linux, arm64, base]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:

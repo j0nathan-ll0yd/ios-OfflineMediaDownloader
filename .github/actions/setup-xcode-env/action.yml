@@ -1,5 +1,10 @@
 name: Setup Xcode Environment
 description: Preflight Xcode availability, create Development.xcconfig, discover simulator
+inputs:
+  discover_simulator:
+    description: "Whether to discover and output iOS Simulator details"
+    required: false
+    default: "true"
 outputs:
   device_id:
     description: "Simulator UDID"
@@ -31,6 +36,7 @@ runs:
         EOF
     - name: Discover iOS Simulator (dynamic)
       id: simulator
+      if: inputs.discover_simulator == 'true'
       shell: bash
       run: |
         # Dynamic simulator discovery
