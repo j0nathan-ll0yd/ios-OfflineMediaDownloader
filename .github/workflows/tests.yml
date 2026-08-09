@@ -75,7 +75,7 @@ jobs:
     runs-on: [self-hosted, linux, arm64, swift-lint]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Validate iOS version targets
         run: bash Scripts/validate-ios-version.sh
@@ -98,7 +98,7 @@ jobs:
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-xcode-env
         with:
           discover_simulator: 'false'
@@ -113,7 +113,7 @@ jobs:
     env:
       SNAPSHOT_TESTING_RECORD: never
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
@@ -270,7 +270,7 @@ jobs:
     runs-on: [self-hosted, macOS, arm64, xcode-26]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Clone design-system-Lifegames as sibling of workspace
         env:
@@ -352,7 +352,7 @@ jobs:
     runs-on: [self-hosted, linux, arm64, base]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
