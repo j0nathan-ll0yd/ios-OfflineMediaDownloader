@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
 import LoggerClient
 import SharedModels
@@ -236,20 +237,108 @@ extension KeychainClient: DependencyKey {
     }
   )
 
-  public static let testValue = KeychainClient(
-    getUserData: { User(email: "test@example.com", firstName: "Test", identifier: "test-id", lastName: "User") },
-    getJwtToken: { "test-jwt-token" },
-    getTokenExpiresAt: { Date().addingTimeInterval(3600) },
-    getDeviceData: { Device(endpointArn: "test-endpoint-arn") },
-    getUserIdentifier: { "test-user-id" },
-    setUserData: { _ in },
-    setJwtToken: { _ in },
-    setTokenExpiresAt: { _ in },
-    setDeviceData: { _ in },
-    setUserIdentifier: { _ in },
-    deleteUserData: {},
-    deleteJwtToken: {},
-    deleteTokenExpiresAt: {},
-    deleteDeviceData: {}
-  )
+  public static var testValue: KeychainClient {
+    .inMemory()
+  }
+
+  public static var previewValue: KeychainClient {
+    .inMemory()
+  }
+}
+
+// MARK: - In-Memory Implementation
+
+public extension KeychainClient {
+  static func inMemory(initialValues: [String: String] = [:]) -> KeychainClient {
+    let storage = LockIsolated(initialValues)
+    return KeychainClient(
+      getUserData: {
+        guard let email = storage.withValue({ $0[KeychainKeys.email.rawValue] }),
+              let firstName = storage.withValue({ $0[KeychainKeys.firstName.rawValue] }),
+              let identifier = storage.withValue({ $0[KeychainKeys.identifier.rawValue] }),
+              let lastName = storage.withValue({ $0[KeychainKeys.lastName.rawValue] })
+        else {
+          throw KeychainError.itemNotFound
+        }
+        return User(
+          email: email,
+          firstName: firstName,
+          identifier: identifier,
+          lastName: lastName
+        )
+      },
+      getJwtToken: {
+        storage.withValue { $0[KeychainKeys.jwtToken.rawValue] }
+      },
+      getTokenExpiresAt: {
+        guard let timestamp = storage.withValue({ $0[KeychainKeys.jwtTokenExpiresAt.rawValue] }),
+              let timeInterval = Double(timestamp)
+        else {
+          return nil
+        }
+        return Date(timeIntervalSince1970: timeInterval)
+      },
+      getDeviceData: {
+        guard let endpointArn = storage.withValue({ $0[KeychainKeys.endpointArn.rawValue] }) else {
+          return nil
+        }
+        return Device(endpointArn: endpointArn)
+      },
+      getUserIdentifier: {
+        storage.withValue { $0[KeychainKeys.identifier.rawValue] }
+      },
+      setUserData: { userData in
+        storage.withValue { (dict: inout [String: String]) in
+          dict[KeychainKeys.email.rawValue] = userData.email
+          dict[KeychainKeys.firstName.rawValue] = userData.firstName
+          dict[KeychainKeys.identifier.rawValue] = userData.identifier
+          dict[KeychainKeys.lastName.rawValue] = userData.lastName
+        }
+      },
+      setJwtToken: { token in
+        storage.withValue { (dict: inout [String: String]) in
+          dict[KeychainKeys.jwtToken.rawValue] = token
+        }
+      },
+      setTokenExpiresAt: { expiresAt in
+        let timestamp = String(expiresAt.timeIntervalSince1970)
+        storage.withValue { (dict: inout [String: String]) in
+          dict[KeychainKeys.jwtTokenExpiresAt.rawValue] = timestamp
+        }
+      },
+      setDeviceData: { deviceData in
+        storage.withValue { (dict: inout [String: String]) in
+          dict[KeychainKeys.endpointArn.rawValue] = deviceData.endpointArn
+        }
+      },
+      setUserIdentifier: { identifier in
+        storage.withValue { (dict: inout [String: String]) in
+          dict[KeychainKeys.identifier.rawValue] = identifier
+        }
+      },
+      deleteUserData: {
+        storage.withValue { (dict: inout [String: String]) in
+          dict.removeValue(forKey: KeychainKeys.email.rawValue)
+          dict.removeValue(forKey: KeychainKeys.firstName.rawValue)
+          dict.removeValue(forKey: KeychainKeys.identifier.rawValue)
+          dict.removeValue(forKey: KeychainKeys.lastName.rawValue)
+        }
+      },
+      deleteJwtToken: {
+        storage.withValue { (dict: inout [String: String]) in
+          dict.removeValue(forKey: KeychainKeys.jwtToken.rawValue)
+        }
+      },
+      deleteTokenExpiresAt: {
+        storage.withValue { (dict: inout [String: String]) in
+          dict.removeValue(forKey: KeychainKeys.jwtTokenExpiresAt.rawValue)
+        }
+      },
+      deleteDeviceData: {
+        storage.withValue { (dict: inout [String: String]) in
+          dict.removeValue(forKey: KeychainKeys.endpointArn.rawValue)
+        }
+      }
+    )
+  }
 }

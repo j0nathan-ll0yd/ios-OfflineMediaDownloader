@@ -9,7 +9,6 @@ import PersistenceClient
 import SharedModels
 import Testing
 
-@Suite(.serialized)
 struct DefaultFilesFeatureTests {
   // MARK: - onAppear Tests
 

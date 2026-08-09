@@ -198,7 +198,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -maximum-test-execution-time-allowance 120 \
-            -parallel-testing-enabled NO \
+            -parallel-testing-enabled YES \
             -only-testing:OfflineMediaDownloaderTests \
             -skipPackagePluginValidation \
             -skipMacroValidation \
@@ -217,7 +217,7 @@ jobs:
             -scheme OMDFeatures-Package \
             -destination "id=${{ steps.env.outputs.device_id }}" \
             -only-testing:PreviewFixturesTests \
-            -parallel-testing-enabled NO \
+            -parallel-testing-enabled YES \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \

@@ -229,7 +229,9 @@ public struct ProfileView: View {
     let first = store.user?.firstName.first.map(String.init) ?? ""
     let last = store.user?.lastName.first.map(String.init) ?? ""
     let combined = "\(first)\(last)".uppercased()
-    if !combined.isEmpty { return combined }
+    if !combined.isEmpty {
+      return combined
+    }
     if let emailInitial = store.user?.email.first.map(String.init) {
       return emailInitial.uppercased()
     }

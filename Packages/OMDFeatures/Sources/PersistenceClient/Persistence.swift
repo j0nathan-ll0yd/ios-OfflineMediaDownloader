@@ -18,25 +18,47 @@ public struct PersistenceController: Sendable {
   @MainActor
   public static let preview: PersistenceController = .init(inMemory: true)
 
-  public let container: NSPersistentContainer
-
-  public init(inMemory: Bool = false) {
-    container = NSPersistentContainer(name: "OfflineMediaDownloader")
-    if inMemory {
-      container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
-    }
+  public static func makeTestContainer() -> NSPersistentContainer {
+    let container = NSPersistentContainer(name: "OfflineMediaDownloader")
+    let description = NSPersistentStoreDescription()
+    description.type = NSInMemoryStoreType
+    description.url = URL(string: "memory://\(UUID().uuidString)")
+    container.persistentStoreDescriptions = [description]
     container.loadPersistentStores { _, error in
       if let error = error as NSError? {
-        if PersistenceController.isTestEnvironment {
-          @Dependency(\.logger) var logger
-          logger.warning(.storage, "CoreData error in test environment: \(error)")
-          return
-        }
-        fatalError("Unresolved error \(error), \(error.userInfo)")
+        @Dependency(\.logger) var logger
+        logger.warning(.storage, "CoreData test container error: \(error)")
       }
     }
     container.viewContext.automaticallyMergesChangesFromParent = true
     container.viewContext.mergePolicy = NSOverwriteMergePolicy
+    return container
+  }
+
+  public let container: NSPersistentContainer
+
+  public init(container: NSPersistentContainer) {
+    self.container = container
+  }
+
+  public init(inMemory: Bool = false) {
+    if inMemory {
+      container = PersistenceController.makeTestContainer()
+    } else {
+      container = NSPersistentContainer(name: "OfflineMediaDownloader")
+      container.loadPersistentStores { _, error in
+        if let error = error as NSError? {
+          if PersistenceController.isTestEnvironment {
+            @Dependency(\.logger) var logger
+            logger.warning(.storage, "CoreData error in test environment: \(error)")
+            return
+          }
+          fatalError("Unresolved error \(error), \(error.userInfo)")
+        }
+      }
+      container.viewContext.automaticallyMergesChangesFromParent = true
+      container.viewContext.mergePolicy = NSOverwriteMergePolicy
+    }
   }
 
   public var viewContext: NSManagedObjectContext {

@@ -16,7 +16,6 @@ import ServerClient
 import SharedModels
 import Testing
 
-@Suite(.serialized)
 struct RootFeatureTests {
   // MARK: - Launch Flow Tests
 

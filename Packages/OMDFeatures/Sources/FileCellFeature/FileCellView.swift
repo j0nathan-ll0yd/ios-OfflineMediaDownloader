@@ -19,9 +19,15 @@ public struct FileCellView: View {
   /// Thumbnail action based on current state
   private var thumbnailAction: (() -> Void)? {
     // Pending files have no action
-    if store.state.isPending { return nil }
-    if store.isDownloading { return { store.send(.cancelDownloadButtonTapped) } }
-    if store.isDownloaded { return { store.send(.playButtonTapped) } }
+    if store.state.isPending {
+      return nil
+    }
+    if store.isDownloading {
+      return { store.send(.cancelDownloadButtonTapped) }
+    }
+    if store.isDownloaded {
+      return { store.send(.playButtonTapped) }
+    }
     return { store.send(.downloadButtonTapped) }
   }
 

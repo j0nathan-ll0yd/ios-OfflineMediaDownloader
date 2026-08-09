@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import ConcurrencyExtras
 import Foundation
 
 public enum DownloadQuality: String, CaseIterable, Codable, Sendable {
@@ -78,4 +79,45 @@ extension UserDefaultsClient: DependencyKey {
       UserDefaults.standard.set(enabled, forKey: UserDefaultsKeys.cellularDownloadsEnabled)
     }
   )
+
+  public static var testValue: UserDefaultsClient {
+    .inMemory()
+  }
+
+  public static var previewValue: UserDefaultsClient {
+    .inMemory()
+  }
+}
+
+// MARK: - In-Memory Implementation
+
+public extension UserDefaultsClient {
+  static func inMemory(initialValues: [String: any Sendable] = [:]) -> UserDefaultsClient {
+    let storage = LockIsolated(initialValues)
+    return UserDefaultsClient(
+      getDownloadQuality: {
+        guard let rawValue = storage.withValue({ $0[UserDefaultsKeys.downloadQuality] as? String }),
+              let quality = DownloadQuality(rawValue: rawValue)
+        else {
+          return .auto
+        }
+        return quality
+      },
+      setDownloadQuality: { quality in
+        storage.withValue { (dict: inout [String: any Sendable]) in
+          dict[UserDefaultsKeys.downloadQuality] = quality.rawValue
+        }
+      },
+      getCellularDownloadsEnabled: {
+        storage.withValue { dict in
+          (dict[UserDefaultsKeys.cellularDownloadsEnabled] as? Bool) ?? false
+        }
+      },
+      setCellularDownloadsEnabled: { enabled in
+        storage.withValue { (dict: inout [String: any Sendable]) in
+          dict[UserDefaultsKeys.cellularDownloadsEnabled] = enabled
+        }
+      }
+    )
+  }
 }

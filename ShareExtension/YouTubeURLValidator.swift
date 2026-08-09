@@ -70,7 +70,9 @@ enum YouTubeURLValidator {
     for prefix in supportedPrefixes {
       if path.hasPrefix(prefix) {
         let videoId = String(path.dropFirst(prefix.count))
-        if !videoId.isEmpty { return true }
+        if !videoId.isEmpty {
+          return true
+        }
       }
     }
 

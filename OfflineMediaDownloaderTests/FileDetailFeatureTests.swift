@@ -12,7 +12,6 @@ import SharedModels
 import Testing
 import ThumbnailCacheClient
 
-@Suite(.serialized)
 struct FileDetailFeatureTests {
   // MARK: - onAppear Tests
 

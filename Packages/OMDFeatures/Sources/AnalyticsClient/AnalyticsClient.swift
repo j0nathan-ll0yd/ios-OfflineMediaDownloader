@@ -84,8 +84,12 @@ public extension AnalyticsClient {
     fileSize: Int? = nil
   ) {
     var properties: [String: String] = ["file_id": fileId]
-    if let fileName { properties["file_name"] = fileName }
-    if let fileSize { properties["file_size"] = String(fileSize) }
+    if let fileName {
+      properties["file_name"] = fileName
+    }
+    if let fileSize {
+      properties["file_size"] = String(fileSize)
+    }
     track(event, properties)
   }
 
@@ -113,7 +117,9 @@ public extension AnalyticsClient {
 
   func trackPushReceived(correlationId: String, notificationType: String?) {
     var properties: [String: String] = ["correlationId": correlationId]
-    if let notificationType { properties["notificationType"] = notificationType }
+    if let notificationType {
+      properties["notificationType"] = notificationType
+    }
     track(.pushReceived, properties)
   }
 }
