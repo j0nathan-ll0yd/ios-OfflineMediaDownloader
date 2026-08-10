@@ -148,7 +148,7 @@ jobs:
       - uses: ./.github/actions/setup-xcode-env
         id: env
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/Library/Caches/org.swift.swiftpm
           key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
@@ -305,7 +305,7 @@ jobs:
         with:
           discover_simulator: 'false'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/Library/Caches/org.swift.swiftpm
           key: spm-cache-${{ runner.os }}-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
