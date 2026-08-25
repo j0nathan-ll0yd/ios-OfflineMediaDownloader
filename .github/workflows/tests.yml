@@ -77,20 +77,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Validate iOS version targets
-        run: bash Scripts/validate-ios-version.sh
-
-      - name: Validate TCA patterns
-        run: bash Scripts/validate-tca-patterns.sh
-
-      - name: SwiftLint
-        run: swiftlint lint --reporter github-actions-logging
-
-      - name: SwiftFormat (lint mode)
-        run: swiftformat --lint .
-
-      - name: ShellCheck
-        run: shellcheck Scripts/*.sh
+      # A2b exact-step binding (atlas audits/gate-can-fail-campaign.md)
+      - name: Lint (conventions, SwiftLint, SwiftFormat, ShellCheck)
+        run: |
+          bash Scripts/validate-ios-version.sh
+          bash Scripts/validate-tca-patterns.sh
+          swiftlint lint --reporter github-actions-logging
+          swiftformat --lint .
+          shellcheck Scripts/*.sh
 
   apitypes-build:
     name: APITypes Build (SPM)
@@ -102,7 +96,8 @@ jobs:
       - uses: ./.github/actions/setup-xcode-env
         with:
           discover_simulator: 'false'
-      - name: Build APITypes package
+      # A2b exact-step binding (atlas audits/gate-can-fail-campaign.md)
+      - name: APITypes Build (SPM)
         run: xcrun swift build --package-path APITypes --disable-sandbox
 
   test:
@@ -188,7 +183,8 @@ jobs:
       - name: Check build warnings
         run: bash Scripts/check-build-warnings.sh
 
-      - name: Run tests (including snapshots)
+      # A2b exact-step binding (atlas audits/gate-can-fail-campaign.md)
+      - name: Test (build + unit + snapshots + warnings)
         run: |
           set -o pipefail
           xcodebuild test-without-building \
