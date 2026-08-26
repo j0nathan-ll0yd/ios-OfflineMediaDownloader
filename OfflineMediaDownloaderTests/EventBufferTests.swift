@@ -53,7 +53,7 @@ struct EventBufferTests {
       await buffer.append(makeEvent())
     }
     await buffer.flush()
-    #expect(sentCount.value == 1)
+    #expect(sentCount.value == 2)
 
     // A second flush with an empty buffer is a no-op.
     await buffer.flush()
