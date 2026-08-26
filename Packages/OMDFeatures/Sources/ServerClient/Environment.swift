@@ -23,6 +23,17 @@ public enum Environment {
     fatalError("MEDIA_DOWNLOADER_BASE_PATH not set in plist for this environment")
   }()
 
+  /// `basePath` parsed once as a `URL`.
+  ///
+  /// `basePath` comes from the build configuration, so a value that does not parse
+  /// is the same class of build-configuration failure `basePath` itself reports.
+  public static let baseURL: URL = {
+    guard let url = URL(string: basePath) else {
+      fatalError("MEDIA_DOWNLOADER_BASE_PATH is not a valid URL: \(basePath)")
+    }
+    return url
+  }()
+
   public static let apiKey: String = {
     if let apiKey = Environment.infoDictionary["MEDIA_DOWNLOADER_API_KEY"] as? String {
       return apiKey

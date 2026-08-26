@@ -51,7 +51,7 @@ public struct DownloadSettingsView: View {
         .tracking(1.5)
 
       VStack(spacing: Spacing.s300) {
-        ForEach(DownloadQuality.allCases, id: \.self) { quality in
+        ForEach(DownloadQuality.allCases) { quality in
           qualityCard(quality, isSelected: store.downloadQuality == quality)
         }
       }

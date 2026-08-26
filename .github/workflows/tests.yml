@@ -327,6 +327,41 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee release-build.log | { xcbeautify || cat; }
 
+      - name: Verify design-token bundle embeds in ShareExtension.appex
+        run: |
+          set -euo pipefail
+          # LGColor reads Bundle.module. Inside an .appex that resolves against
+          # the extension bundle, not the containing app, so a missing resource
+          # bundle is a runtime rendering failure and not a build error. Assert
+          # it here, on the real archive, or the failure only shows up on device.
+          APPEX="build/OfflineMediaDownloader.xcarchive/Products/Applications/OfflineMediaDownloader.app/PlugIns/ShareExtension.appex"
+          BUNDLE="$APPEX/LifegamesDesignSystem_LifegamesTokens.bundle"
+
+          if [ ! -d "$BUNDLE" ]; then
+            echo "::error::$BUNDLE is missing from the archived extension"
+            find "$APPEX" -maxdepth 2 || true
+            exit 1
+          fi
+          if [ ! -f "$BUNDLE/Assets.car" ]; then
+            echo "::error::$BUNDLE has no compiled Assets.car"
+            exit 1
+          fi
+
+          # Presence of the catalog is not enough — check the tokens the share
+          # sheet actually reads (ShareExtension/ShareStatusView.swift).
+          xcrun --sdk iphoneos assetutil --info "$BUNDLE/Assets.car" > assets-info.json
+          missing=0
+          for token in color-surface-base color-surface-raised color-accent-blue \
+                       color-accent-green color-accent-red color-text-subtle; do
+            if grep -q "\"$token\"" assets-info.json; then
+              echo "found  $token"
+            else
+              echo "::error::$token is absent from the archived Assets.car"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Archive error summary
         if: failure()
         run: |

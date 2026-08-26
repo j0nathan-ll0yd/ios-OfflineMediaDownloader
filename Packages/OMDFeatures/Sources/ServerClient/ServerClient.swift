@@ -133,7 +133,7 @@ private func makeAuthenticatedAPIClient() -> Client {
   @Dependency(\.logger) var logger
 
   return Client(
-    serverURL: URL(string: Environment.basePath)!,
+    serverURL: Environment.baseURL,
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
@@ -148,7 +148,7 @@ private func makeUnauthenticatedAPIClient() -> Client {
   @Dependency(\.logger) var logger
 
   return Client(
-    serverURL: URL(string: Environment.basePath)!,
+    serverURL: Environment.baseURL,
     transport: URLSessionTransport(configuration: .init(session: pinnedURLSession)),
     middlewares: [
       CorrelationMiddleware(correlationClient: correlationClient, logger: logger),
@@ -217,7 +217,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -267,7 +267,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -315,7 +315,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -357,7 +357,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -393,7 +393,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -458,7 +458,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -500,7 +500,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -535,7 +535,7 @@ extension ServerClient: DependencyKey {
           requestId: try? r.body.json.requestId
         )
       case let .undocumented(code, p):
-        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[.init("x-amzn-requestid")!])
+        throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
     },
 
@@ -545,13 +545,27 @@ extension ServerClient: DependencyKey {
 
       let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
 
-      let base = Environment.basePath.hasSuffix("/") ? Environment.basePath : Environment.basePath + "/"
-      var urlComponents = URLComponents(string: base + "device/event")!
+      let eventURL = Environment.baseURL.appending(path: "device/event")
+      guard var urlComponents = URLComponents(url: eventURL, resolvingAgainstBaseURL: false) else {
+        throw ServerClientError.networkError(
+          message: "Could not build the device/event URL from \(eventURL)",
+          requestId: nil,
+          correlationId: nil
+        )
+      }
       urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
         URLQueryItem(name: "ApiKey", value: Environment.apiKey),
       ]
 
-      var request = URLRequest(url: urlComponents.url!)
+      guard let requestURL = urlComponents.url else {
+        throw ServerClientError.networkError(
+          message: "Could not build the device/event URL from \(eventURL)",
+          requestId: nil,
+          correlationId: nil
+        )
+      }
+
+      var request = URLRequest(url: requestURL)
       request.httpMethod = "POST"
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
       request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")

@@ -38,6 +38,7 @@
 		D5E5CE052F2A0005007EAB48 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */; };
 		D5E5CE062F2A0006007EAB48 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */; };
 		D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */; };
+		D5E5CE1B2F2A0021007EAB48 /* ShareStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E5CE1A2F2A0020007EAB48 /* ShareStatusView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +111,7 @@
 		C44108412F148878007EAB48 /* DownloadActivityWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DownloadActivityWidgetExtension.entitlements; sourceTree = "<group>"; };
 		D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtension/YouTubeURLValidator.swift; sourceTree = SOURCE_ROOT; };
+		D5E5CE1A2F2A0020007EAB48 /* ShareStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtension/ShareStatusView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -314,6 +316,7 @@
 			isa = PBXGroup;
 			children = (
 				D5E5CE162F2A0016007EAB48 /* YouTubeURLValidator.swift */,
+				D5E5CE1A2F2A0020007EAB48 /* ShareStatusView.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -376,6 +379,7 @@
 				A100000D2F30000D00000001 /* AuthenticationClient */,
 				A100000E2F30000E00000001 /* FileDetailFeature */,
 				A100000F2F30000F00000001 /* LoginFeature */,
+				B1TOKEN022F50000200000001 /* LifegamesTokens */,
 			);
 			productName = OfflineMediaDownloader;
 			productReference = C41DD8842CC6C52600F041C6 /* OfflineMediaDownloader.app */;
@@ -468,6 +472,7 @@
 				D5E5CE142F2A0014007EAB48 /* OpenAPIURLSession */,
 				D5E5CE152F2A0015007EAB48 /* OpenAPIRuntime */,
 				B1HTTP022F40000200000001 /* HTTPTypes */,
+				B1TOKEN012F50000100000001 /* LifegamesTokens */,
 			);
 			productName = ShareExtension;
 			productReference = D5E5CE012F2A0001007EAB48 /* ShareExtension.appex */;
@@ -592,6 +597,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D5E5CE172F2A0017007EAB48 /* YouTubeURLValidator.swift in Sources */,
+				D5E5CE1B2F2A0021007EAB48 /* ShareStatusView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1296,6 +1302,14 @@
 		B1HTTP022F40000200000001 /* HTTPTypes */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = HTTPTypes;
+		};
+		B1TOKEN012F50000100000001 /* LifegamesTokens */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LifegamesTokens;
+		};
+		B1TOKEN022F50000200000001 /* LifegamesTokens */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LifegamesTokens;
 		};
 		C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;

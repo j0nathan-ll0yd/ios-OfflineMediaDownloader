@@ -1,3 +1,4 @@
+import APIClient
 import CorrelationClient
 import Foundation
 import HTTPTypes
@@ -21,7 +22,7 @@ struct CorrelationMiddleware: ClientMiddleware {
 
     // Generate correlation ID and start tracking
     let correlationId = await correlationClient.startRequest(operationID, request.method.rawValue)
-    request.headerFields[.init("X-Correlation-ID")!] = correlationId.uuidString
+    request.headerFields[optional: HTTPHeaderName.correlationId] = correlationId.uuidString
 
     // Log outgoing request
     logger.info(.network, "Request started: \(operationID)", metadata: [
@@ -35,7 +36,7 @@ struct CorrelationMiddleware: ClientMiddleware {
       let duration = Date().timeIntervalSince(startTime)
 
       // Extract server request ID from response headers if present
-      let serverRequestId = response.headerFields[.init("x-amzn-requestid")!]
+      let serverRequestId = response.headerFields[optional: HTTPHeaderName.amznRequestId]
 
       // Record success
       await correlationClient.completeRequest(

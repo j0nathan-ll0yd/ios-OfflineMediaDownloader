@@ -2,11 +2,16 @@ import ComposableArchitecture
 import ConcurrencyExtras
 import Foundation
 
-public enum DownloadQuality: String, CaseIterable, Codable, Sendable {
+public enum DownloadQuality: String, CaseIterable, Codable, Identifiable, Sendable {
   case auto
   case high
   case medium
   case low
+
+  /// The raw value is the stable identity `ForEach` needs (S60).
+  public var id: String {
+    rawValue
+  }
 
   public var displayName: String {
     switch self {

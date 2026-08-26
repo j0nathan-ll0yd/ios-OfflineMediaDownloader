@@ -92,6 +92,7 @@ public struct RootFeature: Sendable {
 
   @Dependency(\.analytics) var analytics
   @Dependency(\.authenticationClient) var authenticationClient
+  @Dependency(\.continuousClock) var clock
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.keychainClient) var keychainClient
   @Dependency(\.coreDataClient) var coreDataClient
@@ -116,13 +117,16 @@ public struct RootFeature: Sendable {
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
         let analytics = analytics
-        return .run { [authenticationClient] send in
+        return .run { [authenticationClient, clock] send in
           analytics.trackAppLaunched()
           await MainActor.run { setupNotifications() }
 
-          // Ensure launch screen is visible for at least 1 second for smooth transition
+          // Ensure launch screen is visible for at least 1 second for smooth transition.
+          // The delay goes through the clock dependency so tests can collapse it: a real
+          // 1s sleep raced TCA's 1s default `receive` timeout with no margin, which made
+          // every launch-flow test flaky under load.
           async let authState = authenticationClient.determineAuthState()
-          async let minDelay: () = Task.sleep(nanoseconds: 1_000_000_000)
+          async let minDelay: () = clock.sleep(for: .seconds(1))
 
           let (state, _) = try await (authState, minDelay)
           await send(.authStateResponse(state))
