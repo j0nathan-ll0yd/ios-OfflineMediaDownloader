@@ -435,10 +435,20 @@ private struct SwipeableRow: View {
 // MARK: - PendingFilesView
 
 public struct PendingFilesView: View {
+  /// One queued server-side download. The file id is already unique within the
+  /// `OrderedSet`, so it carries the row identity `ForEach` needs (S60).
+  private struct PendingFile: Identifiable {
+    let id: String
+  }
+
   let fileIds: OrderedSet<String>
 
   public init(fileIds: OrderedSet<String>) {
     self.fileIds = fileIds
+  }
+
+  private var pendingFiles: [PendingFile] {
+    fileIds.map(PendingFile.init)
   }
 
   public var body: some View {
@@ -456,13 +466,13 @@ public struct PendingFilesView: View {
               .foregroundStyle(LGColor.textSubtle)
               .frame(maxWidth: .infinity, alignment: .leading)
 
-            ForEach(fileIds, id: \.self) { id in
+            ForEach(pendingFiles) { pendingFile in
               HStack(spacing: 12) {
                 Image(systemName: "clock")
                   .font(.system(size: 18))
                   .foregroundStyle(OMDPalette.queued)
 
-                Text(id)
+                Text(pendingFile.id)
                   .font(.subheadline)
                   .foregroundStyle(.white)
                   .lineLimit(1)

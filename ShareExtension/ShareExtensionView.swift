@@ -1,3 +1,4 @@
+import LifegamesTokens
 import SwiftUI
 
 // MARK: - ShareExtensionView
@@ -17,7 +18,7 @@ struct ShareExtensionView: View {
 
   var body: some View {
     ZStack {
-      Color(hex: "121212")
+      LGColor.surfaceBase
         .ignoresSafeArea()
 
       VStack(spacing: 24) {
@@ -33,7 +34,7 @@ struct ShareExtensionView: View {
         }
       }
       .padding(32)
-      .background(Color(hex: "1E1E1E"))
+      .background(LGColor.surfaceRaised)
       .clipShape(RoundedRectangle(cornerRadius: 20))
       .padding(.horizontal, 32)
     }
@@ -48,12 +49,12 @@ struct ShareExtensionView: View {
     VStack(spacing: 16) {
       ProgressView()
         .progressViewStyle(.circular)
-        .tint(Color(hex: "007AFF"))
+        .tint(LGColor.accentBlue)
         .scaleEffect(1.5)
 
       Text("Sending to Downloader...")
         .font(.body)
-        .foregroundStyle(Color(hex: "8E8E93"))
+        .foregroundStyle(LGColor.textSubtle)
     }
   }
 
@@ -61,7 +62,7 @@ struct ShareExtensionView: View {
     VStack(spacing: 16) {
       Image(systemName: "checkmark.circle.fill")
         .font(.system(size: 48))
-        .foregroundStyle(Color(hex: "34C759"))
+        .foregroundStyle(LGColor.accentGreen)
 
       Text("Sent to Downloader")
         .font(.headline)
@@ -73,11 +74,11 @@ struct ShareExtensionView: View {
     VStack(spacing: 16) {
       Image(systemName: "exclamationmark.triangle.fill")
         .font(.system(size: 48))
-        .foregroundStyle(Color(hex: "FF453A"))
+        .foregroundStyle(LGColor.accentRed)
 
       Text(message)
         .font(.body)
-        .foregroundStyle(Color(hex: "8E8E93"))
+        .foregroundStyle(LGColor.textSubtle)
         .multilineTextAlignment(.center)
 
       Button("Dismiss") {
@@ -87,7 +88,7 @@ struct ShareExtensionView: View {
       .foregroundStyle(.white)
       .frame(maxWidth: .infinity)
       .padding(.vertical, 12)
-      .background(Color(hex: "007AFF"))
+      .background(LGColor.accentBlue)
       .clipShape(RoundedRectangle(cornerRadius: 10))
     }
   }
@@ -108,20 +109,6 @@ struct ShareExtensionView: View {
     } catch {
       viewState = .error(error.localizedDescription)
     }
-  }
-}
-
-// MARK: - Color Hex Extension (private — extension cannot import main app Theme)
-
-private extension Color {
-  init(hex: String) {
-    let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-    var int: UInt64 = 0
-    Scanner(string: hex).scanHexInt64(&int)
-    let r = Double((int >> 16) & 0xFF) / 255.0
-    let g = Double((int >> 8) & 0xFF) / 255.0
-    let b = Double(int & 0xFF) / 255.0
-    self.init(red: r, green: g, blue: b)
   }
 }
 

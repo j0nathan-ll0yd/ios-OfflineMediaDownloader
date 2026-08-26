@@ -20,6 +20,17 @@ public final class ValetUtil: Sendable {
     return "com.test.OfflineMediaDownloader.Valet"
   }()
 
+  /// `identifier` as a Valet `Identifier`, validated once.
+  ///
+  /// `Identifier(nonEmpty:)` returns nil only for an empty string, and `identifier`
+  /// is non-empty on both of its branches, so a nil here means that invariant broke.
+  private static let valetIdentifier: Identifier = {
+    guard let valetIdentifier = Identifier(nonEmpty: ValetUtil.identifier) else {
+      fatalError("ValetUtil.identifier must be non-empty, got: \(ValetUtil.identifier)")
+    }
+    return valetIdentifier
+  }()
+
   private init() {
     // SecureEnclaveValet is not available in simulator environments
     // and may fail on devices without Secure Enclave hardware
@@ -29,13 +40,13 @@ public final class ValetUtil: Sendable {
       // Try to create SecureEnclaveValet, but it may fail on older devices
       // or in certain CI environments
       secureEnclave = SecureEnclaveValet.valet(
-        with: Identifier(nonEmpty: ValetUtil.identifier)!,
+        with: ValetUtil.valetIdentifier,
         accessControl: .userPresence
       )
     #endif
 
     keychain = Valet.valet(
-      with: Identifier(nonEmpty: ValetUtil.identifier)!,
+      with: ValetUtil.valetIdentifier,
       accessibility: .whenUnlocked
     )
 

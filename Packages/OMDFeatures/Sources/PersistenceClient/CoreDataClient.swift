@@ -302,7 +302,9 @@ public extension CoreDataClient {
           if let existing = results.first {
             metrics = existing
           } else {
-            let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context)!
+            guard let entity = NSEntityDescription.entity(forEntityName: "AppMetrics", in: context) else {
+              throw CoreDataError.fetchFailed("AppMetrics entity is missing from the managed object model")
+            }
             metrics = NSManagedObject(entity: entity, insertInto: context)
             metrics.setValue(Int64(0), forKey: "playCount")
           }

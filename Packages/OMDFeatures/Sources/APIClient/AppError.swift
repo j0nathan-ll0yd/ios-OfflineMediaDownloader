@@ -189,7 +189,7 @@ public extension AppError {
   static func from(_ error: Error) -> AppError {
     // Check for OpenAPI ClientError - extract requestId from response headers
     if let clientError = error as? ClientError {
-      let requestId = clientError.response?.headerFields[.init("x-amzn-requestid")!]
+      let requestId = clientError.response?.headerFields[optional: HTTPHeaderName.amznRequestId]
       let message = "Server error: \(clientError.causeDescription)"
       return .serverError(message: message, requestId: requestId, correlationId: nil)
     }

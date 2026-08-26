@@ -174,7 +174,7 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
     guard let originalURL = downloadTask.originalRequest?.url else { return }
 
     let fileManager = FileManager.default
-    let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let documentsPath = URL.documentsDirectory
     let destinationURL = documentsPath.appendingPathComponent(originalURL.lastPathComponent)
 
     @Dependency(\.logger) var logger
