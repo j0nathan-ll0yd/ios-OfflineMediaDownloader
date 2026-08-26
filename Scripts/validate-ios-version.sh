@@ -1,6 +1,8 @@
 #!/bin/bash
 # validate-ios-version.sh
 # Ensures no backwards compatibility code for iOS versions below 26
+# A2b gate-can-fail green half (recipe 9). Comment only, so the reverted PR
+# keeps a non-empty diff and the paths filter still schedules the run.
 
 set -euo pipefail
 
