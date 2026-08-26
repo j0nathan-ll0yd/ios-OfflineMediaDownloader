@@ -41,6 +41,8 @@ private func eventCount(in data: Data) -> Int {
 struct EventBufferTests {
   // MARK: - Successful flush
 
+  /// A2b gate-can-fail green half (recipe 10). Comment only, so the reverted PR
+  /// keeps a non-empty diff and the paths filter still schedules the run.
   @Test("Successful flush clears the buffer and sends exactly once")
   func successfulFlushClearsBuffer() async {
     let sentCount = LockIsolated(0)
