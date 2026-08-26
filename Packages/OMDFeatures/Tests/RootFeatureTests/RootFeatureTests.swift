@@ -25,6 +25,7 @@ struct RootFeatureTests {
       }
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
@@ -50,6 +51,7 @@ struct RootFeatureTests {
       $0.keychainClient.getTokenExpiresAt = { nil } // No expiration stored
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
@@ -81,6 +83,7 @@ struct RootFeatureTests {
       }
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
@@ -118,6 +121,7 @@ struct RootFeatureTests {
       }
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
@@ -145,6 +149,7 @@ struct RootFeatureTests {
       }
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
@@ -172,6 +177,7 @@ struct RootFeatureTests {
       }
       $0.analytics.track = { _, _ in }
       $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
     }
 
     await store.send(.didFinishLaunching) {
