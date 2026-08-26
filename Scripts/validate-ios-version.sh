@@ -72,4 +72,10 @@ for file in "${FILES[@]}"; do
     fi
 done
 
-[ $VIOLATIONS -eq 0 ] && echo -e "${GREEN}iOS version check passed - no backwards compatibility code found${NC}" || { echo -e "${RED}Found $VIOLATIONS iOS version violation(s)${NC}"; exit 1; }
+if [ $VIOLATIONS -eq 0 ]; then
+    echo -e "${GREEN}iOS version check passed - no backwards compatibility code found${NC}"
+    exit 0
+else
+    echo -e "${RED}Found $VIOLATIONS iOS version violation(s)${NC}"
+    exit 1
+fi
