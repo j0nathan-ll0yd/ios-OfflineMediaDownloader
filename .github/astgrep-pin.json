@@ -1,0 +1,5 @@
+{
+  "repository": "j0nathan-ll0yd/agent-enforcement",
+  "sha": "7dd28c3c4dca91190077eb0eb5216d58c8dc588e",
+  "rationale": "Pins the ast-grep rule set. Moving this sha is the reviewable rule-set bump."
+}
