@@ -6,11 +6,12 @@ private let youtubeIDRegex: NSRegularExpression? = try? NSRegularExpression(
   options: .caseInsensitive
 )
 
+// A2b can-fail probe for the Swift Conventions (ast-grep) gate. DO NOT MERGE.
 // Ref: https://stackoverflow.com/a/44986877/7050213
 public extension String {
   var youtubeID: String? {
     let range = NSRange(location: 0, length: count)
-    guard let result = youtubeIDRegex?.firstMatch(in: self, range: range) else {
+    guard let result = youtubeIDRegex!.firstMatch(in: self, range: range) else {
       return nil
     }
     return (self as NSString).substring(with: result.range)
