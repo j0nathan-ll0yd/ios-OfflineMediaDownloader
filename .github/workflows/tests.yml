@@ -20,6 +20,7 @@ on:
       - '.github/actions/**'
       - '.github/dependabot.yml'
       - '.github/astgrep-pin.json'
+      - '.preview-fixtures.json'
   push:
     branches: [main, develop]
     paths:
@@ -39,6 +40,7 @@ on:
       - '.github/actions/**'
       - '.github/dependabot.yml'
       - '.github/astgrep-pin.json'
+      - '.preview-fixtures.json'
 
 concurrency:
   group: tests-${{ github.head_ref || github.ref }}
@@ -391,31 +393,55 @@ jobs:
         with:
           node-version: 22
 
-      - name: Fetch agent-enforcement checker
+      - name: Fetch the pinned agent-enforcement checker
         env:
-          # Fine-grained PAT with Contents:Read on agent-enforcement. Falls back
-          # to a runner-local checkout, then to GITHUB_TOKEN (which cannot read
-          # other private repos) — a loud SKIP means the deterministic CI tier
-          # is not running and the secret should be added.
-          AE_TOKEN: ${{ secrets.AGENT_ENFORCEMENT_TOKEN || secrets.GITHUB_TOKEN }}
+          # Fine-grained PAT with Contents:Read on agent-enforcement. No
+          # secrets.GITHUB_TOKEN fallback: it cannot read another private repo,
+          # so the fallback only converts a missing secret into a confusing 404.
+          # No runner-local $HOME checkout either — its branch is uncontrolled,
+          # so the verdict would depend on where a checkout was parked.
+          AE_TOKEN: ${{ secrets.AGENT_ENFORCEMENT_TOKEN }}
         run: |
-          set -uo pipefail
-          CHECK_LOCAL="$HOME/Repositories/agent-enforcement/home/.claude/hooks/lib/preview-fixtures-check.mjs"
-          if [ -f "$CHECK_LOCAL" ]; then
-            cp "$CHECK_LOCAL" "$RUNNER_TEMP/preview-fixtures-check.mjs"
-            echo "Using runner-local enforcement checkout."
-          elif git clone --depth 1 "https://x-access-token:${AE_TOKEN}@github.com/j0nathan-ll0yd/agent-enforcement.git" "$RUNNER_TEMP/agent-enforcement" 2>/dev/null; then
-            cp "$RUNNER_TEMP/agent-enforcement/home/.claude/hooks/lib/preview-fixtures-check.mjs" "$RUNNER_TEMP/preview-fixtures-check.mjs"
-            echo "Cloned agent-enforcement via token."
-          else
-            echo "::warning::Cannot obtain the agent-enforcement checker (add the AGENT_ENFORCEMENT_TOKEN secret) — S98 scan SKIPPED (not passed)."
-            exit 0
-          fi
-          echo "have_checker=1" >> "$GITHUB_ENV"
+          # set -e is load-bearing. The previous version ran set -uo and ended
+          # its fallback with exit 0, which GitHub reads as a PASS: every run
+          # from 2026-07-07 through 2026-08-27, until the
+          # AGENT_ENFORCEMENT_TOKEN secret was added, took that path and the job
+          # was green while scanning nothing. A missing checker must red the job.
+          set -euo pipefail
+          # An absent secret expands to the empty string, not an unset variable,
+          # so set -u does not catch it. Without this the operator sees only a
+          # bare git auth error. Fine-grained PATs expire, so this path is live.
+          [ -n "${AE_TOKEN}" ] || {
+            echo "::error::AGENT_ENFORCEMENT_TOKEN is missing or expired — add it in repo settings. S98 cannot run without it."
+            exit 1
+          }
+          PIN_SHA=$(node -p "require('./.github/astgrep-pin.json').sha")
+          # Re-run safe: a self-hosted runner may not have cleared RUNNER_TEMP,
+          # and `git remote add` on an existing repo exits 3.
+          rm -rf "$RUNNER_TEMP/ae-s98"
+          git init "$RUNNER_TEMP/ae-s98"
+          git -C "$RUNNER_TEMP/ae-s98" remote add origin \
+            "https://x-access-token:${AE_TOKEN}@github.com/j0nathan-ll0yd/agent-enforcement.git"
+          # git init + fetch --depth 1 <sha>, not clone --branch: a commit sha is
+          # not a branch, so clone --branch cannot take one.
+          git -C "$RUNNER_TEMP/ae-s98" fetch --depth 1 origin "$PIN_SHA"
+          git -C "$RUNNER_TEMP/ae-s98" checkout FETCH_HEAD
+          GOT_SHA=$(git -C "$RUNNER_TEMP/ae-s98" rev-parse HEAD)
+          [ "$GOT_SHA" = "$PIN_SHA" ] || {
+            echo "::error::checked out $GOT_SHA, expected $PIN_SHA"
+            exit 1
+          }
+          echo "Obtained the checker at agent-enforcement $PIN_SHA."
 
+      # No `if:` guard. The scan always runs when this step is reached, because
+      # the fetch step above is now the fail-closed gate.
       - name: Scan Preview blocks for inline domain construction
-        if: env.have_checker == '1'
-        run: node "$RUNNER_TEMP/preview-fixtures-check.mjs" --scan .
+        run: |
+          set -euo pipefail
+          # Run from the fetched checkout rather than a copy. The checker gates
+          # its own CLI on its basename, so a renamed copy would load, match
+          # nothing and exit 0 — another silent green.
+          node "$RUNNER_TEMP/ae-s98/home/.claude/hooks/lib/preview-fixtures-check.mjs" --scan .
 
   swift-conventions:
     name: Swift Conventions (ast-grep)
@@ -438,9 +464,9 @@ jobs:
           # No runner-local $HOME checkout either — its branch is uncontrolled.
           AE_TOKEN: ${{ secrets.AGENT_ENFORCEMENT_TOKEN }}
         run: |
-          # set -e, not the S98 job's set -uo: without it a failed fetch would
-          # continue to the next command. A fetch failure, a sha mismatch or an
-          # unreadable version must exit non-zero. 0084 rejects an exit 0 skip.
+          # set -e is load-bearing: without it a failed fetch would continue to
+          # the next command. A fetch failure, a sha mismatch or an unreadable
+          # version must exit non-zero. 0084 rejects an exit 0 skip.
           set -euo pipefail
           PIN_SHA=$(node -p "require('./.github/astgrep-pin.json').sha")
           git init "$RUNNER_TEMP/ae"
