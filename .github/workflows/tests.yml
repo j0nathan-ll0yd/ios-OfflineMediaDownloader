@@ -1,46 +1,52 @@
 name: Tests
 
 on:
+  # INVARIANT: the pull_request trigger carries NO path filter. Do not add one.
+  #
+  # Branch protection on main requires five contexts, and every one of them is
+  # produced by a job in this file: "PR Title (Conventional Commits)", "Lint
+  # (conventions, SwiftLint, SwiftFormat, ShellCheck)", "APITypes Build (SPM)",
+  # "Test (build + unit + snapshots + warnings)" and "Swift Conventions
+  # (ast-grep)". A path filter that excludes a change set creates no workflow
+  # run at all, so those five contexts never report and sit "Expected"
+  # forever. Per GitHub: "If a workflow is skipped due to path filtering [...]
+  # then checks associated with that workflow will remain in a 'Pending'
+  # state. A pull request that requires those checks to be successful will be
+  # blocked from merging."
+  #
+  # The allowlist this replaces made that unmergeable state reachable three
+  # ways. It excluded root markdown, so PR #91 (README.md + CLAUDE.md) could
+  # never merge. It also omitted DownloadActivityWidget/** and
+  # NotificationServiceExtension/**, two real Xcode targets, so a change to
+  # either produced no run, no verification and no way to merge.
+  #
+  # Do NOT repair this by adding a second workflow that mirrors these five job
+  # names for the excluded paths. GitHub rules that shape out: "make sure that
+  # job names are unique across all workflows. Using the same job name in
+  # multiple workflows can cause ambiguous status check results and block pull
+  # requests from being merged." Two triggers also cannot be made
+  # complementary, because paths-ignore runs a workflow when ANY changed file
+  # falls outside the ignore list. A mixed pull request (code plus a README)
+  # therefore fires both workflows, duplicate names resolve latest-wins, and a
+  # no-op twin can mask a real failure.
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'App/**'
-      - 'ShareExtension/**'
-      - 'OfflineMediaDownloaderTests/**'
-      - 'OfflineMediaDownloader.xcodeproj/**'
-      - 'OfflineMediaDownloaderUITests/**'
-      - 'APITypes/**'
-      - 'Packages/**'
-      - 'Scripts/**'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - '.swiftlint.yml'
-      - '.swiftformat'
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.github/dependabot.yml'
-      - '.github/astgrep-pin.json'
-      - '.preview-fixtures.json'
   push:
     branches: [main, develop]
-    paths:
-      - 'App/**'
-      - 'ShareExtension/**'
-      - 'OfflineMediaDownloaderTests/**'
-      - 'OfflineMediaDownloader.xcodeproj/**'
-      - 'OfflineMediaDownloaderUITests/**'
-      - 'APITypes/**'
-      - 'Packages/**'
-      - 'Scripts/**'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - '.swiftlint.yml'
-      - '.swiftformat'
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.github/dependabot.yml'
-      - '.github/astgrep-pin.json'
-      - '.preview-fixtures.json'
+    # A denylist, not an allowlist. An allowlist rots dangerously: a new source
+    # directory escapes CI silently, which is exactly how the two targets above
+    # went unverified. A denylist rots safely, because an unlisted path runs the
+    # suite. Markdown is the only entry, and it is the only safe one: no job
+    # below reads a .md file. The five checks run swiftlint, swiftformat,
+    # shellcheck over Scripts/*.sh, xcodebuild and ast-grep, and none of them
+    # parse markdown. Keep this list to paths with that same property.
+    #
+    # Spell it '**/*.md', not '**.md'. The leading '**/' collapses to zero
+    # directories, so the one pattern covers README.md at the root and every
+    # nested .md. The shorter '**.md' form is documented as recursive but has
+    # been observed matching root-level files only (github/docs issue #24132).
+    paths-ignore:
+      - '**/*.md'
 
 concurrency:
   group: tests-${{ github.head_ref || github.ref }}
