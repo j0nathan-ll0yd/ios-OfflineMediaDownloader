@@ -36,9 +36,11 @@ Read off the reducer bodies, not from memory: `RootFeature.swift:107,110,391,394
 `downloadTracking` and `main`, and attaches `diagnostic` through `.ifLet` inside `#if DEBUG`.
 
 Four further reducers live inside a parent target rather than in a target of their own, and are
-reached by presentation instead of a `Scope`: `LoginFeature/EmailLoginFeature.swift`
-(`LoginFeature.swift:55,228`) and `MainFeature/{DownloadSettingsFeature,EditProfileFeature,
-NotificationsFeature}.swift` (`MainFeature.swift:54-58`).
+reached by presentation instead of a `Scope`:
+
+- `LoginFeature/EmailLoginFeature.swift` (`LoginFeature.swift:55,228`)
+- `MainFeature/DownloadSettingsFeature.swift`, `MainFeature/EditProfileFeature.swift` and
+  `MainFeature/NotificationsFeature.swift` (`MainFeature.swift:54-58`)
 
 ## Key Features
 
