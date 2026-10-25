@@ -380,8 +380,8 @@ public struct RootFeature: Sendable {
     }
     #if DEBUG
     .ifLet(\.$diagnostic, action: \.diagnostic) {
-      DiagnosticFeature()
-    }
+        DiagnosticFeature()
+      }
     #endif
   }
 }
