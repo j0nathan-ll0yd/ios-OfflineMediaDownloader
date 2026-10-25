@@ -229,6 +229,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee package-test.log | { xcbeautify || cat; }
 
+      - name: Run OMDFeatures package test suites
+        working-directory: Packages/OMDFeatures
+        run: |
+          # Every OMDFeatures-Package test target, unfiltered. These suites are
+          # not part of the app scheme, so before this step CI built them but
+          # never ran them, and they failed unnoticed. No -only-testing or
+          # -skip-testing: a failing suite must fail this step.
+          set -o pipefail
+          xcodebuild test \
+            -scheme OMDFeatures-Package \
+            -destination "id=${{ steps.env.outputs.device_id }}" \
+            -resultBundlePath PackageTestResults.xcresult \
+            -test-timeouts-enabled YES \
+            -maximum-test-execution-time-allowance 120 \
+            -parallel-testing-enabled YES \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee package-suites.log | { xcbeautify || cat; }
+
       - name: Upload test results (always)
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -236,6 +256,7 @@ jobs:
           name: test-results
           path: |
             TestResults.xcresult
+            Packages/OMDFeatures/PackageTestResults.xcresult
             test-results.xml
             build-results.xml
           retention-days: 7
