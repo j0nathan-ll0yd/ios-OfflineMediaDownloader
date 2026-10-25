@@ -1,6 +1,10 @@
+import APITypes
 import Foundation
 
-public enum ClientEvent: Encodable, Sendable {
+/// The generated `oneOf` item type of `POST /device/event`'s `events` array.
+public typealias DeviceEventPayload = Components.Schemas.Models_period_ClientEventBatchRequest.eventsPayloadPayload
+
+public enum ClientEvent: Sendable {
   case pushDelivered(timestamp: Date, correlationId: String, notificationType: String?)
   case pushReceived(timestamp: Date, correlationId: String, notificationType: String?)
   case pushOpened(timestamp: Date, correlationId: String, notificationType: String?)
@@ -17,130 +21,134 @@ public enum ClientEvent: Encodable, Sendable {
   case appLaunched(timestamp: Date, appVersion: String, buildNumber: String, osVersion: String, deviceModel: String)
   case networkError(timestamp: Date, endpoint: String, statusCode: Int?, errorMessage: String)
 
-  private enum CodingKeys: String, CodingKey {
-    case eventType, timestamp, correlationId, notificationType
-    case fileId, fileSizeBytes, durationMs, durationSec, playbackDurationSec
-    case localCount, serverCount, missingFileIds
-    case host, errorMessage, errorType
-    case sessionId, taskName
-    case appVersion, buildNumber, osVersion, deviceModel
-    case endpoint, statusCode
-  }
-
-  public func encode(to encoder: any Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-
+  /// The event as the generated `/device/event` contract type.
+  ///
+  /// A `notificationType` outside the contract enum is omitted: the server rejects
+  /// the whole batch for an unknown value, and the field is optional.
+  public var payload: DeviceEventPayload {
     switch self {
     case let .pushDelivered(timestamp, correlationId, notificationType):
-      try container.encode("push_delivered", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(correlationId, forKey: .correlationId)
-      try container.encodeIfPresent(notificationType, forKey: .notificationType)
+      .case1(.init(
+        eventType: .push_delivered,
+        timestamp: timestamp,
+        correlationId: correlationId,
+        notificationType: notificationType.flatMap { .init(rawValue: $0) }
+      ))
 
     case let .pushReceived(timestamp, correlationId, notificationType):
-      try container.encode("push_received", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(correlationId, forKey: .correlationId)
-      try container.encodeIfPresent(notificationType, forKey: .notificationType)
+      .case2(.init(
+        eventType: .push_received,
+        timestamp: timestamp,
+        correlationId: correlationId,
+        notificationType: notificationType.flatMap { .init(rawValue: $0) }
+      ))
 
     case let .pushOpened(timestamp, correlationId, notificationType):
-      try container.encode("push_opened", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(correlationId, forKey: .correlationId)
-      try container.encodeIfPresent(notificationType, forKey: .notificationType)
+      .case3(.init(
+        eventType: .push_opened,
+        timestamp: timestamp,
+        correlationId: correlationId,
+        notificationType: notificationType.flatMap { .init(rawValue: $0) }
+      ))
 
     case let .downloadCompletedLocally(timestamp, fileId, fileSizeBytes, durationMs):
-      try container.encode("download_completed_locally", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(fileId, forKey: .fileId)
-      try container.encode(fileSizeBytes, forKey: .fileSizeBytes)
-      try container.encode(durationMs, forKey: .durationMs)
+      .case4(.init(
+        eventType: .download_completed_locally,
+        timestamp: timestamp,
+        fileId: fileId,
+        fileSizeBytes: fileSizeBytes,
+        durationMs: durationMs
+      ))
 
     case let .playbackStarted(timestamp, fileId, durationSec):
-      try container.encode("playback_started", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(fileId, forKey: .fileId)
-      try container.encodeIfPresent(durationSec, forKey: .durationSec)
+      .case5(.init(eventType: .playback_started, timestamp: timestamp, fileId: fileId, durationSec: durationSec))
 
     case let .playbackCompleted(timestamp, fileId, playbackDurationSec):
-      try container.encode("playback_completed", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(fileId, forKey: .fileId)
-      try container.encode(playbackDurationSec, forKey: .playbackDurationSec)
+      .case6(.init(
+        eventType: .playback_completed,
+        timestamp: timestamp,
+        fileId: fileId,
+        playbackDurationSec: playbackDurationSec
+      ))
 
     case let .fileSyncMismatch(timestamp, localCount, serverCount, missingFileIds):
-      try container.encode("file_sync_mismatch", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(localCount, forKey: .localCount)
-      try container.encode(serverCount, forKey: .serverCount)
-      try container.encodeIfPresent(missingFileIds, forKey: .missingFileIds)
-
-    case let .certificatePinningFailed(timestamp, host, errorMessage):
-      try container.encode("certificate_pinning_failed", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(host, forKey: .host)
-      try container.encode(errorMessage, forKey: .errorMessage)
+      .case7(.init(
+        eventType: .file_sync_mismatch,
+        timestamp: timestamp,
+        localCount: localCount,
+        serverCount: serverCount,
+        missingFileIds: missingFileIds
+      ))
 
     case let .tokenRefreshSucceeded(timestamp, sessionId):
-      try container.encode("token_refresh_succeeded", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encodeIfPresent(sessionId, forKey: .sessionId)
+      .case8(.init(eventType: .token_refresh_succeeded, timestamp: timestamp, sessionId: sessionId))
 
     case let .tokenRefreshFailed(timestamp, errorType, errorMessage):
-      try container.encode("token_refresh_failed", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(errorType, forKey: .errorType)
-      try container.encode(errorMessage, forKey: .errorMessage)
+      .case9(.init(eventType: .token_refresh_failed, timestamp: timestamp, errorType: errorType, errorMessage: errorMessage))
 
     case let .sessionExpired(timestamp, sessionId):
-      try container.encode("session_expired", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encodeIfPresent(sessionId, forKey: .sessionId)
-
-    case let .backgroundTaskCompleted(timestamp, taskName, durationMs):
-      try container.encode("background_task_completed", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(taskName, forKey: .taskName)
-      try container.encode(durationMs, forKey: .durationMs)
-
-    case let .backgroundTaskExpired(timestamp, taskName):
-      try container.encode("background_task_expired", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(taskName, forKey: .taskName)
+      .case10(.init(eventType: .session_expired, timestamp: timestamp, sessionId: sessionId))
 
     case let .appLaunched(timestamp, appVersion, buildNumber, osVersion, deviceModel):
-      try container.encode("app_launched", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(appVersion, forKey: .appVersion)
-      try container.encode(buildNumber, forKey: .buildNumber)
-      try container.encode(osVersion, forKey: .osVersion)
-      try container.encode(deviceModel, forKey: .deviceModel)
+      .case11(.init(
+        eventType: .app_launched,
+        timestamp: timestamp,
+        appVersion: appVersion,
+        buildNumber: buildNumber,
+        osVersion: osVersion,
+        deviceModel: deviceModel
+      ))
+
+    case let .certificatePinningFailed(timestamp, host, errorMessage):
+      .case12(.init(eventType: .certificate_pinning_failed, timestamp: timestamp, host: host, errorMessage: errorMessage))
+
+    case let .backgroundTaskCompleted(timestamp, taskName, durationMs):
+      .case13(.init(eventType: .background_task_completed, timestamp: timestamp, taskName: taskName, durationMs: durationMs))
+
+    case let .backgroundTaskExpired(timestamp, taskName):
+      .case14(.init(eventType: .background_task_expired, timestamp: timestamp, taskName: taskName))
 
     case let .networkError(timestamp, endpoint, statusCode, errorMessage):
-      try container.encode("network_error", forKey: .eventType)
-      try container.encode(Self.format(timestamp), forKey: .timestamp)
-      try container.encode(endpoint, forKey: .endpoint)
-      try container.encodeIfPresent(statusCode, forKey: .statusCode)
-      try container.encode(errorMessage, forKey: .errorMessage)
+      .case15(.init(
+        eventType: .network_error,
+        timestamp: timestamp,
+        endpoint: endpoint,
+        statusCode: statusCode,
+        errorMessage: errorMessage
+      ))
     }
-  }
-
-  // SAFETY: ISO8601DateFormatter is configured once at init and never mutated — safe for concurrent reads
-  private nonisolated(unsafe) static let iso8601: ISO8601DateFormatter = {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f
-  }()
-
-  private static func format(_ date: Date) -> String {
-    iso8601.string(from: date)
   }
 }
 
-public struct ClientEventBatch: Encodable, Sendable {
+public struct ClientEventBatch: Sendable {
   public let events: [ClientEvent]
 
   public init(events: [ClientEvent]) {
     self.events = events
   }
+
+  /// The batch as the generated `POST /device/event` request body.
+  public var requestBody: Components.Schemas.Models_period_ClientEventBatchRequest {
+    .init(events: events.map(\.payload))
+  }
+
+  /// The JSON wire form of `requestBody`.
+  ///
+  /// This is the only sanctioned encoder: the generated types encode `Date` through
+  /// the encoder's date strategy, and the contract requires RFC 3339 strings.
+  public func jsonData() throws -> Data {
+    try Self.encoder.encode(requestBody)
+  }
+
+  // SAFETY: JSONEncoder and ISO8601DateFormatter are configured once at init and never mutated — safe for concurrent reads
+  private nonisolated(unsafe) static let encoder: JSONEncoder = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .custom { date, encoder in
+      var container = encoder.singleValueContainer()
+      try container.encode(formatter.string(from: date))
+    }
+    return encoder
+  }()
 }

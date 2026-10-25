@@ -1,3 +1,4 @@
+import AnalyticsClient
 import APIClient
 import APITypes
 import ComposableArchitecture
@@ -24,7 +25,7 @@ public struct ServerClient: Sendable {
   public var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
   public var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   public var logoutUser: @Sendable () async throws -> Void
-  public var logEvents: @Sendable (_ body: Data) async throws -> Void
+  public var logEvents: @Sendable (_ batch: ClientEventBatch) async throws -> Void
 }
 
 public extension DependencyValues {
@@ -539,7 +540,7 @@ extension ServerClient: DependencyKey {
       }
     },
 
-    logEvents: { body in
+    logEvents: { batch in
       @Dependency(\.logger) var logger
       logger.info(.network, "ServerClient.logEvents called")
 
@@ -569,7 +570,7 @@ extension ServerClient: DependencyKey {
       request.httpMethod = "POST"
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
       request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")
-      request.httpBody = body
+      request.httpBody = try batch.jsonData()
       request.timeoutInterval = 30
 
       let (_, response) = try await pinnedURLSession.data(for: request)

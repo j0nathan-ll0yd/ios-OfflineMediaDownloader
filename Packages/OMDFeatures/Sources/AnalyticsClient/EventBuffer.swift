@@ -64,7 +64,7 @@ public actor EventBuffer {
     events.removeAll()
 
     do {
-      let data = try JSONEncoder().encode(batch)
+      let data = try batch.jsonData()
       try await sendWithRetry(data)
     } catch {
       // EB-1: all retries exhausted — re-enqueue the failed batch at the FRONT of events

@@ -77,6 +77,7 @@ let package = Package(
     ], swiftSettings: approachableConcurrency),
 
     .target(name: "AnalyticsClient", dependencies: [
+      .product(name: "APITypes", package: "APITypes"),
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
