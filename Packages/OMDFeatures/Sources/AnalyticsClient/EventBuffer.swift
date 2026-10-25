@@ -1,5 +1,26 @@
 import Foundation
 
+/// The server rejected a `/device/event` batch with HTTP 400 (contract validation failed).
+///
+/// Resending the same batch cannot succeed, so `EventBuffer` drops it rather than
+/// retrying or re-enqueuing it. The server also returns 400 for a missing or empty
+/// `x-device-uuid` header, which is not a property of the batch, so the flush handler
+/// never sends without a device ID: it throws `EventFlushError.deviceIdUnavailable`
+/// instead, which `EventBuffer` retries and re-enqueues.
+public struct EventBatchRejectedError: Error, Equatable {
+  public let statusCode: Int
+
+  public init(statusCode: Int) {
+    self.statusCode = statusCode
+  }
+}
+
+/// A flush that could not send yet. `EventBuffer` retries and re-enqueues the batch.
+public enum EventFlushError: Error, Equatable {
+  /// `identifierForVendor` was unavailable, for example before first unlock after a reboot.
+  case deviceIdUnavailable
+}
+
 public actor EventBuffer {
   private var events: [ClientEvent] = []
   private var flushTask: Task<Void, Never>?
@@ -15,6 +36,8 @@ public actor EventBuffer {
   // batch would push the buffer beyond this limit, the oldest overflow events are dropped and
   // logged — never silently truncated.
   static let maxReenqueueCap = 200
+  /// The contract's `maxItems` for `ClientEventBatchRequest.events`. The server rejects larger batches.
+  static let maxEventsPerRequest = 100
 
   public init(
     flushHandler: @escaping @Sendable (Data) async throws -> Void,
@@ -57,15 +80,30 @@ public actor EventBuffer {
   }
 
   public func flush() async {
-    guard !events.isEmpty else { return }
-    // Snapshot and clear before the await so events appended during the send
+    while !events.isEmpty {
+      guard await sendNextBatch() else { return }
+    }
+  }
+
+  /// Sends up to `maxEventsPerRequest` of the oldest events. Returns `false` when the
+  /// send failed terminally and the batch was re-enqueued, which ends the flush.
+  private func sendNextBatch() async -> Bool {
+    // Snapshot and remove before the await so events appended during the send
     // form the next disjoint batch and are never double-sent (reentrancy-safe property).
-    let batch = ClientEventBatch(events: events)
-    events.removeAll()
+    let batch = ClientEventBatch(events: Array(events.prefix(Self.maxEventsPerRequest)))
+    events.removeFirst(batch.events.count)
 
     do {
-      let data = try JSONEncoder().encode(batch)
+      let data = try batch.jsonData()
       try await sendWithRetry(data)
+      return true
+    } catch let error as EventBatchRejectedError {
+      logHandler("EventBuffer batch rejected (HTTP \(error.statusCode)): dropped \(batch.events.count) event(s)")
+      return true
+    } catch let error as EncodingError {
+      // A batch that cannot encode never will, so re-enqueuing it would block every later flush.
+      logHandler("EventBuffer batch could not encode: dropped \(batch.events.count) event(s). Error: \(error.localizedDescription)")
+      return true
     } catch {
       // EB-1: all retries exhausted — re-enqueue the failed batch at the FRONT of events
       // so chronological order is preserved (failed events come before any events appended
@@ -86,6 +124,7 @@ public actor EventBuffer {
         events = combined
         logHandler("EventBuffer flush failed (terminal): re-enqueued \(batch.events.count) event(s) for next flush. Error: \(error.localizedDescription)")
       }
+      return false
     }
   }
 
@@ -98,6 +137,8 @@ public actor EventBuffer {
       do {
         try await flushHandler(data)
         return
+      } catch let error as EventBatchRejectedError {
+        throw error
       } catch {
         lastError = error
         logHandler("EventBuffer attempt \(attempt + 1) failed: \(error.localizedDescription)")
@@ -106,8 +147,16 @@ public actor EventBuffer {
     throw lastError ?? URLError(.unknown)
   }
 
-  public static func makeFlushHandler(deviceId: String) -> @Sendable (Data) async throws -> Void {
+  /// - Parameter deviceId: resolved on every flush, so a device ID that becomes available
+  ///   later (for example after first unlock) is used for the events buffered before it.
+  public static func makeFlushHandler(
+    deviceId: @escaping @Sendable () async -> String?
+  ) -> @Sendable (Data) async throws -> Void {
     { data in
+      guard let deviceId = await deviceId(), !deviceId.isEmpty else {
+        throw EventFlushError.deviceIdUnavailable
+      }
+
       guard let basePath = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
             let apiKey = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_API_KEY"] as? String,
             var urlComponents = URLComponents(string: basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event")
@@ -129,11 +178,25 @@ public actor EventBuffer {
       request.timeoutInterval = 30
 
       let (_, response) = try await URLSession.shared.data(for: request)
-      guard let httpResponse = response as? HTTPURLResponse,
-            (200 ... 299).contains(httpResponse.statusCode)
-      else {
-        throw URLError(.badServerResponse)
-      }
+      try classify(response)
+    }
+  }
+
+  /// Maps a `/device/event` response to the flush outcome.
+  ///
+  /// - 2xx: sent.
+  /// - 400: throws `EventBatchRejectedError`, which drops the batch.
+  /// - Any other status, or a response that is not HTTP: throws `URLError(.badServerResponse)`,
+  ///   which retries and then re-enqueues.
+  static func classify(_ response: URLResponse) throws {
+    guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+      throw URLError(.badServerResponse)
+    }
+    if statusCode == 400 {
+      throw EventBatchRejectedError(statusCode: statusCode)
+    }
+    guard (200 ... 299).contains(statusCode) else {
+      throw URLError(.badServerResponse)
     }
   }
 }

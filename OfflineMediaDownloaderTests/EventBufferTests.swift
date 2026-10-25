@@ -242,4 +242,126 @@ struct EventBufferTests {
 
     #expect(batchSizes.value == [5], "Expected exactly one batch of 5; got \(batchSizes.value)")
   }
+
+  // MARK: - Contract limits
+
+  @Test("A flush sends at most maxEventsPerRequest events per request, oldest first")
+  func flushSplitsAtContractMaxItems() async {
+    let batchSizes = LockIsolated<[Int]>([])
+    let buffer = EventBuffer(
+      flushHandler: { data in batchSizes.withValue { $0.append(eventCount(in: data)) } },
+      logHandler: { _ in },
+      maxBatchSize: .max
+    )
+
+    let total = EventBuffer.maxEventsPerRequest * 2 + 5
+    for _ in 0 ..< total {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    #expect(batchSizes.value == [EventBuffer.maxEventsPerRequest, EventBuffer.maxEventsPerRequest, 5])
+  }
+
+  @Test("A batch the server rejects is dropped without retry and the flush continues")
+  func rejectedBatchIsDroppedNotRetried() async {
+    let callCount = LockIsolated(0)
+    let batchSizes = LockIsolated<[Int]>([])
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: { data in
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
+        if count == 1 {
+          throw EventBatchRejectedError(statusCode: 400)
+        }
+        batchSizes.withValue { $0.append(eventCount(in: data)) }
+      },
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } },
+      maxBatchSize: .max
+    )
+
+    for _ in 0 ..< EventBuffer.maxEventsPerRequest + 3 {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    // One rejected request, then one for the remaining 3. No retry of the rejected batch.
+    #expect(callCount.value == 2)
+    #expect(batchSizes.value == [3])
+    #expect(logMessages.value.contains { $0.contains("rejected") && $0.contains("\(EventBuffer.maxEventsPerRequest)") })
+
+    // Nothing was re-enqueued.
+    await buffer.flush()
+    #expect(callCount.value == 2)
+  }
+
+  // MARK: - Device ID
+
+  @Test("The flush handler refuses to send without a device ID", arguments: [nil, ""] as [String?])
+  func flushHandlerThrowsRetryableErrorWithoutDeviceId(deviceId: String?) async {
+    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId })
+
+    await #expect(throws: EventFlushError.deviceIdUnavailable) {
+      try await handler(Data())
+    }
+  }
+
+  @Test("A missing device ID re-enqueues the batch instead of dropping it")
+  func missingDeviceIdReenqueues() async {
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }),
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+    )
+
+    for _ in 0 ..< 2 {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    #expect(logMessages.value.contains { $0.contains("re-enqueued 2 event(s)") }, "got: \(logMessages.value)")
+    #expect(!logMessages.value.contains { $0.contains("rejected") || $0.contains("dropped") }, "got: \(logMessages.value)")
+  }
+
+  // MARK: - Response classification
+
+  private static let eventURL = URL(string: "https://api.example.test/device/event")
+
+  private static func httpResponse(_ statusCode: Int) throws -> HTTPURLResponse {
+    let url = try #require(eventURL)
+    return try #require(HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: nil))
+  }
+
+  @Test("2xx responses classify as sent", arguments: [200, 202, 204])
+  func successStatusesAreSent(statusCode: Int) throws {
+    try EventBuffer.classify(Self.httpResponse(statusCode))
+  }
+
+  @Test("400 classifies as a rejected batch, which is dropped")
+  func badRequestIsRejected() throws {
+    let response = try Self.httpResponse(400)
+    #expect(throws: EventBatchRejectedError(statusCode: 400)) {
+      try EventBuffer.classify(response)
+    }
+  }
+
+  @Test("Other 4xx and 5xx classify as retryable", arguments: [401, 403, 404, 429, 500, 502, 503])
+  func otherStatusesAreRetryable(statusCode: Int) throws {
+    let response = try Self.httpResponse(statusCode)
+    #expect(throws: URLError(.badServerResponse)) {
+      try EventBuffer.classify(response)
+    }
+  }
+
+  @Test("A response that is not HTTP classifies as retryable")
+  func nonHTTPResponseIsRetryable() throws {
+    let url = try #require(Self.eventURL)
+    let response = URLResponse(url: url, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
+    #expect(throws: URLError(.badServerResponse)) {
+      try EventBuffer.classify(response)
+    }
+  }
 }

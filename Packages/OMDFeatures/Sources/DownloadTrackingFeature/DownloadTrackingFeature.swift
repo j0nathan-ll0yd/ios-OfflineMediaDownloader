@@ -14,7 +14,8 @@ public struct DownloadTrackingFeature: Sendable {
   @ObservableState
   public struct State: Equatable {
     public init() {}
-    var downloadStartTimes: [String: Date] = [:]
+    /// Monotonic start readings (`MonotonicClock`), so a wall-clock change cannot skew durations.
+    var downloadStartTimes: [String: Duration] = [:]
     var downloadSizes: [String: Int64] = [:]
   }
 
@@ -39,12 +40,13 @@ public struct DownloadTrackingFeature: Sendable {
   @Dependency(\.liveActivityClient) var liveActivityClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
+  @Dependency(\.monotonicClock) var monotonicClock
 
   public var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
       case let .startDownload(fileId, title, url, size):
-        state.downloadStartTimes[fileId] = Date()
+        state.downloadStartTimes[fileId] = monotonicClock.now()
         state.downloadSizes[fileId] = size
         return .merge(
           .send(.delegate(.downloadStarted(fileId: fileId, title: title, isBackground: true))),
@@ -75,7 +77,7 @@ public struct DownloadTrackingFeature: Sendable {
         logger.info(.download, "Background download completed", metadata: ["fileId": fileId])
         let startTime = state.downloadStartTimes.removeValue(forKey: fileId)
         let fileSize = state.downloadSizes.removeValue(forKey: fileId)
-        let durationMs = startTime.map { Int(Date().timeIntervalSince($0) * 1000) } ?? 0
+        let durationMs = startTime.map { (monotonicClock.now() - $0).wholeMilliseconds } ?? 0
         let analytics = analytics
         return .merge(
           .run { [coreDataClient, liveActivityClient] send in

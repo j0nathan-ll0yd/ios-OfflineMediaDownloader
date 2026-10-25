@@ -147,22 +147,22 @@ private func mapToClientEvent(
 
   case .downloadCompletedLocally:
     guard let fileId = properties?["fileId"],
-          let fileSizeBytes = properties?["fileSizeBytes"].flatMap(Int.init),
-          let durationMs = properties?["durationMs"].flatMap(Int.init) else { return nil }
+          let fileSizeBytes = properties?["fileSizeBytes"].flatMap({ nonNegativeInt($0, field: "fileSizeBytes") }),
+          let durationMs = properties?["durationMs"].flatMap({ nonNegativeInt($0, field: "durationMs") }) else { return nil }
     return .downloadCompletedLocally(timestamp: now, fileId: fileId, fileSizeBytes: fileSizeBytes, durationMs: durationMs)
 
   case .playbackStarted:
     guard let fileId = properties?["fileId"] else { return nil }
-    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap(Double.init))
+    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap { nonNegativeDouble($0, field: "durationSec") })
 
   case .playbackCompleted:
     guard let fileId = properties?["fileId"],
-          let playbackDurationSec = properties?["playbackDurationSec"].flatMap(Double.init) else { return nil }
+          let playbackDurationSec = properties?["playbackDurationSec"].flatMap({ nonNegativeDouble($0, field: "playbackDurationSec") }) else { return nil }
     return .playbackCompleted(timestamp: now, fileId: fileId, playbackDurationSec: playbackDurationSec)
 
   case .fileSyncMismatch:
-    guard let localCount = properties?["localCount"].flatMap(Int.init),
-          let serverCount = properties?["serverCount"].flatMap(Int.init) else { return nil }
+    guard let localCount = properties?["localCount"].flatMap({ nonNegativeInt($0, field: "localCount") }),
+          let serverCount = properties?["serverCount"].flatMap({ nonNegativeInt($0, field: "serverCount") }) else { return nil }
     let missingFileIds = properties?["missingFileIds"]?.components(separatedBy: ",").filter { !$0.isEmpty }
     return .fileSyncMismatch(timestamp: now, localCount: localCount, serverCount: serverCount, missingFileIds: missingFileIds)
 
@@ -184,7 +184,7 @@ private func mapToClientEvent(
 
   case .backgroundTaskCompleted:
     guard let taskName = properties?["taskName"],
-          let durationMs = properties?["durationMs"].flatMap(Int.init) else { return nil }
+          let durationMs = properties?["durationMs"].flatMap({ nonNegativeInt($0, field: "durationMs") }) else { return nil }
     return .backgroundTaskCompleted(timestamp: now, taskName: taskName, durationMs: durationMs)
 
   case .backgroundTaskExpired:
@@ -208,6 +208,44 @@ private func mapToClientEvent(
   }
 }
 
+/// Parses a contract field with `minimum: 0`. A negative value clamps to 0 so it cannot
+/// invalidate the whole batch, and the clamp is reported: durations come from
+/// `MonotonicClock`, so a negative value means a producer bug, not a clock change.
+func nonNegativeInt(
+  _ string: String,
+  field: String,
+  report: (String) -> Void = reportClampedField
+) -> Int? {
+  guard let value = Int(string) else { return nil }
+  if value < 0 {
+    report("Analytics field \(field) was negative (\(value)), clamped to 0")
+  }
+  return max(0, value)
+}
+
+/// Parses a contract number with `minimum: 0`. Non-finite values are rejected because
+/// JSON cannot encode them; negative values clamp to 0. Both cases are reported.
+func nonNegativeDouble(
+  _ string: String,
+  field: String,
+  report: (String) -> Void = reportClampedField
+) -> Double? {
+  guard let value = Double(string) else { return nil }
+  guard value.isFinite else {
+    report("Analytics field \(field) was not finite (\(value)), dropped")
+    return nil
+  }
+  if value < 0 {
+    report("Analytics field \(field) was negative (\(value)), clamped to 0")
+  }
+  return max(0, value)
+}
+
+func reportClampedField(_ message: String) {
+  // SANCTIONED-SINK: AnalyticsClient's error-path relay for contract clamps
+  os_log("%{public}@", log: analyticsLog, type: .error, message)
+}
+
 // MARK: - Debug Console Logger
 
 private let analyticsLog = OSLog(subsystem: "OfflineMediaDownloader", category: "Analytics")
@@ -216,12 +254,18 @@ private let analyticsLog = OSLog(subsystem: "OfflineMediaDownloader", category: 
 
 extension AnalyticsClient: DependencyKey {
   public static let liveValue: AnalyticsClient = {
-    let deviceId = MainActor.assumeIsolated {
-      UIDevice.current.identifierForVendor?.uuidString ?? ""
+    // The Notification Service Extension reads the device ID from the shared App Group.
+    // Store it only when known, so an unavailable ID never overwrites a valid one.
+    let resolveDeviceId: @Sendable () async -> String? = {
+      let deviceId = await MainActor.run { UIDevice.current.identifierForVendor?.uuidString }
+      if let deviceId, !deviceId.isEmpty {
+        UserDefaults(suiteName: "group.lifegames.OfflineMediaDownloader")?.set(deviceId, forKey: "deviceUUID")
+      }
+      return deviceId
     }
-    UserDefaults(suiteName: "group.lifegames.OfflineMediaDownloader")?.set(deviceId, forKey: "deviceUUID")
+    Task { _ = await resolveDeviceId() }
     let buffer = EventBuffer(
-      flushHandler: EventBuffer.makeFlushHandler(deviceId: deviceId),
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: resolveDeviceId),
       logHandler: { message in
         // SANCTIONED-SINK: AnalyticsClient's error-path relay for EventBuffer flush/retry failures
         os_log("%{public}@", log: analyticsLog, type: .error, message)

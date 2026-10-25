@@ -24,7 +24,6 @@ public struct ServerClient: Sendable {
   public var addFile: @Sendable (_ url: URL) async throws -> DownloadFileResponse
   public var deleteFile: @Sendable (_ fileId: String) async throws -> DeleteFileResponse
   public var logoutUser: @Sendable () async throws -> Void
-  public var logEvents: @Sendable (_ body: Data) async throws -> Void
 }
 
 public extension DependencyValues {
@@ -537,50 +536,6 @@ extension ServerClient: DependencyKey {
       case let .undocumented(code, p):
         throw mapStatusCodeToError(code, message: nil, requestId: p.headerFields[optional: HTTPHeaderName.amznRequestId])
       }
-    },
-
-    logEvents: { body in
-      @Dependency(\.logger) var logger
-      logger.info(.network, "ServerClient.logEvents called")
-
-      let deviceId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
-
-      let eventURL = Environment.baseURL.appending(path: "device/event")
-      guard var urlComponents = URLComponents(url: eventURL, resolvingAgainstBaseURL: false) else {
-        throw ServerClientError.networkError(
-          message: "Could not build the device/event URL from \(eventURL)",
-          requestId: nil,
-          correlationId: nil
-        )
-      }
-      urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
-        URLQueryItem(name: "ApiKey", value: Environment.apiKey),
-      ]
-
-      guard let requestURL = urlComponents.url else {
-        throw ServerClientError.networkError(
-          message: "Could not build the device/event URL from \(eventURL)",
-          requestId: nil,
-          correlationId: nil
-        )
-      }
-
-      var request = URLRequest(url: requestURL)
-      request.httpMethod = "POST"
-      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")
-      request.httpBody = body
-      request.timeoutInterval = 30
-
-      let (_, response) = try await pinnedURLSession.data(for: request)
-      guard let httpResponse = response as? HTTPURLResponse,
-            (200 ... 299).contains(httpResponse.statusCode)
-      else {
-        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-        throw mapStatusCodeToError(statusCode, message: nil, requestId: nil)
-      }
-
-      logger.info(.network, "ServerClient.logEvents succeeded")
     }
   )
 }
@@ -680,8 +635,7 @@ public extension ServerClient {
         requestId: "test-request-id"
       )
     },
-    logoutUser: {},
-    logEvents: { _ in }
+    logoutUser: {}
   )
 
   static let previewValue = ServerClient(
@@ -734,7 +688,6 @@ public extension ServerClient {
         requestId: "preview"
       )
     },
-    logoutUser: {},
-    logEvents: { _ in }
+    logoutUser: {}
   )
 }

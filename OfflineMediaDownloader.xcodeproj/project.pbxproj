@@ -13,6 +13,8 @@
 		BAE08BD9C61AFF9E4E05E4F6 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D6A6D4EB96486CBC77B3A91 /* Foundation.framework */; };
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
+		3DA16F813C6700B9736D6958 /* DeviceEventEncoding in Frameworks */ = {isa = PBXBuildFile; productRef = 83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */; };
+		E7988A0A0BE073EF726AFEFE /* DeviceEventEncoding in Frameworks */ = {isa = PBXBuildFile; productRef = EDF0AAD74470336DB8010120 /* DeviceEventEncoding */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
 		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
 		C44108292F1487B2007EAB48 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108282F1487B2007EAB48 /* SwiftUI.framework */; };
@@ -185,6 +187,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BAE08BD9C61AFF9E4E05E4F6 /* Foundation.framework in Frameworks */,
+				3DA16F813C6700B9736D6958 /* DeviceEventEncoding in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,6 +220,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C44112772F25D658007EAB48 /* SnapshotTesting in Frameworks */,
+				E7988A0A0BE073EF726AFEFE /* DeviceEventEncoding in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,6 +341,9 @@
 			dependencies = (
 			);
 			name = NotificationServiceExtension;
+			packageProductDependencies = (
+				83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */,
+			);
 			productName = NotificationServiceExtension;
 			productReference = 35C611F199767DE3CAED194A /* NotificationServiceExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -404,6 +411,7 @@
 			name = OfflineMediaDownloaderTests;
 			packageProductDependencies = (
 				C41DD9612F1A5A5A00F041C6 /* SnapshotTesting */,
+				EDF0AAD74470336DB8010120 /* DeviceEventEncoding */,
 			);
 			productName = OfflineMediaDownloaderTests;
 			productReference = C41DD8992CC6C52700F041C6 /* OfflineMediaDownloaderTests.xctest */;
@@ -1243,6 +1251,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DeviceEventEncoding;
+		};
+		EDF0AAD74470336DB8010120 /* DeviceEventEncoding */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DeviceEventEncoding;
+		};
 		A10000022F30000200000001 /* RootFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RootFeature;

@@ -36,7 +36,8 @@ public struct FileListFeature: Sendable {
     public var showAddConfirmation: Bool = false
     public var playingFile: File?
     public var isPreparingToPlay: Bool = false
-    var playbackStartTime: Date?
+    /// Monotonic start reading (`MonotonicClock`), so a wall-clock change cannot skew the duration.
+    var playbackStartTime: Duration?
     public var pendingAddUrl: URL?
     public var pendingYoutubeId: String?
     public var sharingFileURL: URL?
@@ -103,7 +104,7 @@ public struct FileListFeature: Sendable {
   }
 
   @Dependency(\.analytics) var analytics
-  @Dependency(\.date) var date
+  @Dependency(\.monotonicClock) var monotonicClock
   @Dependency(\.serverClient) var serverClient
   @Dependency(\.coreDataClient) var coreDataClient
   @Dependency(\.logger) var logger
@@ -485,7 +486,7 @@ public struct FileListFeature: Sendable {
 
       case let .startPlayer(file):
         state.playingFile = file
-        state.playbackStartTime = date.now
+        state.playbackStartTime = monotonicClock.now()
         let analytics = analytics
         analytics.track(.playbackStarted, ["fileId": file.fileId])
         return .run { [coreDataClient] _ in
@@ -499,7 +500,7 @@ public struct FileListFeature: Sendable {
         state.isPreparingToPlay = false
         state.playbackStartTime = nil
         if let fileId, let startTime {
-          let durationSec = date.now.timeIntervalSince(startTime)
+          let durationSec = (monotonicClock.now() - startTime).seconds
           let analytics = analytics
           analytics.track(.playbackCompleted, [
             "fileId": fileId,

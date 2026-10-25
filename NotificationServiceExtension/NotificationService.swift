@@ -1,3 +1,4 @@
+import DeviceEventEncoding
 import Foundation
 import os
 import UserNotifications
@@ -90,21 +91,11 @@ final class NotificationService: UNNotificationServiceExtension {
       return
     }
 
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-    var event: [String: Any] = [
-      "eventType": "push_delivered",
-      "timestamp": formatter.string(from: Date()),
-      "correlationId": notificationId,
-    ]
-    if let notificationType {
-      event["notificationType"] = notificationType
-    }
-
-    let body: [String: Any] = ["events": [event]]
-
-    guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+    guard let jsonData = try? PushDeliveredEventBatch.jsonData(
+      correlationId: notificationId,
+      notificationType: notificationType,
+      timestamp: Date()
+    ) else {
       Self.logger.error("Failed to serialize event JSON")
       return
     }

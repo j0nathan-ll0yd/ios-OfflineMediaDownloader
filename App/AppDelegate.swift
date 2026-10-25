@@ -138,13 +138,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     @Dependency(\.logger) var logger
     @Dependency(\.analytics) var analytics
     logger.info(.lifecycle, "AppDelegate: handleEventsForBackgroundURLSession called with identifier: \(identifier)")
-    let startTime = CFAbsoluteTimeGetCurrent()
+    // ContinuousClock, not CFAbsoluteTime: a wall-clock change must not skew the duration.
+    let startTime = ContinuousClock.now
     // SAFETY: completionHandler must escape @MainActor isolation to be called from async context
     nonisolated(unsafe) let handler = completionHandler
     let analyticsClient = analytics
     Task(name: "set-background-completion-handler") {
       await DownloadManager.shared.setBackgroundCompletionHandler { @Sendable in
-        let durationMs = Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
+        let durationMs = (ContinuousClock.now - startTime).wholeMilliseconds
         analyticsClient.track(.backgroundTaskCompleted, [
           "taskName": identifier,
           "durationMs": String(durationMs),
