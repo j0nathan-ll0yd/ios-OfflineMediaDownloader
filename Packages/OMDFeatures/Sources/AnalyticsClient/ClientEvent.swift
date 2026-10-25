@@ -140,14 +140,12 @@ public struct ClientEventBatch: Sendable {
     try Self.encoder.encode(requestBody)
   }
 
-  // SAFETY: JSONEncoder and ISO8601DateFormatter are configured once at init and never mutated — safe for concurrent reads
-  private nonisolated(unsafe) static let encoder: JSONEncoder = {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+  private static let encoder: JSONEncoder = {
+    let format = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .custom { date, encoder in
       var container = encoder.singleValueContainer()
-      try container.encode(formatter.string(from: date))
+      try container.encode(date.formatted(format))
     }
     return encoder
   }()

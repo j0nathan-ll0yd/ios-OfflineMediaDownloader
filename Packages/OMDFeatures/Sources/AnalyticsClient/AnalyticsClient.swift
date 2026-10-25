@@ -147,22 +147,22 @@ private func mapToClientEvent(
 
   case .downloadCompletedLocally:
     guard let fileId = properties?["fileId"],
-          let fileSizeBytes = properties?["fileSizeBytes"].flatMap(Int.init),
-          let durationMs = properties?["durationMs"].flatMap(Int.init) else { return nil }
+          let fileSizeBytes = properties?["fileSizeBytes"].flatMap(nonNegativeInt),
+          let durationMs = properties?["durationMs"].flatMap(nonNegativeInt) else { return nil }
     return .downloadCompletedLocally(timestamp: now, fileId: fileId, fileSizeBytes: fileSizeBytes, durationMs: durationMs)
 
   case .playbackStarted:
     guard let fileId = properties?["fileId"] else { return nil }
-    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap(Double.init))
+    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap(nonNegativeDouble))
 
   case .playbackCompleted:
     guard let fileId = properties?["fileId"],
-          let playbackDurationSec = properties?["playbackDurationSec"].flatMap(Double.init) else { return nil }
+          let playbackDurationSec = properties?["playbackDurationSec"].flatMap(nonNegativeDouble) else { return nil }
     return .playbackCompleted(timestamp: now, fileId: fileId, playbackDurationSec: playbackDurationSec)
 
   case .fileSyncMismatch:
-    guard let localCount = properties?["localCount"].flatMap(Int.init),
-          let serverCount = properties?["serverCount"].flatMap(Int.init) else { return nil }
+    guard let localCount = properties?["localCount"].flatMap(nonNegativeInt),
+          let serverCount = properties?["serverCount"].flatMap(nonNegativeInt) else { return nil }
     let missingFileIds = properties?["missingFileIds"]?.components(separatedBy: ",").filter { !$0.isEmpty }
     return .fileSyncMismatch(timestamp: now, localCount: localCount, serverCount: serverCount, missingFileIds: missingFileIds)
 
@@ -184,7 +184,7 @@ private func mapToClientEvent(
 
   case .backgroundTaskCompleted:
     guard let taskName = properties?["taskName"],
-          let durationMs = properties?["durationMs"].flatMap(Int.init) else { return nil }
+          let durationMs = properties?["durationMs"].flatMap(nonNegativeInt) else { return nil }
     return .backgroundTaskCompleted(timestamp: now, taskName: taskName, durationMs: durationMs)
 
   case .backgroundTaskExpired:
@@ -206,6 +206,19 @@ private func mapToClientEvent(
   default:
     return nil
   }
+}
+
+/// Parses a contract field with `minimum: 0`. A negative value, such as a duration
+/// across a wall-clock change, clamps to 0 so it cannot invalidate the whole batch.
+func nonNegativeInt(_ string: String) -> Int? {
+  Int(string).map { max(0, $0) }
+}
+
+/// Parses a contract number with `minimum: 0`. Non-finite values are rejected because
+/// JSON cannot encode them; negative values clamp to 0.
+func nonNegativeDouble(_ string: String) -> Double? {
+  guard let value = Double(string), value.isFinite else { return nil }
+  return max(0, value)
 }
 
 // MARK: - Debug Console Logger

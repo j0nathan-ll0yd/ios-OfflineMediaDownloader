@@ -242,4 +242,59 @@ struct EventBufferTests {
 
     #expect(batchSizes.value == [5], "Expected exactly one batch of 5; got \(batchSizes.value)")
   }
+
+  // MARK: - Contract limits
+
+  @Test("A flush sends at most maxEventsPerRequest events per request, oldest first")
+  func flushSplitsAtContractMaxItems() async {
+    let batchSizes = LockIsolated<[Int]>([])
+    let buffer = EventBuffer(
+      flushHandler: { data in batchSizes.withValue { $0.append(eventCount(in: data)) } },
+      logHandler: { _ in },
+      maxBatchSize: .max
+    )
+
+    let total = EventBuffer.maxEventsPerRequest * 2 + 5
+    for _ in 0 ..< total {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    #expect(batchSizes.value == [EventBuffer.maxEventsPerRequest, EventBuffer.maxEventsPerRequest, 5])
+  }
+
+  @Test("A batch the server rejects is dropped without retry and the flush continues")
+  func rejectedBatchIsDroppedNotRetried() async {
+    let callCount = LockIsolated(0)
+    let batchSizes = LockIsolated<[Int]>([])
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: { data in
+        let count = callCount.withValue { count -> Int in
+          count += 1
+          return count
+        }
+        if count == 1 {
+          throw EventBatchRejectedError(statusCode: 400)
+        }
+        batchSizes.withValue { $0.append(eventCount(in: data)) }
+      },
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } },
+      maxBatchSize: .max
+    )
+
+    for _ in 0 ..< EventBuffer.maxEventsPerRequest + 3 {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    // One rejected request, then one for the remaining 3. No retry of the rejected batch.
+    #expect(callCount.value == 2)
+    #expect(batchSizes.value == [3])
+    #expect(logMessages.value.contains { $0.contains("rejected") && $0.contains("\(EventBuffer.maxEventsPerRequest)") })
+
+    // Nothing was re-enqueued.
+    await buffer.flush()
+    #expect(callCount.value == 2)
+  }
 }
