@@ -229,12 +229,18 @@ private let analyticsLog = OSLog(subsystem: "OfflineMediaDownloader", category: 
 
 extension AnalyticsClient: DependencyKey {
   public static let liveValue: AnalyticsClient = {
-    let deviceId = MainActor.assumeIsolated {
-      UIDevice.current.identifierForVendor?.uuidString ?? ""
+    // The Notification Service Extension reads the device ID from the shared App Group.
+    // Store it only when known, so an unavailable ID never overwrites a valid one.
+    let resolveDeviceId: @Sendable () async -> String? = {
+      let deviceId = await MainActor.run { UIDevice.current.identifierForVendor?.uuidString }
+      if let deviceId, !deviceId.isEmpty {
+        UserDefaults(suiteName: "group.lifegames.OfflineMediaDownloader")?.set(deviceId, forKey: "deviceUUID")
+      }
+      return deviceId
     }
-    UserDefaults(suiteName: "group.lifegames.OfflineMediaDownloader")?.set(deviceId, forKey: "deviceUUID")
+    Task { _ = await resolveDeviceId() }
     let buffer = EventBuffer(
-      flushHandler: EventBuffer.makeFlushHandler(deviceId: deviceId),
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: resolveDeviceId),
       logHandler: { message in
         // SANCTIONED-SINK: AnalyticsClient's error-path relay for EventBuffer flush/retry failures
         os_log("%{public}@", log: analyticsLog, type: .error, message)

@@ -1,15 +1,24 @@
 import Foundation
 
-/// The server rejected a `/device/event` batch as invalid (HTTP 400).
+/// The server rejected a `/device/event` batch with HTTP 400 (contract validation failed).
 ///
 /// Resending the same batch cannot succeed, so `EventBuffer` drops it rather than
-/// retrying or re-enqueuing it.
+/// retrying or re-enqueuing it. The server also returns 400 for a missing or empty
+/// `x-device-uuid` header, which is not a property of the batch, so the flush handler
+/// never sends without a device ID: it throws `EventFlushError.deviceIdUnavailable`
+/// instead, which `EventBuffer` retries and re-enqueues.
 public struct EventBatchRejectedError: Error, Equatable {
   public let statusCode: Int
 
   public init(statusCode: Int) {
     self.statusCode = statusCode
   }
+}
+
+/// A flush that could not send yet. `EventBuffer` retries and re-enqueues the batch.
+public enum EventFlushError: Error, Equatable {
+  /// `identifierForVendor` was unavailable, for example before first unlock after a reboot.
+  case deviceIdUnavailable
 }
 
 public actor EventBuffer {
@@ -138,8 +147,16 @@ public actor EventBuffer {
     throw lastError ?? URLError(.unknown)
   }
 
-  public static func makeFlushHandler(deviceId: String) -> @Sendable (Data) async throws -> Void {
+  /// - Parameter deviceId: resolved on every flush, so a device ID that becomes available
+  ///   later (for example after first unlock) is used for the events buffered before it.
+  public static func makeFlushHandler(
+    deviceId: @escaping @Sendable () async -> String?
+  ) -> @Sendable (Data) async throws -> Void {
     { data in
+      guard let deviceId = await deviceId(), !deviceId.isEmpty else {
+        throw EventFlushError.deviceIdUnavailable
+      }
+
       guard let basePath = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
             let apiKey = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_API_KEY"] as? String,
             var urlComponents = URLComponents(string: basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event")

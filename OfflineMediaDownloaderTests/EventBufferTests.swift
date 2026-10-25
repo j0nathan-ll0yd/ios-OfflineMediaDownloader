@@ -297,4 +297,32 @@ struct EventBufferTests {
     await buffer.flush()
     #expect(callCount.value == 2)
   }
+
+  // MARK: - Device ID
+
+  @Test("The flush handler refuses to send without a device ID", arguments: [nil, ""] as [String?])
+  func flushHandlerThrowsRetryableErrorWithoutDeviceId(deviceId: String?) async {
+    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId })
+
+    await #expect(throws: EventFlushError.deviceIdUnavailable) {
+      try await handler(Data())
+    }
+  }
+
+  @Test("A missing device ID re-enqueues the batch instead of dropping it")
+  func missingDeviceIdReenqueues() async {
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }),
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+    )
+
+    for _ in 0 ..< 2 {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    #expect(logMessages.value.contains { $0.contains("re-enqueued 2 event(s)") }, "got: \(logMessages.value)")
+    #expect(!logMessages.value.contains { $0.contains("rejected") || $0.contains("dropped") }, "got: \(logMessages.value)")
+  }
 }
