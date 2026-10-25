@@ -147,18 +147,25 @@ public actor EventBuffer {
     throw lastError ?? URLError(.unknown)
   }
 
-  /// - Parameter deviceId: resolved on every flush, so a device ID that becomes available
-  ///   later (for example after first unlock) is used for the events buffered before it.
+  /// - Parameters:
+  ///   - deviceId: resolved on every flush, so a device ID that becomes available
+  ///     later (for example after first unlock) is used for the events buffered before it.
+  ///   - session: the session to upload through. Live, this is `\.analyticsURLSession`,
+  ///     which pins the API Gateway certificate chain.
+  ///   - infoDictionary: the bundle values that hold the endpoint and API key.
   public static func makeFlushHandler(
-    deviceId: @escaping @Sendable () async -> String?
+    deviceId: @escaping @Sendable () async -> String?,
+    session: URLSession,
+    infoDictionary: @escaping @Sendable () -> [String: Any]? = { Bundle.main.infoDictionary }
   ) -> @Sendable (Data) async throws -> Void {
     { data in
       guard let deviceId = await deviceId(), !deviceId.isEmpty else {
         throw EventFlushError.deviceIdUnavailable
       }
 
-      guard let basePath = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
-            let apiKey = Bundle.main.infoDictionary?["MEDIA_DOWNLOADER_API_KEY"] as? String,
+      let info = infoDictionary()
+      guard let basePath = info?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
+            let apiKey = info?["MEDIA_DOWNLOADER_API_KEY"] as? String,
             var urlComponents = URLComponents(string: basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event")
       else {
         return
@@ -177,7 +184,7 @@ public actor EventBuffer {
       request.httpBody = data
       request.timeoutInterval = 30
 
-      let (_, response) = try await URLSession.shared.data(for: request)
+      let (_, response) = try await session.data(for: request)
       try classify(response)
     }
   }

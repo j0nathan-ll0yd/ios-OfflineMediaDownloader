@@ -302,7 +302,7 @@ struct EventBufferTests {
 
   @Test("The flush handler refuses to send without a device ID", arguments: [nil, ""] as [String?])
   func flushHandlerThrowsRetryableErrorWithoutDeviceId(deviceId: String?) async {
-    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId })
+    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId }, session: URLSession(configuration: .ephemeral))
 
     await #expect(throws: EventFlushError.deviceIdUnavailable) {
       try await handler(Data())
@@ -313,7 +313,7 @@ struct EventBufferTests {
   func missingDeviceIdReenqueues() async {
     let logMessages = LockIsolated<[String]>([])
     let buffer = EventBuffer(
-      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }),
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }, session: URLSession(configuration: .ephemeral)),
       logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
 
@@ -364,4 +364,56 @@ struct EventBufferTests {
       try EventBuffer.classify(response)
     }
   }
+
+  // MARK: - Injected session
+
+  @Test("The flush handler uploads through the injected session")
+  func flushHandlerUsesInjectedSession() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [RecordingURLProtocol.self]
+    let session = URLSession(configuration: configuration)
+    RecordingURLProtocol.requests.setValue([])
+
+    let handler = EventBuffer.makeFlushHandler(
+      deviceId: { "device-123" },
+      session: session,
+      infoDictionary: {
+        ["MEDIA_DOWNLOADER_BASE_PATH": "https://api.example.test/", "MEDIA_DOWNLOADER_API_KEY": "key-abc"]
+      }
+    )
+    try await handler(Data(#"{"events":[]}"#.utf8))
+
+    let request = try #require(RecordingURLProtocol.requests.value.first)
+    #expect(RecordingURLProtocol.requests.value.count == 1)
+    #expect(request.url?.absoluteString == "https://api.example.test/device/event?ApiKey=key-abc")
+    #expect(request.httpMethod == "POST")
+    #expect(request.value(forHTTPHeaderField: "x-device-uuid") == "device-123")
+  }
+}
+
+/// Records every request and answers 204, so a test can prove which session carried it.
+/// `URLSession.shared` never routes through this protocol, so a recorded request proves
+/// the handler used the injected session.
+private final class RecordingURLProtocol: URLProtocol {
+  static let requests = LockIsolated<[URLRequest]>([])
+
+  override class func canInit(with _: URLRequest) -> Bool {
+    true
+  }
+
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    request
+  }
+
+  override func startLoading() {
+    let request = request
+    Self.requests.withValue { $0.append(request) }
+    let response = HTTPURLResponse(url: request.url ?? URL(fileURLWithPath: "/"), statusCode: 204, httpVersion: nil, headerFields: nil)
+    if let response {
+      client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    }
+    client?.urlProtocolDidFinishLoading(self)
+  }
+
+  override func stopLoading() {}
 }

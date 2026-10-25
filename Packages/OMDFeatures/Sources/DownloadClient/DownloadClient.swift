@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import LoggerClient
+import NetworkSecurity
 import ServerClient
 
 public enum DownloadProgress: Equatable, Sendable {
@@ -151,15 +152,15 @@ extension DownloadManager: URLSessionDownloadDelegate, URLSessionDelegate {
       return
     }
 
-    let pinValid = CertificatePinning.validate(serverTrust: serverTrust)
+    let outcome = CertificatePinning.evaluate(serverTrust: serverTrust)
 
-    if pinValid {
+    if outcome == .matched {
       @Dependency(\.logger) var logger
       logger.debug(.download, "Certificate pinning validated for download")
       completionHandler(.useCredential, URLCredential(trust: serverTrust))
     } else {
       @Dependency(\.logger) var logger
-      logger.warning(.download, "Certificate pinning failed - download connection rejected")
+      logger.warning(.download, "Certificate pinning failed (\(outcome)) - download connection rejected")
       completionHandler(.cancelAuthenticationChallenge, nil)
     }
   }
