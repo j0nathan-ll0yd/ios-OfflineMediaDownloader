@@ -93,6 +93,13 @@ jobs:
           bash Scripts/validate-ios-version.sh
           bash Scripts/validate-tca-patterns.sh
           swiftlint lint --reporter github-actions-logging
+          # The Mintfile pins the local SwiftFormat for the pre-commit hook. Fail when
+          # this image's version drifts from it, so local and CI lint stay identical.
+          SWIFTFORMAT_PIN=$(sed -n 's|^nicklockwood/SwiftFormat@||p' Mintfile)
+          test "$(swiftformat --version)" = "$SWIFTFORMAT_PIN" || {
+            echo "::error::runner SwiftFormat $(swiftformat --version) does not match the Mintfile pin $SWIFTFORMAT_PIN"
+            exit 1
+          }
           swiftformat --lint .
           shellcheck Scripts/*.sh
 
