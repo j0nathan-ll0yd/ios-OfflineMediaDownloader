@@ -1,3 +1,4 @@
+import ActiveDownloadsFeature
 import APIClient
 import ComposableArchitecture
 import ConcurrencyExtras
@@ -423,6 +424,19 @@ struct RootFeatureTests {
       $0.main.fileList.files.append(FileCellFeature.State(file: testFile))
     }
 
+    // A metadata push queues the file in Active Downloads (PN9: the user sees it queued).
+    await store.receive(\.main.activeDownloads.fileQueued) {
+      $0.main.activeDownloads.activeDownloads.append(
+        ActiveDownloadsFeature.ActiveDownload(
+          fileId: "push-file-123",
+          title: "Push Video.mp4",
+          progress: 0,
+          status: .queued,
+          isBackgroundInitiated: false
+        )
+      )
+    }
+
     // New files trigger onAppear to check download status
     // (file has no URL so the effect returns immediately)
     await store.receive(\.main.fileList.files[id: "push-file-123"].onAppear)
@@ -539,12 +553,15 @@ struct RootFeatureTests {
       $0.logger.log = { _, _, _, _, _, _ in }
     }
 
-    await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil))))
+    // The 401 path returns a synchronous .send(.main(.delegate(.authenticationRequired))).
+    // That action clears the shared isAuthenticated flag, and @Shared is a reference, so the
+    // change is already visible when send takes its snapshot: assert it here. Root, Main and
+    // FileList share one "isAuthenticated" key, so one assertion covers all three.
+    await store.send(.tokenRefreshResponse(.failure(ServerClientError.unauthorized(requestId: nil, correlationId: nil)))) {
+      $0.$isAuthenticated.withLock { $0 = false }
+    }
 
     await store.receive(\.main.delegate.authenticationRequired) {
-      $0.$isAuthenticated.withLock { $0 = false }
-      $0.main.$isAuthenticated.withLock { $0 = false }
-      $0.main.fileList.$isAuthenticated.withLock { $0 = false }
       $0.login.loginStatus = .unauthenticated
       $0.main.loginSheet = LoginFeature.State()
     }

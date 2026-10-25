@@ -22,16 +22,16 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.getFiles = { TestData.multipleFiles }
       $0.pasteboardClient.hasStrings = { false }
     }
 
-    // onAppear sets isLoading based on files.isEmpty (which is true)
-    await store.send(.onAppear) {
-      $0.isLoading = true
-    }
+    // onAppear sets isLoading = files.isEmpty. The default is already true, so no change.
+    await store.send(.onAppear)
 
     await store.receive(\.localFilesLoaded) {
+      $0.hasCompletedInitialLoad = true
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
       })
@@ -50,13 +50,19 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
       $0.pasteboardClient.hasStrings = { false }
     }
 
-    await store.send(.onAppear)
+    // Files are already shown, so onAppear clears the loading indicator.
+    await store.send(.onAppear) {
+      $0.isLoading = false
+    }
 
-    await store.receive(\.localFilesLoaded)
+    await store.receive(\.localFilesLoaded) {
+      $0.hasCompletedInitialLoad = true
+    }
   }
 
   @MainActor
@@ -75,13 +81,16 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.coreDataClient.getFiles = { [TestData.sampleFile] }
       $0.pasteboardClient.hasStrings = { false }
     }
 
     await store.send(.onAppear)
 
-    await store.receive(\.localFilesLoaded)
+    await store.receive(\.localFilesLoaded) {
+      $0.hasCompletedInitialLoad = true
+    }
 
     // Verify download state is preserved after the receive
     let finalFiles = store.state.files
@@ -100,6 +109,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -110,6 +120,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
@@ -133,6 +144,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -143,6 +155,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
@@ -169,6 +182,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in throw TestData.TestNetworkError.notConnected }
     }
 
@@ -177,6 +191,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.failure) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
     }
 
@@ -219,6 +234,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in throw ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id") }
     }
 
@@ -227,6 +243,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.failure) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
     }
 
@@ -256,6 +273,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in throw ServerClientError.internalServerError(
         message: "Database unavailable",
         requestId: "test-request-id",
@@ -268,6 +286,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.failure) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
     }
 
@@ -303,6 +322,8 @@ struct FileListFeatureTests {
   func showErrorCreatesAlert() async {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.showError(.invalidClipboardUrl)) {
@@ -334,6 +355,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.alert(.presented(.dismiss))) {
@@ -359,6 +382,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in TestData.validFileResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.fileClient.fileExists = { _ in false }
@@ -373,6 +397,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       $0.files = IdentifiedArray(uniqueElements: TestData.multipleFiles.map {
         FileCellFeature.State(file: $0)
@@ -396,6 +421,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addButtonTapped) {
@@ -416,6 +443,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
@@ -438,6 +467,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addFileResponse(.success(TestData.validAddFileResponse))) {
@@ -455,6 +486,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addFileResponse(.failure(ServerClientError.unauthorized(requestId: "test-request-id", correlationId: "test-correlation-id")))) {
@@ -473,6 +506,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addFileResponse(.failure(ServerClientError.internalServerError(
@@ -503,6 +538,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addFileResponse(.failure(TestData.TestNetworkError.notConnected))) {
@@ -542,6 +579,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.addFile = { _ in TestData.validAddFileResponse }
     }
 
@@ -565,6 +603,8 @@ struct FileListFeatureTests {
   func prepareAddFileSetsState() async throws {
     let store = TestStore(initialState: FileListFeature.State()) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     let url = try #require(URL(string: "https://youtube.com/watch?v=abc123"))
@@ -589,6 +629,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -612,6 +653,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -636,6 +678,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.fileAddedFromPush(updatedFile)) {
@@ -654,6 +698,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.updateFileUrl(fileId: pendingFile.fileId, url: newUrl)) {
@@ -670,6 +716,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -696,6 +743,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     let fileToDelete = TestData.multipleFiles[0]
@@ -715,6 +764,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     let fileToDelete = TestData.multipleFiles[0]
@@ -734,6 +785,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.deleteFile(id: "does-not-exist"))
@@ -751,6 +804,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.dismissDeleteConfirmation) {
@@ -777,6 +832,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.deleteFile = { _ in serverDeleteCalled.setValue(true); return DeleteFileResponse(
         body: DeleteFileResponseDetail(deleted: true, fileRemoved: true),
         error: nil,
@@ -820,6 +876,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.deleteFile = { _ in
         serverDeleteCalled.setValue(true)
         throw ServerClientError.internalServerError(message: "DB down", requestId: "test", correlationId: nil)
@@ -864,6 +921,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.analytics.track = { _, _ in }
       $0.monotonicClock.now = { playbackStart }
       $0.coreDataClient.incrementPlayCount = {}
@@ -889,6 +947,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.analytics.track = { _, _ in }
       $0.monotonicClock.now = { .seconds(2) }
     }
@@ -909,6 +968,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.addPendingFileId("existing-id"))
@@ -926,6 +987,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.fileFailed(fileId: "failing-id", error: "Server error")) {
@@ -950,6 +1013,8 @@ struct FileListFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.fileFailed(fileId: "unknown-id", error: "Error")) {
@@ -973,6 +1038,8 @@ struct FileListFeatureTests {
   func remoteFilesResponseMergesWithLocalDownloaded() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
+    // Fetching requires an authenticated user; registered-only users are sent to login.
+    state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
     var downloadedCell1 = FileCellFeature.State(file: TestData.downloadedFile)
@@ -997,6 +1064,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in serverResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.analytics.track = { _, _ in }
@@ -1007,6 +1075,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       // Server file is added, AND local downloaded files are kept
       var merged = IdentifiedArrayOf<FileCellFeature.State>()
@@ -1027,6 +1096,8 @@ struct FileListFeatureTests {
   func remoteFilesResponsePreservesLocalFiles() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
+    // Fetching requires an authenticated user; registered-only users are sent to login.
+    state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
     // One downloaded, one not downloaded
@@ -1051,6 +1122,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in serverResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.analytics.track = { _, _ in }
@@ -1061,6 +1133,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       // Server file added, downloaded file kept, pending file ALSO kept (Option B)
       var merged = IdentifiedArrayOf<FileCellFeature.State>()
@@ -1079,6 +1152,8 @@ struct FileListFeatureTests {
   func remoteFilesResponseUpdatesMetadata() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
+    // Fetching requires an authenticated user; registered-only users are sent to login.
+    state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
     var existingCell = FileCellFeature.State(file: TestData.sampleFile)
@@ -1099,6 +1174,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in serverResponse }
       $0.coreDataClient.cacheFiles = { _ in }
     }
@@ -1108,6 +1184,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       // File metadata updated from server, download state preserved
       var expectedCell = FileCellFeature.State(file: updatedFile)
@@ -1122,6 +1199,8 @@ struct FileListFeatureTests {
   func remoteFilesResponseAddsNewFiles() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
+    // Fetching requires an authenticated user; registered-only users are sent to login.
+    state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
     state.files = []
 
@@ -1134,6 +1213,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in serverResponse }
       $0.coreDataClient.cacheFiles = { _ in }
     }
@@ -1143,6 +1223,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       var expected = IdentifiedArrayOf<FileCellFeature.State>()
       for file in TestData.multipleFiles {
@@ -1158,6 +1239,8 @@ struct FileListFeatureTests {
   func remoteFilesResponseMaintainsSortOrder() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
+    // Fetching requires an authenticated user; registered-only users are sent to login.
+    state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
     // Local file with old date, marked downloaded
@@ -1189,6 +1272,7 @@ struct FileListFeatureTests {
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.serverClient.getFiles = { _ in serverResponse }
       $0.coreDataClient.cacheFiles = { _ in }
       $0.analytics.track = { _, _ in }
@@ -1199,6 +1283,7 @@ struct FileListFeatureTests {
     }
 
     await store.receive(\.remoteFilesResponse.success) {
+      $0.hasCompletedInitialLoad = true
       $0.isLoading = false
       // New file first (newer date), old downloaded file second
       var merged = IdentifiedArrayOf<FileCellFeature.State>()

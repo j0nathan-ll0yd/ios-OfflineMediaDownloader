@@ -1,10 +1,17 @@
+import APIClient
 import ComposableArchitecture
 import ConcurrencyExtras
+import DownloadClient
 @testable import FileCellFeature
+import FileClient
 import Foundation
+import LoggerClient
+import PersistenceClient
+import ServerClient
 import SharedModels
 import TestData
 import Testing
+import ThumbnailCacheClient
 
 struct FileCellFeatureTests {
   // MARK: - File Existence Tests
@@ -15,6 +22,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in true }
     }
 
@@ -35,6 +43,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: initialState) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.fileClient.fileExists = { _ in false }
     }
 
@@ -50,6 +59,8 @@ struct FileCellFeatureTests {
   func onAppearNilUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.onAppear)
@@ -61,9 +72,12 @@ struct FileCellFeatureTests {
   @MainActor
   @Test("Download button starts download with progress updates")
   func downloadWithProgress() async {
+    let markedDownloaded = LockIsolated<[String]>([])
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.coreDataClient.markFileDownloaded = { fileId in markedDownloaded.withValue { $0.append(fileId) } }
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.progress(percent: 25))
@@ -92,6 +106,9 @@ struct FileCellFeatureTests {
       $0.isDownloaded = true
     }
     await store.receive(\.delegate.downloadCompleted)
+    // downloadCompleted persists the flag in a separate effect; wait for it before asserting.
+    await store.finish()
+    #expect(markedDownloaded.value == [TestData.sampleFile.fileId])
   }
 
   @MainActor
@@ -140,6 +157,7 @@ struct FileCellFeatureTests {
   @MainActor
   @Test("Download failure retry triggers download")
   func downloadFailureRetry() async {
+    let markedDownloaded = LockIsolated<[String]>([])
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.alert = AlertState {
       TextState("Download Failed")
@@ -152,6 +170,8 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: state) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.coreDataClient.markFileDownloaded = { fileId in markedDownloaded.withValue { $0.append(fileId) } }
       $0.downloadClient.downloadFile = { _, _ in
         AsyncStream { continuation in
           continuation.yield(.completed(localURL: URL(fileURLWithPath: "/tmp/test.mp4")))
@@ -176,6 +196,9 @@ struct FileCellFeatureTests {
       $0.isDownloaded = true
     }
     await store.receive(\.delegate.downloadCompleted)
+    // downloadCompleted persists the flag in a separate effect; wait for it before asserting.
+    await store.finish()
+    #expect(markedDownloaded.value == [TestData.sampleFile.fileId])
   }
 
   @MainActor
@@ -188,6 +211,7 @@ struct FileCellFeatureTests {
     let store = TestStore(initialState: state) {
       FileCellFeature()
     } withDependencies: {
+      $0.logger = TestData.noopLogger
       $0.downloadClient.cancelDownload = { _ in }
     }
 
@@ -202,6 +226,8 @@ struct FileCellFeatureTests {
   func downloadWithoutUrl() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.pendingFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadButtonTapped)
@@ -211,12 +237,16 @@ struct FileCellFeatureTests {
   @MainActor
   @Test("Download completed sets isDownloaded and progress to 1.0")
   func downloadCompleted() async {
+    let markedDownloaded = LockIsolated<[String]>([])
     var state = FileCellFeature.State(file: TestData.sampleFile)
     state.isDownloading = true
     state.downloadProgress = 0.9
 
     let store = TestStore(initialState: state) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
+      $0.coreDataClient.markFileDownloaded = { fileId in markedDownloaded.withValue { $0.append(fileId) } }
     }
 
     await store.send(.downloadCompleted(URL(fileURLWithPath: "/tmp/test.mp4"))) {
@@ -225,10 +255,12 @@ struct FileCellFeatureTests {
       $0.isDownloaded = true
     }
     await store.receive(\.delegate.downloadCompleted)
+    // downloadCompleted persists the flag in a separate effect; wait for it before asserting.
+    await store.finish()
+    #expect(markedDownloaded.value == [TestData.sampleFile.fileId])
   }
 
-  // Delete tests moved to FileListFeatureTests: PR #64 relocated deletion
-  // out of FileCellFeature (swipe-to-delete with pessimistic confirmation).
+  // MARK: - Delete Tests
 
   // MARK: - Play Tests
 
@@ -237,6 +269,8 @@ struct FileCellFeatureTests {
   func playButtonSendsDelegate() async {
     let store = TestStore(initialState: FileCellFeature.State(file: TestData.sampleFile)) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.playButtonTapped)
@@ -278,6 +312,8 @@ struct FileCellFeatureTests {
 
     let store = TestStore(initialState: state) {
       FileCellFeature()
+    } withDependencies: {
+      $0.logger = TestData.noopLogger
     }
 
     await store.send(.downloadProgressUpdated(0.5)) {

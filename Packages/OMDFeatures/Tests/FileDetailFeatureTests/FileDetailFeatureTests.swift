@@ -400,7 +400,15 @@ struct FileDetailFeatureTests {
       $0.thumbnailCacheClient.deleteThumbnail = { _ in }
     }
 
+    // The reducer dismisses the confirmation and marks the delete in flight, then reports
+    // the server failure through .showDeleteError, which clears isDeleting and shows the alert.
     await store.send(.alert(.presented(.confirmDelete))) {
+      $0.alert = nil
+      $0.isDeleting = true
+    }
+
+    await store.receive(\.showDeleteError) {
+      $0.isDeleting = false
       $0.alert = AlertState {
         TextState("Delete Failed")
       } actions: {
