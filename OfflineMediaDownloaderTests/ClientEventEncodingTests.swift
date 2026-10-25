@@ -174,12 +174,23 @@ struct ClientEventEncodingTests {
 
   @Test("Contract fields with minimum 0 clamp negatives and reject non-finite numbers")
   func nonNegativeParsersClampAndReject() {
-    #expect(nonNegativeInt("42") == 42)
-    #expect(nonNegativeInt("-5") == 0)
-    #expect(nonNegativeInt("abc") == nil)
-    #expect(nonNegativeDouble("12.5") == 12.5)
-    #expect(nonNegativeDouble("-0.4") == 0)
-    #expect(nonNegativeDouble("nan") == nil)
-    #expect(nonNegativeDouble("inf") == nil)
+    let silent: (String) -> Void = { message in Issue.record("Unexpected clamp report: \(message)") }
+    #expect(nonNegativeInt("42", field: "durationMs", report: silent) == 42)
+    #expect(nonNegativeInt("abc", field: "durationMs", report: silent) == nil)
+    #expect(nonNegativeDouble("12.5", field: "durationSec", report: silent) == 12.5)
+
+    var reports: [String] = []
+    let record: (String) -> Void = { reports.append($0) }
+    #expect(nonNegativeInt("-5", field: "durationMs", report: record) == 0)
+    #expect(nonNegativeDouble("-0.4", field: "playbackDurationSec", report: record) == 0)
+    #expect(nonNegativeDouble("nan", field: "durationSec", report: record) == nil)
+    #expect(nonNegativeDouble("inf", field: "durationSec", report: record) == nil)
+
+    #expect(reports == [
+      "Analytics field durationMs was negative (-5), clamped to 0",
+      "Analytics field playbackDurationSec was negative (-0.4), clamped to 0",
+      "Analytics field durationSec was not finite (nan), dropped",
+      "Analytics field durationSec was not finite (inf), dropped",
+    ])
   }
 }

@@ -147,22 +147,22 @@ private func mapToClientEvent(
 
   case .downloadCompletedLocally:
     guard let fileId = properties?["fileId"],
-          let fileSizeBytes = properties?["fileSizeBytes"].flatMap(nonNegativeInt),
-          let durationMs = properties?["durationMs"].flatMap(nonNegativeInt) else { return nil }
+          let fileSizeBytes = properties?["fileSizeBytes"].flatMap({ nonNegativeInt($0, field: "fileSizeBytes") }),
+          let durationMs = properties?["durationMs"].flatMap({ nonNegativeInt($0, field: "durationMs") }) else { return nil }
     return .downloadCompletedLocally(timestamp: now, fileId: fileId, fileSizeBytes: fileSizeBytes, durationMs: durationMs)
 
   case .playbackStarted:
     guard let fileId = properties?["fileId"] else { return nil }
-    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap(nonNegativeDouble))
+    return .playbackStarted(timestamp: now, fileId: fileId, durationSec: properties?["durationSec"].flatMap { nonNegativeDouble($0, field: "durationSec") })
 
   case .playbackCompleted:
     guard let fileId = properties?["fileId"],
-          let playbackDurationSec = properties?["playbackDurationSec"].flatMap(nonNegativeDouble) else { return nil }
+          let playbackDurationSec = properties?["playbackDurationSec"].flatMap({ nonNegativeDouble($0, field: "playbackDurationSec") }) else { return nil }
     return .playbackCompleted(timestamp: now, fileId: fileId, playbackDurationSec: playbackDurationSec)
 
   case .fileSyncMismatch:
-    guard let localCount = properties?["localCount"].flatMap(nonNegativeInt),
-          let serverCount = properties?["serverCount"].flatMap(nonNegativeInt) else { return nil }
+    guard let localCount = properties?["localCount"].flatMap({ nonNegativeInt($0, field: "localCount") }),
+          let serverCount = properties?["serverCount"].flatMap({ nonNegativeInt($0, field: "serverCount") }) else { return nil }
     let missingFileIds = properties?["missingFileIds"]?.components(separatedBy: ",").filter { !$0.isEmpty }
     return .fileSyncMismatch(timestamp: now, localCount: localCount, serverCount: serverCount, missingFileIds: missingFileIds)
 
@@ -184,7 +184,7 @@ private func mapToClientEvent(
 
   case .backgroundTaskCompleted:
     guard let taskName = properties?["taskName"],
-          let durationMs = properties?["durationMs"].flatMap(nonNegativeInt) else { return nil }
+          let durationMs = properties?["durationMs"].flatMap({ nonNegativeInt($0, field: "durationMs") }) else { return nil }
     return .backgroundTaskCompleted(timestamp: now, taskName: taskName, durationMs: durationMs)
 
   case .backgroundTaskExpired:
@@ -208,17 +208,42 @@ private func mapToClientEvent(
   }
 }
 
-/// Parses a contract field with `minimum: 0`. A negative value, such as a duration
-/// across a wall-clock change, clamps to 0 so it cannot invalidate the whole batch.
-func nonNegativeInt(_ string: String) -> Int? {
-  Int(string).map { max(0, $0) }
+/// Parses a contract field with `minimum: 0`. A negative value clamps to 0 so it cannot
+/// invalidate the whole batch, and the clamp is reported: durations come from
+/// `MonotonicClock`, so a negative value means a producer bug, not a clock change.
+func nonNegativeInt(
+  _ string: String,
+  field: String,
+  report: (String) -> Void = reportClampedField
+) -> Int? {
+  guard let value = Int(string) else { return nil }
+  if value < 0 {
+    report("Analytics field \(field) was negative (\(value)), clamped to 0")
+  }
+  return max(0, value)
 }
 
 /// Parses a contract number with `minimum: 0`. Non-finite values are rejected because
-/// JSON cannot encode them; negative values clamp to 0.
-func nonNegativeDouble(_ string: String) -> Double? {
-  guard let value = Double(string), value.isFinite else { return nil }
+/// JSON cannot encode them; negative values clamp to 0. Both cases are reported.
+func nonNegativeDouble(
+  _ string: String,
+  field: String,
+  report: (String) -> Void = reportClampedField
+) -> Double? {
+  guard let value = Double(string) else { return nil }
+  guard value.isFinite else {
+    report("Analytics field \(field) was not finite (\(value)), dropped")
+    return nil
+  }
+  if value < 0 {
+    report("Analytics field \(field) was negative (\(value)), clamped to 0")
+  }
   return max(0, value)
+}
+
+func reportClampedField(_ message: String) {
+  // SANCTIONED-SINK: AnalyticsClient's error-path relay for contract clamps
+  os_log("%{public}@", log: analyticsLog, type: .error, message)
 }
 
 // MARK: - Debug Console Logger
