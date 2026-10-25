@@ -1038,7 +1038,7 @@ struct FileListFeatureTests {
   func remoteFilesResponseMergesWithLocalDownloaded() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
-    // Fetching requires an authenticated user; registered-only users are sent to login.
+    // Fetching requires an authenticated user: since #38, a registered-only refresh goes to login.
     state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
@@ -1096,7 +1096,7 @@ struct FileListFeatureTests {
   func remoteFilesResponsePreservesLocalFiles() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
-    // Fetching requires an authenticated user; registered-only users are sent to login.
+    // Fetching requires an authenticated user: since #38, a registered-only refresh goes to login.
     state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
@@ -1152,7 +1152,7 @@ struct FileListFeatureTests {
   func remoteFilesResponseUpdatesMetadata() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
-    // Fetching requires an authenticated user; registered-only users are sent to login.
+    // Fetching requires an authenticated user: since #38, a registered-only refresh goes to login.
     state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 
@@ -1199,7 +1199,7 @@ struct FileListFeatureTests {
   func remoteFilesResponseAddsNewFiles() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
-    // Fetching requires an authenticated user; registered-only users are sent to login.
+    // Fetching requires an authenticated user: since #38, a registered-only refresh goes to login.
     state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
     state.files = []
@@ -1239,7 +1239,7 @@ struct FileListFeatureTests {
   func remoteFilesResponseMaintainsSortOrder() async {
     var state = FileListFeature.State()
     state.$isRegistered.withLock { $0 = true }
-    // Fetching requires an authenticated user; registered-only users are sent to login.
+    // Fetching requires an authenticated user: since #38, a registered-only refresh goes to login.
     state.$isAuthenticated.withLock { $0 = true }
     state.isLoading = false
 

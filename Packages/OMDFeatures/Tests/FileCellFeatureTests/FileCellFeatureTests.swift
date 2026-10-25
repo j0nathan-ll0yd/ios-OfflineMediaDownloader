@@ -260,7 +260,8 @@ struct FileCellFeatureTests {
     #expect(markedDownloaded.value == [TestData.sampleFile.fileId])
   }
 
-  // MARK: - Delete Tests
+  // Delete tests moved to FileListFeatureTests: PR #64 relocated deletion
+  // out of FileCellFeature (swipe-to-delete with pessimistic confirmation).
 
   // MARK: - Play Tests
 
