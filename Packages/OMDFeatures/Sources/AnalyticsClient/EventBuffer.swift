@@ -178,13 +178,25 @@ public actor EventBuffer {
       request.timeoutInterval = 30
 
       let (_, response) = try await URLSession.shared.data(for: request)
-      let statusCode = (response as? HTTPURLResponse)?.statusCode
-      if statusCode == 400 {
-        throw EventBatchRejectedError(statusCode: 400)
-      }
-      guard let statusCode, (200 ... 299).contains(statusCode) else {
-        throw URLError(.badServerResponse)
-      }
+      try classify(response)
+    }
+  }
+
+  /// Maps a `/device/event` response to the flush outcome.
+  ///
+  /// - 2xx: sent.
+  /// - 400: throws `EventBatchRejectedError`, which drops the batch.
+  /// - Any other status, or a response that is not HTTP: throws `URLError(.badServerResponse)`,
+  ///   which retries and then re-enqueues.
+  static func classify(_ response: URLResponse) throws {
+    guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+      throw URLError(.badServerResponse)
+    }
+    if statusCode == 400 {
+      throw EventBatchRejectedError(statusCode: statusCode)
+    }
+    guard (200 ... 299).contains(statusCode) else {
+      throw URLError(.badServerResponse)
     }
   }
 }

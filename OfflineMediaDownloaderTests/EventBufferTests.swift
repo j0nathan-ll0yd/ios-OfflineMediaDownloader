@@ -325,4 +325,43 @@ struct EventBufferTests {
     #expect(logMessages.value.contains { $0.contains("re-enqueued 2 event(s)") }, "got: \(logMessages.value)")
     #expect(!logMessages.value.contains { $0.contains("rejected") || $0.contains("dropped") }, "got: \(logMessages.value)")
   }
+
+  // MARK: - Response classification
+
+  private static let eventURL = URL(string: "https://api.example.test/device/event")
+
+  private static func httpResponse(_ statusCode: Int) throws -> HTTPURLResponse {
+    let url = try #require(eventURL)
+    return try #require(HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: nil))
+  }
+
+  @Test("2xx responses classify as sent", arguments: [200, 202, 204])
+  func successStatusesAreSent(statusCode: Int) throws {
+    try EventBuffer.classify(Self.httpResponse(statusCode))
+  }
+
+  @Test("400 classifies as a rejected batch, which is dropped")
+  func badRequestIsRejected() throws {
+    let response = try Self.httpResponse(400)
+    #expect(throws: EventBatchRejectedError(statusCode: 400)) {
+      try EventBuffer.classify(response)
+    }
+  }
+
+  @Test("Other 4xx and 5xx classify as retryable", arguments: [401, 403, 404, 429, 500, 502, 503])
+  func otherStatusesAreRetryable(statusCode: Int) throws {
+    let response = try Self.httpResponse(statusCode)
+    #expect(throws: URLError(.badServerResponse)) {
+      try EventBuffer.classify(response)
+    }
+  }
+
+  @Test("A response that is not HTTP classifies as retryable")
+  func nonHTTPResponseIsRetryable() throws {
+    let url = try #require(Self.eventURL)
+    let response = URLResponse(url: url, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
+    #expect(throws: URLError(.badServerResponse)) {
+      try EventBuffer.classify(response)
+    }
+  }
 }
