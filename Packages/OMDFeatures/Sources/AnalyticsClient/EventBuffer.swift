@@ -17,9 +17,24 @@ public struct EventBatchRejectedError: Error, Equatable {
 }
 
 /// A flush that could not send yet. `EventBuffer` retries and re-enqueues the batch.
-public enum EventFlushError: Error, Equatable {
+public enum EventFlushError: Error, Equatable, LocalizedError {
   /// `identifierForVendor` was unavailable, for example before first unlock after a reboot.
   case deviceIdUnavailable
+  /// A bundle value the endpoint needs is missing, empty or not a String.
+  case configurationMissing(key: String)
+  /// The configured base path does not form a valid `/device/event` URL.
+  case invalidEndpoint(basePath: String)
+
+  public var errorDescription: String? {
+    switch self {
+    case .deviceIdUnavailable:
+      "Device ID unavailable; the batch was not sent"
+    case let .configurationMissing(key):
+      "\(key) is missing, empty or not a String in the bundle; the batch was not sent"
+    case let .invalidEndpoint(basePath):
+      "MEDIA_DOWNLOADER_BASE_PATH '\(basePath)' does not form a valid /device/event URL; the batch was not sent"
+    }
+  }
 }
 
 public actor EventBuffer {
@@ -160,27 +175,7 @@ public actor EventBuffer {
       guard let deviceId = await deviceId(), !deviceId.isEmpty else {
         throw EventFlushError.deviceIdUnavailable
       }
-
-      let info = infoDictionary()
-      guard let basePath = info?["MEDIA_DOWNLOADER_BASE_PATH"] as? String,
-            let apiKey = info?["MEDIA_DOWNLOADER_API_KEY"] as? String,
-            var urlComponents = URLComponents(string: basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event")
-      else {
-        return
-      }
-
-      urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
-        URLQueryItem(name: "ApiKey", value: apiKey),
-      ]
-
-      guard let url = urlComponents.url else { return }
-
-      var request = URLRequest(url: url)
-      request.httpMethod = "POST"
-      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")
-      request.httpBody = data
-      request.timeoutInterval = 30
+      let request = try makeRequest(data: data, deviceId: deviceId, infoDictionary: infoDictionary())
 
       // Resolved on every send, so an override in the calling task's dependency
       // context reaches the upload. Live, the client pins the certificate chain.
@@ -188,6 +183,42 @@ public actor EventBuffer {
       let response = try await uploadClient.send(request)
       try classify(response)
     }
+  }
+
+  /// Builds the `/device/event` request.
+  ///
+  /// Every configuration failure throws `EventFlushError`, which `EventBuffer` retries,
+  /// logs and re-enqueues. A silent return here would read as a successful send and
+  /// discard the batch.
+  static func makeRequest(data: Data, deviceId: String, infoDictionary: [String: Any]?) throws -> URLRequest {
+    let basePath = try requiredString("MEDIA_DOWNLOADER_BASE_PATH", in: infoDictionary)
+    let apiKey = try requiredString("MEDIA_DOWNLOADER_API_KEY", in: infoDictionary)
+
+    let endpoint = basePath.hasSuffix("/") ? basePath + "device/event" : basePath + "/device/event"
+    guard var urlComponents = URLComponents(string: endpoint) else {
+      throw EventFlushError.invalidEndpoint(basePath: basePath)
+    }
+    urlComponents.queryItems = (urlComponents.queryItems ?? []) + [
+      URLQueryItem(name: "ApiKey", value: apiKey),
+    ]
+    guard let url = urlComponents.url, url.scheme != nil, url.host() != nil else {
+      throw EventFlushError.invalidEndpoint(basePath: basePath)
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue(deviceId, forHTTPHeaderField: "x-device-uuid")
+    request.httpBody = data
+    request.timeoutInterval = 30
+    return request
+  }
+
+  private static func requiredString(_ key: String, in infoDictionary: [String: Any]?) throws -> String {
+    guard let value = infoDictionary?[key] as? String, !value.isEmpty else {
+      throw EventFlushError.configurationMissing(key: key)
+    }
+    return value
   }
 
   /// Maps a `/device/event` response to the flush outcome.
