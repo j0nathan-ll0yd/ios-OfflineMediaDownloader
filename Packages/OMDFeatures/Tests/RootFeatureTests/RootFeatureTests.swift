@@ -6,6 +6,7 @@ import FileCellFeature
 import Foundation
 import LoginFeature
 import MainFeature
+import NotificationRegistrationClient
 @testable import RootFeature
 import ServerClient
 import SharedModels
@@ -38,6 +39,48 @@ struct RootFeatureTests {
       $0.$isAuthenticated.withLock { $0 = false }
       $0.login.registrationStatus = .unregistered
     }
+  }
+
+  @MainActor
+  @Test(
+    "Launch registers for remote notifications only when authorization is granted",
+    arguments: [(true, 1), (false, 0)]
+  )
+  func launchRegistersForNotificationsOnlyWhenAuthorized(authorized: Bool, expectedRegistrations: Int) async {
+    let authorizationRequests = LockIsolated(0)
+    let registrations = LockIsolated(0)
+    let store = TestStore(initialState: RootFeature.State()) {
+      RootFeature()
+    } withDependencies: {
+      $0.authenticationClient.determineAuthState = {
+        AuthState(loginStatus: .unauthenticated, registrationStatus: .unregistered)
+      }
+      $0.notificationRegistrationClient.requestAuthorization = {
+        authorizationRequests.withValue { $0 += 1 }
+        return authorized
+      }
+      $0.notificationRegistrationClient.registerForRemoteNotifications = {
+        registrations.withValue { $0 += 1 }
+      }
+      $0.analytics.track = { _, _ in }
+      $0.logger.log = { _, _, _, _, _, _ in }
+      $0.continuousClock = ImmediateClock()
+    }
+
+    await store.send(.didFinishLaunching) {
+      $0.launchStatus = "Checking authentication..."
+    }
+
+    await store.receive(\.authStateResponse) {
+      $0.isLaunching = false
+      $0.$isAuthenticated.withLock { $0 = false }
+      $0.login.registrationStatus = .unregistered
+    }
+
+    // The permission effect runs beside the launch flow; wait for it before counting.
+    await store.finish()
+    #expect(authorizationRequests.value == 1)
+    #expect(registrations.value == expectedRegistrations)
   }
 
   @MainActor
