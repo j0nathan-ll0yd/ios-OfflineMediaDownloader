@@ -77,8 +77,10 @@ if command -v swiftlint &> /dev/null; then
     # Run SwiftLint on staged files
     for file in $STAGED_SWIFT_FILES; do
         if [ -f "$file" ]; then
-            swiftlint lint --quiet --path "$file" 2>/dev/null || {
-                echo -e "${YELLOW}SwiftLint warnings found in: $file${NC}"
+            # Positional path: SwiftLint 0.65 removed --path. Stderr stays
+            # visible so a usage error can no longer pass as a lint result.
+            swiftlint lint --quiet "$file" || {
+                echo -e "${YELLOW}SwiftLint reported violations in: $file${NC}"
             }
         fi
     done
