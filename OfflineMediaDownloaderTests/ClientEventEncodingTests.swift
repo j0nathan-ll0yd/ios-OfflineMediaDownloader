@@ -1,5 +1,6 @@
 @testable import AnalyticsClient
 import APITypes
+import DeviceEventEncoding
 import Foundation
 import Testing
 
@@ -89,6 +90,16 @@ private let wireCases: [WireCase] = [
   ),
 ]
 
+/// Decodes contract dates in the RFC 3339 form with fractional seconds that both encoders write.
+private let contractDecoder: JSONDecoder = {
+  let decoder = JSONDecoder()
+  decoder.dateDecodingStrategy = .custom { decoder in
+    let string = try decoder.singleValueContainer().decode(String.self)
+    return try Date(string, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+  }
+  return decoder
+}()
+
 private func jsonObject(_ data: Data) throws -> NSDictionary {
   try #require(try JSONSerialization.jsonObject(with: data) as? NSDictionary)
 }
@@ -126,18 +137,39 @@ struct ClientEventEncodingTests {
   func encodedBatchDecodesAsContractType() throws {
     let batch = ClientEventBatch(events: wireCases.map(\.event))
 
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .custom { decoder in
-      let string = try decoder.singleValueContainer().decode(String.self)
-      return try Date(string, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
-    }
-
     // The generated decoder rejects unknown keys, so a round trip proves no field drifts from the contract.
-    let decoded = try decoder.decode(
+    let decoded = try contractDecoder.decode(
       Components.Schemas.Models_period_ClientEventBatchRequest.self,
       from: batch.jsonData()
     )
     #expect(decoded == batch.requestBody)
+  }
+
+  // MARK: - Notification Service Extension encoder
+
+  @Test(
+    "The NSE encoder matches the contract and ClientEventBatch",
+    arguments: ["DownloadReadyNotification", "NotARealNotification", nil] as [String?]
+  )
+  func extensionEncoderMatchesContract(notificationType: String?) throws {
+    let data = try PushDeliveredEventBatch.jsonData(
+      correlationId: correlationId,
+      notificationType: notificationType,
+      timestamp: fixedTimestamp
+    )
+    let expected = ClientEventBatch(events: [
+      .pushDelivered(timestamp: fixedTimestamp, correlationId: correlationId, notificationType: notificationType),
+    ])
+
+    let decoded = try contractDecoder.decode(Components.Schemas.Models_period_ClientEventBatchRequest.self, from: data)
+    #expect(decoded == expected.requestBody)
+    #expect(try jsonObject(data) == jsonObject(expected.jsonData()))
+  }
+
+  @Test("The NSE notificationType allow-list equals the generated contract enum")
+  func extensionNotificationTypesMatchContract() {
+    typealias PushDelivered = Components.Schemas.Models_period_ClientEventBatchRequest.eventsPayloadPayload.Case1Payload
+    #expect(PushDeliveredEventBatch.notificationTypes == Set(PushDelivered.notificationTypePayload.allCases.map(\.rawValue)))
   }
 
   @Test("Contract fields with minimum 0 clamp negatives and reject non-finite numbers")

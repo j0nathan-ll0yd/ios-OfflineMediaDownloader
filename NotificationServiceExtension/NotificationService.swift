@@ -1,4 +1,4 @@
-import AnalyticsClient
+import DeviceEventEncoding
 import Foundation
 import os
 import UserNotifications
@@ -91,11 +91,11 @@ final class NotificationService: UNNotificationServiceExtension {
       return
     }
 
-    let batch = ClientEventBatch(events: [
-      .pushDelivered(timestamp: Date(), correlationId: notificationId, notificationType: notificationType),
-    ])
-
-    guard let jsonData = try? batch.jsonData() else {
+    guard let jsonData = try? PushDeliveredEventBatch.jsonData(
+      correlationId: notificationId,
+      notificationType: notificationType,
+      timestamp: Date()
+    ) else {
       Self.logger.error("Failed to serialize event JSON")
       return
     }

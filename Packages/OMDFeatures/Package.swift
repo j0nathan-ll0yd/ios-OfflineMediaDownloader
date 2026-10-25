@@ -37,6 +37,7 @@ let package = Package(
     .library(name: "PasteboardClient", targets: ["PasteboardClient"]),
     .library(name: "NotificationRegistrationClient", targets: ["NotificationRegistrationClient"]),
     .library(name: "AnalyticsClient", targets: ["AnalyticsClient"]),
+    .library(name: "DeviceEventEncoding", targets: ["DeviceEventEncoding"]),
     .library(name: "CorrelationClient", targets: ["CorrelationClient"]),
     .library(name: "PerformanceClient", targets: ["PerformanceClient"]),
     .library(name: "PreviewFixtures", targets: ["PreviewFixtures"]),
@@ -75,6 +76,9 @@ let package = Package(
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
       .product(name: "IssueReporting", package: "xctest-dynamic-overlay"),
     ], swiftSettings: approachableConcurrency),
+
+    // Foundation-only: linked by the Notification Service Extension, which must stay small.
+    .target(name: "DeviceEventEncoding", swiftSettings: approachableConcurrency),
 
     .target(name: "AnalyticsClient", dependencies: [
       .product(name: "APITypes", package: "APITypes"),
