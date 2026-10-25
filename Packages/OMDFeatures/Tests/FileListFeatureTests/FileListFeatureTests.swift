@@ -860,10 +860,12 @@ struct FileListFeatureTests {
     var state = FileListFeature.State()
     state.files = [FileCellFeature.State(file: TestData.sampleFile)]
 
+    let playbackStart = Duration.seconds(42)
     let store = TestStore(initialState: state) {
       FileListFeature()
     } withDependencies: {
       $0.analytics.track = { _, _ in }
+      $0.monotonicClock.now = { playbackStart }
       $0.coreDataClient.incrementPlayCount = {}
     }
 
@@ -873,7 +875,7 @@ struct FileListFeatureTests {
 
     await store.receive(\.startPlayer) {
       $0.playingFile = TestData.sampleFile
-      $0.playbackStartTime = store.state.playbackStartTime
+      $0.playbackStartTime = playbackStart
     }
   }
 
@@ -882,10 +884,13 @@ struct FileListFeatureTests {
   func dismissPlayerClears() async {
     var state = FileListFeature.State()
     state.playingFile = TestData.sampleFile
-    state.playbackStartTime = Date()
+    state.playbackStartTime = .seconds(1)
 
     let store = TestStore(initialState: state) {
       FileListFeature()
+    } withDependencies: {
+      $0.analytics.track = { _, _ in }
+      $0.monotonicClock.now = { .seconds(2) }
     }
 
     await store.send(.dismissPlayer) {
