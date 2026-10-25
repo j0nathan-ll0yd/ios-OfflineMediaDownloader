@@ -13,7 +13,7 @@ private let correlationId = "6f1c2a9e-3b4d-4e5f-8a7b-9c0d1e2f3a4b"
 
 /// One event and the exact JSON object the pre-migration encoder produced for it.
 /// Every field carries a distinct sentinel, so a swapped argument fails the comparison.
-struct WireCase: Sendable, CustomTestStringConvertible {
+struct WireCase: CustomTestStringConvertible {
   let event: ClientEvent
   let expectedJSON: String
 
