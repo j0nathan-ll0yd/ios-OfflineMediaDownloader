@@ -1,5 +1,6 @@
 @testable import AnalyticsClient
 import ConcurrencyExtras
+import Dependencies
 import Foundation
 import Testing
 
@@ -302,7 +303,7 @@ struct EventBufferTests {
 
   @Test("The flush handler refuses to send without a device ID", arguments: [nil, ""] as [String?])
   func flushHandlerThrowsRetryableErrorWithoutDeviceId(deviceId: String?) async {
-    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId }, session: URLSession(configuration: .ephemeral))
+    let handler = EventBuffer.makeFlushHandler(deviceId: { deviceId })
 
     await #expect(throws: EventFlushError.deviceIdUnavailable) {
       try await handler(Data())
@@ -313,7 +314,7 @@ struct EventBufferTests {
   func missingDeviceIdReenqueues() async {
     let logMessages = LockIsolated<[String]>([])
     let buffer = EventBuffer(
-      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }, session: URLSession(configuration: .ephemeral)),
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: { nil }),
       logHandler: { msg in logMessages.withValue { $0.append(msg) } }
     )
 
@@ -367,53 +368,43 @@ struct EventBufferTests {
 
   // MARK: - Injected session
 
-  @Test("The flush handler uploads through the injected session")
-  func flushHandlerUsesInjectedSession() async throws {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.protocolClasses = [RecordingURLProtocol.self]
-    let session = URLSession(configuration: configuration)
-    RecordingURLProtocol.requests.setValue([])
+  private static let endpointInfo: @Sendable () -> [String: Any]? = {
+    ["MEDIA_DOWNLOADER_BASE_PATH": "https://api.example.test/", "MEDIA_DOWNLOADER_API_KEY": "key-abc"]
+  }
 
-    let handler = EventBuffer.makeFlushHandler(
-      deviceId: { "device-123" },
-      session: session,
-      infoDictionary: {
-        ["MEDIA_DOWNLOADER_BASE_PATH": "https://api.example.test/", "MEDIA_DOWNLOADER_API_KEY": "key-abc"]
+  @Test("The flush handler uploads through the injected upload client")
+  func flushHandlerUsesInjectedUploadClient() async throws {
+    let sent = LockIsolated<[URLRequest]>([])
+    let handler = EventBuffer.makeFlushHandler(deviceId: { "device-123" }, infoDictionary: Self.endpointInfo)
+
+    try await withDependencies {
+      $0.analyticsUploadClient.send = { request in
+        sent.withValue { $0.append(request) }
+        let url = try #require(request.url)
+        return try #require(HTTPURLResponse(url: url, statusCode: 204, httpVersion: nil, headerFields: nil))
       }
-    )
-    try await handler(Data(#"{"events":[]}"#.utf8))
+    } operation: {
+      try await handler(Data(#"{"events":[]}"#.utf8))
+    }
 
-    let request = try #require(RecordingURLProtocol.requests.value.first)
-    #expect(RecordingURLProtocol.requests.value.count == 1)
+    let request = try #require(sent.value.first)
+    #expect(sent.value.count == 1)
     #expect(request.url?.absoluteString == "https://api.example.test/device/event?ApiKey=key-abc")
     #expect(request.httpMethod == "POST")
     #expect(request.value(forHTTPHeaderField: "x-device-uuid") == "device-123")
   }
-}
 
-/// Records every request and answers 204, so a test can prove which session carried it.
-/// `URLSession.shared` never routes through this protocol, so a recorded request proves
-/// the handler used the injected session.
-private final class RecordingURLProtocol: URLProtocol {
-  static let requests = LockIsolated<[URLRequest]>([])
+  @Test("Without an injected upload client the test value fails instead of reaching the network")
+  func uploadClientTestValueIsUnimplemented() async {
+    let handler = EventBuffer.makeFlushHandler(deviceId: { "device-123" }, infoDictionary: Self.endpointInfo)
 
-  override class func canInit(with _: URLRequest) -> Bool {
-    true
-  }
-
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest {
-    request
-  }
-
-  override func startLoading() {
-    let request = request
-    Self.requests.withValue { $0.append(request) }
-    let response = HTTPURLResponse(url: request.url ?? URL(fileURLWithPath: "/"), statusCode: 204, httpVersion: nil, headerFields: nil)
-    if let response {
-      client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    // The unimplemented endpoint both records an issue and throws: require exactly that issue.
+    await withKnownIssue {
+      await #expect(throws: (any Error).self) {
+        try await handler(Data(#"{"events":[]}"#.utf8))
+      }
+    } matching: { issue in
+      String(describing: issue).contains("Unimplemented: 'AnalyticsUploadClient.send'")
     }
-    client?.urlProtocolDidFinishLoading(self)
   }
-
-  override func stopLoading() {}
 }

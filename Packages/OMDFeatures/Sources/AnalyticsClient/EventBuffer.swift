@@ -1,3 +1,4 @@
+import Dependencies
 import Foundation
 
 /// The server rejected a `/device/event` batch with HTTP 400 (contract validation failed).
@@ -150,12 +151,9 @@ public actor EventBuffer {
   /// - Parameters:
   ///   - deviceId: resolved on every flush, so a device ID that becomes available
   ///     later (for example after first unlock) is used for the events buffered before it.
-  ///   - session: the session to upload through. Live, this is `\.analyticsURLSession`,
-  ///     which pins the API Gateway certificate chain.
   ///   - infoDictionary: the bundle values that hold the endpoint and API key.
   public static func makeFlushHandler(
     deviceId: @escaping @Sendable () async -> String?,
-    session: URLSession,
     infoDictionary: @escaping @Sendable () -> [String: Any]? = { Bundle.main.infoDictionary }
   ) -> @Sendable (Data) async throws -> Void {
     { data in
@@ -184,7 +182,10 @@ public actor EventBuffer {
       request.httpBody = data
       request.timeoutInterval = 30
 
-      let (_, response) = try await session.data(for: request)
+      // Resolved on every send, so an override in the calling task's dependency
+      // context reaches the upload. Live, the client pins the certificate chain.
+      @Dependency(\.analyticsUploadClient) var uploadClient
+      let response = try await uploadClient.send(request)
       try classify(response)
     }
   }
