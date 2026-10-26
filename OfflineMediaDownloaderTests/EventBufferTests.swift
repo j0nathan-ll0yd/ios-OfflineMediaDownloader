@@ -407,4 +407,130 @@ struct EventBufferTests {
       String(describing: issue).contains("Unimplemented: 'AnalyticsUploadClient.send'")
     }
   }
+
+  // MARK: - Endpoint configuration
+
+  private static var validInfo: [String: Any] {
+    [
+      "MEDIA_DOWNLOADER_BASE_PATH": "https://api.example.test/prod/",
+      "MEDIA_DOWNLOADER_API_KEY": "key-abc",
+    ]
+  }
+
+  private static func info(_ key: String, _ value: Any?) -> [String: Any] {
+    var info = validInfo
+    info[key] = value
+    return info
+  }
+
+  @Test("A valid configuration builds the /device/event request")
+  func validConfigurationBuildsRequest() throws {
+    let body = Data("{}".utf8)
+    let request = try EventBuffer.makeRequest(data: body, deviceId: "device-123", infoDictionary: Self.validInfo)
+
+    #expect(request.url?.absoluteString == "https://api.example.test/prod/device/event?ApiKey=key-abc")
+    #expect(request.httpMethod == "POST")
+    #expect(request.value(forHTTPHeaderField: "x-device-uuid") == "device-123")
+    #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+    #expect(request.httpBody == body)
+  }
+
+  @Test(
+    "A missing, empty or non-String bundle value throws configurationMissing",
+    arguments: [
+      ("MEDIA_DOWNLOADER_BASE_PATH", nil),
+      ("MEDIA_DOWNLOADER_BASE_PATH", ""),
+      ("MEDIA_DOWNLOADER_BASE_PATH", 42),
+      ("MEDIA_DOWNLOADER_API_KEY", nil),
+      ("MEDIA_DOWNLOADER_API_KEY", ""),
+      ("MEDIA_DOWNLOADER_API_KEY", ["key"]),
+    ] as [(String, (any Sendable)?)]
+  )
+  func missingConfigurationThrows(key: String, value: (any Sendable)?) {
+    #expect(throws: EventFlushError.configurationMissing(key: key)) {
+      try EventBuffer.makeRequest(data: Data(), deviceId: "device-123", infoDictionary: Self.info(key, value))
+    }
+  }
+
+  @Test("A nil info dictionary throws configurationMissing for the base path")
+  func nilInfoDictionaryThrows() {
+    #expect(throws: EventFlushError.configurationMissing(key: "MEDIA_DOWNLOADER_BASE_PATH")) {
+      try EventBuffer.makeRequest(data: Data(), deviceId: "device-123", infoDictionary: nil)
+    }
+  }
+
+  @Test(
+    "A base path that does not form an absolute URL throws invalidEndpoint",
+    arguments: ["https://exa mple.test", "api.example.test", "http://[::1"]
+  )
+  func invalidBasePathThrows(basePath: String) {
+    let result = Result {
+      try EventBuffer.makeRequest(
+        data: Data(),
+        deviceId: "device-123",
+        infoDictionary: Self.info("MEDIA_DOWNLOADER_BASE_PATH", basePath)
+      )
+    }
+    switch result {
+    case let .success(request):
+      Issue.record("Expected invalidEndpoint for '\(basePath)', built \(request.url?.absoluteString ?? "nil")")
+    case let .failure(error):
+      #expect(error as? EventFlushError == .invalidEndpoint(basePath: basePath))
+    }
+  }
+
+  @Test("A configuration error is logged and re-enqueues the batch instead of dropping it")
+  func configurationErrorReenqueues() async {
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: EventBuffer.makeFlushHandler(deviceId: { "device-123" }, infoDictionary: { [:] }),
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+    )
+
+    for _ in 0 ..< 2 {
+      await buffer.append(makeEvent())
+    }
+    await buffer.flush()
+
+    #expect(logMessages.value.contains { $0.contains("MEDIA_DOWNLOADER_BASE_PATH is missing") }, "got: \(logMessages.value)")
+    #expect(logMessages.value.contains { $0.contains("re-enqueued 2 event(s)") }, "got: \(logMessages.value)")
+    #expect(!logMessages.value.contains { $0.contains("rejected") || $0.contains("dropped") }, "got: \(logMessages.value)")
+  }
+
+  @Test("A configuration error is re-enqueued after one attempt, without retry backoff")
+  func configurationErrorSkipsRetries() async {
+    let attempts = LockIsolated(0)
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: { _ in
+        attempts.withValue { $0 += 1 }
+        throw EventFlushError.configurationMissing(key: "MEDIA_DOWNLOADER_API_KEY")
+      },
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+    )
+
+    await buffer.append(makeEvent())
+    await buffer.flush()
+
+    #expect(attempts.value == 1)
+    #expect(logMessages.value.contains { $0.contains("re-enqueued 1 event(s)") }, "got: \(logMessages.value)")
+    #expect(!logMessages.value.contains { $0.contains("attempt") }, "got: \(logMessages.value)")
+  }
+
+  @Test("A missing device ID is still retried within the flush")
+  func deviceIdUnavailableIsRetried() async {
+    let attempts = LockIsolated(0)
+    let buffer = EventBuffer(
+      flushHandler: { _ in
+        attempts.withValue { $0 += 1 }
+        throw EventFlushError.deviceIdUnavailable
+      },
+      logHandler: { _ in }
+    )
+
+    await buffer.append(makeEvent())
+    await buffer.flush()
+
+    #expect(attempts.value == EventBuffer.maxRetries)
+  }
 }
