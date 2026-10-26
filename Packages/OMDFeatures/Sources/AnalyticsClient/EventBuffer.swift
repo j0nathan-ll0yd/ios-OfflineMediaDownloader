@@ -25,6 +25,17 @@ public enum EventFlushError: Error, Equatable, LocalizedError {
   /// The configured base path does not form a valid `/device/event` URL.
   case invalidEndpoint(basePath: String)
 
+  /// Whether the error lasts for the life of the build. Retrying such an error within one
+  /// flush cannot succeed, so `EventBuffer` re-enqueues the batch without further attempts.
+  var isConfigurationError: Bool {
+    switch self {
+    case .configurationMissing, .invalidEndpoint:
+      true
+    case .deviceIdUnavailable:
+      false
+    }
+  }
+
   public var errorDescription: String? {
     switch self {
     case .deviceIdUnavailable:
@@ -155,6 +166,10 @@ public actor EventBuffer {
         return
       } catch let error as EventBatchRejectedError {
         throw error
+      } catch let error as EventFlushError where error.isConfigurationError {
+        // No retry within this flush: the bundle cannot change until the next build.
+        // The caller still re-enqueues the batch and logs the error.
+        throw error
       } catch {
         lastError = error
         logHandler("EventBuffer attempt \(attempt + 1) failed: \(error.localizedDescription)")
@@ -187,9 +202,9 @@ public actor EventBuffer {
 
   /// Builds the `/device/event` request.
   ///
-  /// Every configuration failure throws `EventFlushError`, which `EventBuffer` retries,
-  /// logs and re-enqueues. A silent return here would read as a successful send and
-  /// discard the batch.
+  /// Every configuration failure throws `EventFlushError`, which `EventBuffer` logs and
+  /// re-enqueues without further attempts in the same flush. A silent return here would
+  /// read as a successful send and discard the batch.
   static func makeRequest(data: Data, deviceId: String, infoDictionary: [String: Any]?) throws -> URLRequest {
     let basePath = try requiredString("MEDIA_DOWNLOADER_BASE_PATH", in: infoDictionary)
     let apiKey = try requiredString("MEDIA_DOWNLOADER_API_KEY", in: infoDictionary)

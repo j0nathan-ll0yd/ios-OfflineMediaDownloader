@@ -496,4 +496,41 @@ struct EventBufferTests {
     #expect(logMessages.value.contains { $0.contains("re-enqueued 2 event(s)") }, "got: \(logMessages.value)")
     #expect(!logMessages.value.contains { $0.contains("rejected") || $0.contains("dropped") }, "got: \(logMessages.value)")
   }
+
+  @Test("A configuration error is re-enqueued after one attempt, without retry backoff")
+  func configurationErrorSkipsRetries() async {
+    let attempts = LockIsolated(0)
+    let logMessages = LockIsolated<[String]>([])
+    let buffer = EventBuffer(
+      flushHandler: { _ in
+        attempts.withValue { $0 += 1 }
+        throw EventFlushError.configurationMissing(key: "MEDIA_DOWNLOADER_API_KEY")
+      },
+      logHandler: { msg in logMessages.withValue { $0.append(msg) } }
+    )
+
+    await buffer.append(makeEvent())
+    await buffer.flush()
+
+    #expect(attempts.value == 1)
+    #expect(logMessages.value.contains { $0.contains("re-enqueued 1 event(s)") }, "got: \(logMessages.value)")
+    #expect(!logMessages.value.contains { $0.contains("attempt") }, "got: \(logMessages.value)")
+  }
+
+  @Test("A missing device ID is still retried within the flush")
+  func deviceIdUnavailableIsRetried() async {
+    let attempts = LockIsolated(0)
+    let buffer = EventBuffer(
+      flushHandler: { _ in
+        attempts.withValue { $0 += 1 }
+        throw EventFlushError.deviceIdUnavailable
+      },
+      logHandler: { _ in }
+    )
+
+    await buffer.append(makeEvent())
+    await buffer.flush()
+
+    #expect(attempts.value == EventBuffer.maxRetries)
+  }
 }
