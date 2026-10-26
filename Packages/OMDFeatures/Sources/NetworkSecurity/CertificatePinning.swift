@@ -42,6 +42,28 @@ public enum CertificatePinning {
     }
     return .noMatchingKey
   }
+
+  /// The decision for one server-trust challenge.
+  ///
+  /// - Parameters:
+  ///   - trustValid: the result of system trust evaluation (`SecTrustEvaluateWithError`).
+  ///   - outcome: the pin check. `nil` when trust evaluation failed and the chain was not checked.
+  ///   - enforcesPinning: whether a chain without a pinned key is rejected.
+  /// - Returns: `.cancelAuthenticationChallenge` when trust fails, or when the pin check fails
+  ///   under enforcement; otherwise `.useCredential`.
+  public static func disposition(
+    trustValid: Bool,
+    outcome: Outcome?,
+    enforcesPinning: Bool
+  ) -> URLSession.AuthChallengeDisposition {
+    guard trustValid, let outcome else {
+      return .cancelAuthenticationChallenge
+    }
+    if outcome == .matched {
+      return .useCredential
+    }
+    return enforcesPinning ? .cancelAuthenticationChallenge : .useCredential
+  }
 }
 
 /// What a pinned session decided for one server-trust challenge.
@@ -78,24 +100,20 @@ public final class PinningURLSessionDelegate: NSObject, URLSessionDelegate, Send
 
     let host = challenge.protectionSpace.host
     var error: CFError?
-    guard SecTrustEvaluateWithError(serverTrust, &error) else {
+    let trustValid = SecTrustEvaluateWithError(serverTrust, &error)
+    let outcome = trustValid ? CertificatePinning.evaluate(serverTrust: serverTrust) : nil
+
+    switch outcome {
+    case nil:
       onEvent(.trustEvaluationFailed(host: host, reason: error?.localizedDescription ?? "Unknown error"))
-      completionHandler(.cancelAuthenticationChallenge, nil)
-      return
+    case .matched:
+      onEvent(.pinMatched(host: host))
+    case let .some(outcome):
+      onEvent(.pinFailed(host: host, outcome: outcome, enforced: enforcesPinning))
     }
 
-    let outcome = CertificatePinning.evaluate(serverTrust: serverTrust)
-    if outcome == .matched {
-      onEvent(.pinMatched(host: host))
-      completionHandler(.useCredential, URLCredential(trust: serverTrust))
-    } else {
-      onEvent(.pinFailed(host: host, outcome: outcome, enforced: enforcesPinning))
-      if enforcesPinning {
-        completionHandler(.cancelAuthenticationChallenge, nil)
-      } else {
-        completionHandler(.useCredential, URLCredential(trust: serverTrust))
-      }
-    }
+    let disposition = CertificatePinning.disposition(trustValid: trustValid, outcome: outcome, enforcesPinning: enforcesPinning)
+    completionHandler(disposition, disposition == .useCredential ? URLCredential(trust: serverTrust) : nil)
   }
 }
 
