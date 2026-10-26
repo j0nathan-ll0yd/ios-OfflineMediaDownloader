@@ -38,6 +38,7 @@ let package = Package(
     .library(name: "NotificationRegistrationClient", targets: ["NotificationRegistrationClient"]),
     .library(name: "AnalyticsClient", targets: ["AnalyticsClient"]),
     .library(name: "DeviceEventEncoding", targets: ["DeviceEventEncoding"]),
+    .library(name: "NetworkSecurity", targets: ["NetworkSecurity"]),
     .library(name: "CorrelationClient", targets: ["CorrelationClient"]),
     .library(name: "PerformanceClient", targets: ["PerformanceClient"]),
     .library(name: "PreviewFixtures", targets: ["PreviewFixtures"]),
@@ -80,7 +81,12 @@ let package = Package(
     // Foundation-only: linked by the Notification Service Extension, which must stay small.
     .target(name: "DeviceEventEncoding", swiftSettings: approachableConcurrency),
 
+    // Foundation, Security and CryptoKit only: certificate pinning shared by ServerClient,
+    // DownloadClient, AnalyticsClient and the Notification Service Extension.
+    .target(name: "NetworkSecurity", swiftSettings: approachableConcurrency),
+
     .target(name: "AnalyticsClient", dependencies: [
+      "NetworkSecurity",
       .product(name: "APITypes", package: "APITypes"),
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "DependenciesMacros", package: "swift-dependencies"),
@@ -145,6 +151,7 @@ let package = Package(
       "KeychainClient",
       "CorrelationClient",
       "AnalyticsClient",
+      "NetworkSecurity",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       .product(name: "APITypes", package: "APITypes"),
       .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
@@ -163,6 +170,7 @@ let package = Package(
 
     .target(name: "DownloadClient", dependencies: [
       "LoggerClient",
+      "NetworkSecurity",
       "ServerClient",
       .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
     ], swiftSettings: approachableConcurrency),

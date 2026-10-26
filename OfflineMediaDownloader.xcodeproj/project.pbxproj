@@ -14,6 +14,7 @@
 		C41DD91C2CC6E34400F041C6 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD91B2CC6E34400F041C6 /* ComposableArchitecture */; };
 		C41DD9242CC81B8100F041C6 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9232CC81B8100F041C6 /* Valet */; };
 		3DA16F813C6700B9736D6958 /* DeviceEventEncoding in Frameworks */ = {isa = PBXBuildFile; productRef = 83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */; };
+		72A5B60FD3780D27DF169080 /* NetworkSecurity in Frameworks */ = {isa = PBXBuildFile; productRef = 4D7B94DBAD4B1462A01B0AF6 /* NetworkSecurity */; };
 		E7988A0A0BE073EF726AFEFE /* DeviceEventEncoding in Frameworks */ = {isa = PBXBuildFile; productRef = EDF0AAD74470336DB8010120 /* DeviceEventEncoding */; };
 		C41DD9402D12ABC100F041C6 /* APITypes in Frameworks */ = {isa = PBXBuildFile; productRef = C41DD9412D12ABC100F041C6 /* APITypes */; };
 		C44108272F1487B2007EAB48 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C44108262F1487B2007EAB48 /* WidgetKit.framework */; };
@@ -188,6 +189,7 @@
 			files = (
 				BAE08BD9C61AFF9E4E05E4F6 /* Foundation.framework in Frameworks */,
 				3DA16F813C6700B9736D6958 /* DeviceEventEncoding in Frameworks */,
+				72A5B60FD3780D27DF169080 /* NetworkSecurity in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -343,6 +345,7 @@
 			name = NotificationServiceExtension;
 			packageProductDependencies = (
 				83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */,
+				4D7B94DBAD4B1462A01B0AF6 /* NetworkSecurity */,
 			);
 			productName = NotificationServiceExtension;
 			productReference = 35C611F199767DE3CAED194A /* NotificationServiceExtension.appex */;
@@ -1254,6 +1257,10 @@
 		83864C633DF6E7DF04F83D4B /* DeviceEventEncoding */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DeviceEventEncoding;
+		};
+		4D7B94DBAD4B1462A01B0AF6 /* NetworkSecurity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NetworkSecurity;
 		};
 		EDF0AAD74470336DB8010120 /* DeviceEventEncoding */ = {
 			isa = XCSwiftPackageProductDependency;

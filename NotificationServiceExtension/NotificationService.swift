@@ -1,5 +1,6 @@
 import DeviceEventEncoding
 import Foundation
+import NetworkSecurity
 import os
 import UserNotifications
 
@@ -60,6 +61,18 @@ final class NotificationService: UNNotificationServiceExtension {
 
   // MARK: - Event Posting
 
+  /// Pins the API Gateway certificate chain, like the app's ServerClient and analytics uploads.
+  private static let pinnedSession = makePinnedURLSession(enforcesPinning: true) { event in
+    switch event {
+    case .pinMatched:
+      return
+    case let .trustEvaluationFailed(host, reason):
+      logger.error("push_delivered upload to \(host) failed trust evaluation: \(reason)")
+    case let .pinFailed(host, outcome, enforced):
+      logger.error("push_delivered upload to \(host) failed certificate pinning (\(String(describing: outcome)), enforced: \(enforced))")
+    }
+  }
+
   private static func sendPushDeliveredEvent(
     notificationId: String,
     notificationType: String?
@@ -108,7 +121,7 @@ final class NotificationService: UNNotificationServiceExtension {
     request.timeoutInterval = 25
 
     do {
-      let (_, response) = try await URLSession.shared.data(for: request)
+      let (_, response) = try await Self.pinnedSession.data(for: request)
       let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
       Self.logger.info("push_delivered event sent: status=\(statusCode)")
     } catch {

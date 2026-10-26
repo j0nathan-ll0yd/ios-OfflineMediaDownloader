@@ -1,5 +1,6 @@
 @testable import AnalyticsClient
 import ConcurrencyExtras
+import Dependencies
 import Foundation
 import Testing
 
@@ -362,6 +363,48 @@ struct EventBufferTests {
     let response = URLResponse(url: url, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
     #expect(throws: URLError(.badServerResponse)) {
       try EventBuffer.classify(response)
+    }
+  }
+
+  // MARK: - Injected session
+
+  private static let endpointInfo: @Sendable () -> [String: Any]? = {
+    ["MEDIA_DOWNLOADER_BASE_PATH": "https://api.example.test/", "MEDIA_DOWNLOADER_API_KEY": "key-abc"]
+  }
+
+  @Test("The flush handler uploads through the injected upload client")
+  func flushHandlerUsesInjectedUploadClient() async throws {
+    let sent = LockIsolated<[URLRequest]>([])
+    let handler = EventBuffer.makeFlushHandler(deviceId: { "device-123" }, infoDictionary: Self.endpointInfo)
+
+    try await withDependencies {
+      $0.analyticsUploadClient.send = { request in
+        sent.withValue { $0.append(request) }
+        let url = try #require(request.url)
+        return try #require(HTTPURLResponse(url: url, statusCode: 204, httpVersion: nil, headerFields: nil))
+      }
+    } operation: {
+      try await handler(Data(#"{"events":[]}"#.utf8))
+    }
+
+    let request = try #require(sent.value.first)
+    #expect(sent.value.count == 1)
+    #expect(request.url?.absoluteString == "https://api.example.test/device/event?ApiKey=key-abc")
+    #expect(request.httpMethod == "POST")
+    #expect(request.value(forHTTPHeaderField: "x-device-uuid") == "device-123")
+  }
+
+  @Test("Without an injected upload client the test value fails instead of reaching the network")
+  func uploadClientTestValueIsUnimplemented() async {
+    let handler = EventBuffer.makeFlushHandler(deviceId: { "device-123" }, infoDictionary: Self.endpointInfo)
+
+    // The unimplemented endpoint both records an issue and throws: require exactly that issue.
+    await withKnownIssue {
+      await #expect(throws: (any Error).self) {
+        try await handler(Data(#"{"events":[]}"#.utf8))
+      }
+    } matching: { issue in
+      String(describing: issue).contains("Unimplemented: 'AnalyticsUploadClient.send'")
     }
   }
 }

@@ -1,3 +1,4 @@
+import AnalyticsClient
 import APIClient
 import APITypes
 import ComposableArchitecture
@@ -5,6 +6,7 @@ import CorrelationClient
 import Foundation
 import KeychainClient
 import LoggerClient
+import NetworkSecurity
 import OpenAPIURLSession
 import SharedModels
 import UIKit
@@ -118,13 +120,27 @@ private func mapStatusCodeToError(
 
 // MARK: - OpenAPI Client Factory
 
-private let pinnedURLSession: URLSession = {
-  #if DEBUG
-    return makePinnedURLSession(enforcesPinning: true)
-  #else
-    return makePinnedURLSession(enforcesPinning: true)
-  #endif
-}()
+private let pinnedURLSession = makePinnedURLSession(enforcesPinning: true) { event in
+  @Dependency(\.logger) var logger
+  switch event {
+  case let .trustEvaluationFailed(_, reason):
+    logger.warning(.network, "Certificate validation failed: \(reason)")
+  case .pinMatched:
+    logger.debug(.network, "Certificate pinning: Matched trusted public key")
+  case let .pinFailed(host, outcome, enforced):
+    logger.warning(.network, "Certificate pinning: no pinned key in chain (\(outcome))")
+    if enforced {
+      logger.warning(.network, "Certificate pinning failed - connection rejected")
+      @Dependency(\.analytics) var analytics
+      analytics.track(.certificatePinningFailed, [
+        "host": host,
+        "errorMessage": "No matching public key found in certificate chain",
+      ])
+    } else {
+      logger.warning(.network, "Certificate pinning failed but enforcement is disabled")
+    }
+  }
+}
 
 private func makeAuthenticatedAPIClient() -> Client {
   @Dependency(\.keychainClient) var keychainClient
