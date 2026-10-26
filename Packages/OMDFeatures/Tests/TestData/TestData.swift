@@ -1,5 +1,7 @@
 import APIClient
 import Foundation
+import LoggerClient
+import PasteboardClient
 import SharedModels
 
 /// Centralized test data fixtures for all feature tests
@@ -140,6 +142,24 @@ public enum TestData {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
   public static let shortToken = "short-token-for-display"
+
+  // MARK: - Noop Dependencies
+
+  /// Noop logger for TestStores. `LoggerClient` is a `@DependencyClient`, so its test value
+  /// records an "Unimplemented" issue on every log call a reducer makes.
+  public static let noopLogger = LoggerClient(
+    log: { _, _, _, _, _, _ in },
+    getRecentLogs: { _ in [] },
+    clearLogs: {},
+    exportLogs: { Data() },
+    setMinLevel: { _ in }
+  )
+
+  /// Noop pasteboard that returns no content.
+  public static let noopPasteboardClient = PasteboardClient(
+    hasStrings: { false },
+    string: { nil }
+  )
 
   // MARK: - Error Helpers
 

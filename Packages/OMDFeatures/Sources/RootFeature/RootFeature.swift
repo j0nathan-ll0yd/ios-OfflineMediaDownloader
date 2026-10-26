@@ -18,25 +18,6 @@ import ServerClient
 import SharedModels
 import SwiftUI
 import ThumbnailCacheClient
-import UserNotifications
-
-// MARK: - Notification Setup Helper
-
-@MainActor
-public func setupNotifications() {
-  @Dependency(\.notificationRegistrationClient) var notificationRegistrationClient
-  let client = notificationRegistrationClient
-  let center = UNUserNotificationCenter.current()
-  center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-    guard granted else { return }
-    UNUserNotificationCenter.current().getNotificationSettings { settings in
-      guard settings.authorizationStatus == .authorized else { return }
-      Task {
-        await client.registerForRemoteNotifications()
-      }
-    }
-  }
-}
 
 /// Token refresh threshold - refresh if token expires within this time
 private let tokenRefreshThreshold: TimeInterval = 5 * 60 // 5 minutes
@@ -117,9 +98,15 @@ public struct RootFeature: Sendable {
         state.launchStatus = "Checking authentication..."
         logger.info(.lifecycle, "App launched - checking authentication status")
         let analytics = analytics
-        return .run { [authenticationClient, clock] send in
+        // Notification permission runs as its own effect: awaiting it inside the launch flow
+        // would hold the launch screen until the user answers the permission prompt.
+        let requestNotifications: Effect<Action> = .run { [notificationRegistrationClient] _ in
+          if await notificationRegistrationClient.requestAuthorization() {
+            await notificationRegistrationClient.registerForRemoteNotifications()
+          }
+        }
+        return .merge(requestNotifications, .run { [authenticationClient, clock] send in
           analytics.trackAppLaunched()
-          await MainActor.run { setupNotifications() }
 
           // Ensure launch screen is visible for at least 1 second for smooth transition.
           // The delay goes through the clock dependency so tests can collapse it: a real
@@ -130,7 +117,7 @@ public struct RootFeature: Sendable {
 
           let (state, _) = try await (authState, minDelay)
           await send(.authStateResponse(state))
-        }
+        })
 
       case let .authStateResponse(authState):
         logger.info(.lifecycle, "Auth state determined", metadata: [

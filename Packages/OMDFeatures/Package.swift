@@ -279,7 +279,12 @@ let package = Package(
 
     // ─── Tests ─────────────────────────────────────────────────────────
 
-    .target(name: "TestData", dependencies: ["SharedModels", "APIClient"], path: "Tests/TestData", swiftSettings: approachableConcurrency),
+    .target(
+      name: "TestData",
+      dependencies: ["SharedModels", "APIClient", "LoggerClient", "PasteboardClient"],
+      path: "Tests/TestData",
+      swiftSettings: approachableConcurrency
+    ),
 
     .testTarget(name: "SharedModelsTests", dependencies: ["SharedModels", "TestData"]),
     // Executes every fixture accessor so a design-system fixture/decode

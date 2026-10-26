@@ -39,17 +39,41 @@ echo "$STAGED_SWIFT_FILES"
 echo ""
 
 # ==============================================================================
-# Check 1: SwiftFormat (if installed)
+# Check 1: SwiftFormat, at the version CI uses
 # ==============================================================================
-if command -v swiftformat &> /dev/null; then
-    echo "Running SwiftFormat..."
+# CI lints with the SwiftFormat version pinned in the runner-swift-lint image.
+# The Mintfile pins the same version for local use, and the Lint job asserts the
+# two match. A different local version disagrees on rules such as indent, so a
+# mismatched binary fails this check instead of passing code CI rejects.
+SWIFTFORMAT_PIN=$(sed -n 's|^nicklockwood/SwiftFormat@||p' Mintfile 2>/dev/null)
+SWIFTFORMAT_CMD=""
+if [ -z "$SWIFTFORMAT_PIN" ]; then
+    echo -e "${RED}Mintfile does not pin nicklockwood/SwiftFormat${NC}"
+    CHECKS_PASSED=false
+elif command -v mint &> /dev/null; then
+    SWIFTFORMAT_CMD="mint run --silent nicklockwood/SwiftFormat@$SWIFTFORMAT_PIN swiftformat"
+elif command -v swiftformat &> /dev/null; then
+    LOCAL_SWIFTFORMAT=$(swiftformat --version)
+    if [ "$LOCAL_SWIFTFORMAT" = "$SWIFTFORMAT_PIN" ]; then
+        SWIFTFORMAT_CMD="swiftformat"
+    else
+        echo -e "${RED}SwiftFormat $LOCAL_SWIFTFORMAT does not match the pinned $SWIFTFORMAT_PIN that CI uses${NC}"
+        echo "Install the pinned version: brew install mint && mint bootstrap"
+        CHECKS_PASSED=false
+    fi
+else
+    echo -e "${YELLOW}SwiftFormat not installed. Install the pinned version: brew install mint && mint bootstrap${NC}"
+fi
+
+if [ -n "$SWIFTFORMAT_CMD" ]; then
+    echo "Running SwiftFormat $SWIFTFORMAT_PIN..."
 
     # Run SwiftFormat on staged files
     for file in $STAGED_SWIFT_FILES; do
         if [ -f "$file" ]; then
-            swiftformat "$file" --lint 2>/dev/null || {
+            $SWIFTFORMAT_CMD "$file" --lint 2>/dev/null || {
                 echo -e "${RED}SwiftFormat issues found in: $file${NC}"
-                echo "Run 'swiftformat $file' to fix formatting issues"
+                echo "Run '$SWIFTFORMAT_CMD $file' to fix formatting issues"
                 CHECKS_PASSED=false
             }
         fi
@@ -58,8 +82,6 @@ if command -v swiftformat &> /dev/null; then
     if [ "$CHECKS_PASSED" = true ]; then
         echo -e "${GREEN}SwiftFormat check passed${NC}"
     fi
-else
-    echo -e "${YELLOW}SwiftFormat not installed. Install with: brew install swiftformat${NC}"
 fi
 
 echo ""
