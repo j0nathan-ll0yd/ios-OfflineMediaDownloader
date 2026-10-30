@@ -682,7 +682,7 @@ Identify unused or underutilized dependencies.
 
 **Files to Analyze:**
 - All App/**/*.swift files (import statements)
-- Packages/OMDFeatures/Package.swift and APITypes/Package.swift (declared dependency ranges)
+- Packages/OMDFeatures/Package.swift (declared dependency ranges)
 - APITypes/Package.swift (OpenAPI dependencies)
 
 **Questions to Answer:**
