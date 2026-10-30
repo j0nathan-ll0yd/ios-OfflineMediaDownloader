@@ -145,13 +145,15 @@ Scripts/validate-tca-patterns.sh
 ## 5. DEPENDENCIES (SPM)
 
 **Files to Read (ALL):**
-- Xcode project's `Package.resolved` (search in .xcodeproj)
+- `Packages/OMDFeatures/Package.swift`
 - `APITypes/Package.swift`
-- `APITypes/Package.resolved` (if exists)
 - `.github/dependabot.yml`
 
+No `Package.resolved` is committed (`.gitignore:31-32`). Packages float within the ranges the
+manifests declare, so a local `Package.resolved` shows only the last local resolution.
+
 **Verify:**
-- Is TCA pinned to compatible version (currently 1.22.2+)?
+- Does the TCA range in `Packages/OMDFeatures/Package.swift` stay compatible (currently `from: "1.22.2"`)?
 - Is Valet version current for Secure Enclave support?
 - Are ALL Point-Free dependencies at compatible versions?
 - Is Dependabot configured for weekly updates?
