@@ -630,9 +630,9 @@ Evaluate whether all SPM dependencies are current and secure.
 - Valet from Square
 
 **Files to Analyze:**
-- OfflineMediaDownloader.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+- Packages/OMDFeatures/Package.swift
 - APITypes/Package.swift
-- APITypes/Package.resolved
+- No Package.resolved is committed (.gitignore:31-32); packages float within the declared ranges
 
 **Current Dependencies (from IMPROVEMENT_PLAN.md):**
 | Dependency | Current Version | Purpose |
@@ -682,7 +682,7 @@ Identify unused or underutilized dependencies.
 
 **Files to Analyze:**
 - All App/**/*.swift files (import statements)
-- Package.resolved (full dependency list)
+- Packages/OMDFeatures/Package.swift and APITypes/Package.swift (declared dependency ranges)
 - APITypes/Package.swift (OpenAPI dependencies)
 
 **Questions to Answer:**
@@ -730,7 +730,7 @@ Audit dependencies for security and license compliance.
 - No formal security audit has been conducted
 
 **Files to Analyze:**
-- Package.resolved (all dependencies)
+- Packages/OMDFeatures/Package.swift and APITypes/Package.swift (all declared dependencies)
 - App/Dependencies/KeychainClient.swift (Valet usage)
 - App/Dependencies/CertificatePinning.swift (if exists)
 - App/Dependencies/ServerClient.swift (API communication)
