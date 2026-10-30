@@ -1,17 +1,12 @@
 version: 2
 updates:
-  # Swift Package Manager dependencies
-  - package-ecosystem: "swift"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "deps"
-    labels:
-      - "dependencies"
-      - "swift"
+  # No Swift Package Manager entry, by design (owner decision 2026-10-30; atlas decision 0176).
+  # - SPM packages float within their declared ranges. Package.resolved is not committed
+  #   (.gitignore:31-32).
+  # - Packages/OMDFeatures depends on design-system-Lifegames by sibling path
+  #   (Packages/OMDFeatures/Package.swift:55). A Dependabot clone of this repository alone can
+  #   never resolve it.
+  # - The Swift version job never succeeded: 30 of 30 runs failed, 2025-12-20 to 2026-10-05.
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
